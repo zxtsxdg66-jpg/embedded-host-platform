@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  环境监测首页。信息层级严格按四层（第二阶段 UI 方案第 5 节）：
+
+    ① 系统状态（常驻顶部，不随内容滚动）—— 用户先判断"系统能不能信"
+    ② 核心环境指标（视觉焦点）           —— 再看"环境怎么样"
+    ③ 实时状态条                         —— 数据是不是活的
+    ④ 辅助信息（设备状态 / 运行日志）     —— 需滚动才见，排障用
+
+  头部放在 ScrollView 之外：连接状态是任何时候都必须可见的信息，
+  不能因为用户滚到页面下方就消失。
+-->
+<!--
+  背景层（与 PC 端 ui/widgets/background_widget.py 同一思路）：
+    最底 ImageView（centerCrop，保证不变形、铺满）
+    -> 半透明遮罩 View
+    -> 内容层（各面板自身再按 colors.xml 的分档 alpha 半透明）
+
+  背景固定在 ScrollView 之外，滚动时不跟着动。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_base">
+
+    <ImageView
+        android:id="@+id/imageBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/app_background" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim" />
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- ===== ① 系统状态 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_header"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/page_margin"
+        android:paddingTop="14dp"
+        android:paddingEnd="@dimen/page_margin"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/home_title"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_title" />
+
+            <ImageButton
+                android:id="@+id/buttonReconnect"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_reconnect"
+                android:padding="8dp"
+                android:src="@drawable/ic_refresh" />
+
+            <ImageButton
+                android:id="@+id/buttonHistory"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_history"
+                android:padding="8dp"
+                android:src="@drawable/ic_history" />
+
+            <ImageButton
+                android:id="@+id/buttonAssistant"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_assistant"
+                android:padding="8dp"
+                android:src="@drawable/ic_assistant" />
+
+            <ImageButton
+                android:id="@+id/buttonSettings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_settings"
+                android:padding="8dp"
+                android:src="@drawable/ic_settings" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textSubtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_caption"
+                tools:text="站厅公共区 · 3 台设备" />
+
+            <LinearLayout
+                android:id="@+id/statusPill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill"
+                android:contentDescription="@string/cd_status_indicator"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="5dp">
+
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="@dimen/status_dot"
+                    android:layout_height="@dimen/status_dot"
+                    android:background="@drawable/bg_status_dot" />
+
+                <TextView
+                    android:id="@+id/textStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/conn_disconnected"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_caption" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 数据来源提示：只有 PC 处于 simulator 模式时出现 -->
+        <TextView
+            android:id="@+id/bannerSimulated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_banner_warn"
+            android:paddingStart="10dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="7dp"
+            android:text="@string/banner_simulated"
+            android:textColor="@color/state_warn"
+            android:textSize="@dimen/text_caption"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/page_margin"
+        android:paddingEnd="@dimen/page_margin"
+        android:paddingBottom="@dimen/page_margin"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ===== ② 核心环境指标 ===== -->
+            <com.example.envmonitor.ui.MetricCardView
+                android:id="@+id/cardTemperature"
+                style="@style/Widget.EnvMonitor.Card.Metric"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <com.example.envmonitor.ui.MetricCardView
+                android:id="@+id/cardHumidity"
+                style="@style/Widget.EnvMonitor.Card.Metric"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/card_gap" />
+
+            <com.example.envmonitor.ui.MetricCardView
+                android:id="@+id/cardNoise"
+                style="@style/Widget.EnvMonitor.Card.Metric"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/card_gap" />
+
+            <!-- ===== ③ 实时状态条 ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_inline_panel"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="9dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="9dp">
+
+                <View
+                    android:id="@+id/dotLive"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/bg_status_dot" />
+
+                <TextView
+                    android:id="@+id/textLive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/realtime_label"
+                    android:textColor="@color/accent"
+                    android:textSize="@dimen/text_caption" />
+
+                <TextView
+                    android:id="@+id/textRealtime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/realtime_waiting"
+                    android:textAppearance="@style/TextAppearance.EnvMonitor.Caption"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- ===== ④ 辅助信息：设备状态 ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EnvMonitor.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/card_padding">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_device"
+                        android:textAppearance="@style/TextAppearance.EnvMonitor.SectionTitle" />
+
+                    <TextView
+                        android:id="@+id/textDeviceHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/device_loading"
+                        android:textAppearance="@style/TextAppearance.EnvMonitor.Caption" />
+
+                    <LinearLayout
+                        android:id="@+id/deviceContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== ④ 辅助信息：运行日志（默认收起） ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EnvMonitor.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/card_gap">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/card_padding"
+                    android:paddingEnd="@dimen/card_padding">
+
+                    <LinearLayout
+                        android:id="@+id/logHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/section_log"
+                            android:textAppearance="@style/TextAppearance.EnvMonitor.SectionTitle" />
+
+                        <ImageView
+                            android:id="@+id/iconLogToggle"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@string/section_log"
+                            android:src="@drawable/ic_expand" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:fontFamily="monospace"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/log_empty"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="@dimen/text_caption"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
+</FrameLayout>

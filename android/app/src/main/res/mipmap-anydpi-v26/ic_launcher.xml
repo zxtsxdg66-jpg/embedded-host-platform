@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标（API 26+）。
+
+  2026-09-08 改回第一阶段那枚温度计：background 是纯色底，foreground 是温度计矢量，
+  monochrome 复用同一张（Android 13+ 的"主题图标"模式下系统只取形状、自行上色）。
+  此前用的是整张插图铺 background、foreground 留空的方案——插图在小尺寸下细节糊成一团，
+  且无法用于主题图标模式。应用内的背景插图不受影响，仍是 drawable-nodpi/app_background.webp。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

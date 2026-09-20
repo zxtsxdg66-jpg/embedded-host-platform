@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标的空前景层。
+
+  `<adaptive-icon>` 要求 background 与 foreground 两层都存在，而这次的图标是
+  一整张插图——插图属于"满幅背景"，应该放 background 层（foreground 层是给
+  留白的 Logo 用的，会被再缩进一圈）。所以 foreground 用这张全透明占位图。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+</shape>

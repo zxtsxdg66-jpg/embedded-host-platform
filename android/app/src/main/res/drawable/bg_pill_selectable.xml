@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  可选中的 Chip 底，用于历史页的通道切换。
+
+  与 bg_pill.xml 的区别只有一处：它是固定底色，这个按 selected 状态换色。
+  不改 bg_pill 本身，因为它已被若干处当作静态底使用，给它加状态会让那些地方
+  的外观随控件状态意外变化。
+
+  选中色用 accent，与首页设备在线点同一个绿——"当前正在看的"与"当前是活的"
+  在这套界面里一直是同一种视觉语言。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent" />
+            <corners android:radius="@dimen/pill_radius" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/bg_elevated" />
+            <corners android:radius="@dimen/pill_radius" />
+        </shape>
+    </item>
+</selector>

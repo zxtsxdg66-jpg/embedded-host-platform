@@ -1,0 +1,37 @@
+# 凭证：真实配置绝不入库，示例文件 oss_config.example.json 照常入库
+oss_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv*/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# 运行期数据产物（本地历史库、整点归档、问答日志）
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+exports/
+logs/
+
+# 本地模型训练的数据与产物
+training/datasets/*
+!training/datasets/.gitkeep
+training/runs/*
+!training/runs/.gitkeep
+
+# Android 构建产物与本机路径
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.iml
+
+# 编辑器
+.idea/
+.vscode/

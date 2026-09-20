@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 运行日志展开/收起箭头。收起态为向下，展开时由代码旋转 180°。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/text_tertiary">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6l-6,-6L7.41,8.59z" />
+</vector>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  一条对话气泡：上面一行小字标注是谁在说（用户 / 系统 / 模型识别 / 模型改写），
+  下面是内容本身。
+
+  来源标签常驻显示而不是只在"模型参与时"才出现——读者需要一眼看出这句话里
+  模型参与到什么程度，而不是从"没有标签"去推断。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/card_gap"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/textSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:textColor="@color/text_tertiary"
+        android:textSize="@dimen/text_hint"
+        tools:text="模型改写"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+    <TextView
+        android:id="@+id/textBubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="300dp"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_body"
+        tools:text="噪声当前 54.1dB，未超过报警阈值 80dB，一切正常。"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+</LinearLayout>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设备状态列表的一行：在线指示灯 + 设备 id + 占用情况。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <View
+        android:id="@+id/deviceDot"
+        android:layout_width="@dimen/status_dot"
+        android:layout_height="@dimen/status_dot"
+        android:background="@drawable/bg_status_dot" />
+
+    <TextView
+        android:id="@+id/textDeviceId"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_body"
+        tools:text="sim-env-1-temp" />
+
+    <TextView
+        android:id="@+id/textDeviceState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.EnvMonitor.Caption"
+        tools:text="在线 · 空闲" />
+
+</LinearLayout>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  纯色背景，作为自适应图标的背景层。用矢量而不是 PNG，避免引入多套分辨率位图资源。
+  颜色与应用主题的页面底色（colors.xml 的 bg_base）保持一致，略微提亮以便在
+  浅色桌面壁纸上仍有轮廓。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#12202E" />
+</shape>

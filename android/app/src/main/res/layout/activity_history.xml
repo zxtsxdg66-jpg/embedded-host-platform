@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  历史读数页。背景层与首页、问答页、设置页保持一致（背景图 + 遮罩）。
+
+  版面自上而下：标题栏 -> 通道切换 -> 读数列表（可滚动，占满剩余高度）。
+  列表用 ScrollView + LinearLayout 逐条加视图而不是 RecyclerView，
+  与问答页同一取向，理由见 HistoryActivity 的类注释与 app/build.gradle.kts。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_base">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/app_background" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 标题栏 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/panel_header"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="@dimen/page_margin"
+            android:paddingBottom="10dp">
+
+            <ImageButton
+                android:id="@+id/buttonBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/history_title"
+                android:padding="8dp"
+                android:src="@drawable/ic_back" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/history_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_title" />
+
+                <TextView
+                    android:id="@+id/textSummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="@dimen/text_hint"
+                    android:visibility="gone"
+                    tools:text="共 200 条 · 来自 PC"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/buttonRefresh"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_history_refresh"
+                android:padding="8dp"
+                android:src="@drawable/ic_refresh" />
+        </LinearLayout>
+
+        <!-- 通道切换 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/page_margin"
+            android:paddingTop="10dp"
+            android:paddingEnd="@dimen/page_margin">
+
+            <TextView
+                android:id="@+id/chipTemperature"
+                style="@style/HistoryChip"
+                android:text="@string/label_temperature" />
+
+            <TextView
+                android:id="@+id/chipHumidity"
+                style="@style/HistoryChip"
+                android:layout_marginStart="8dp"
+                android:text="@string/label_humidity" />
+
+            <TextView
+                android:id="@+id/chipNoise"
+                style="@style/HistoryChip"
+                android:layout_marginStart="8dp"
+                android:text="@string/label_noise" />
+        </LinearLayout>
+
+        <!-- 空态 / 加载 / 失败，三种情况共用一行文字 -->
+        <TextView
+            android:id="@+id/textMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/page_margin"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_body"
+            android:visibility="gone"
+            tools:text="正在读取…"
+            tools:visibility="visible" />
+
+        <!-- 读数列表 -->
+        <ScrollView
+            android:id="@+id/scrollRows"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/page_margin"
+            android:paddingTop="4dp"
+            android:paddingEnd="@dimen/page_margin"
+            android:paddingBottom="@dimen/page_margin"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/containerRows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+    </LinearLayout>
+
+</FrameLayout>

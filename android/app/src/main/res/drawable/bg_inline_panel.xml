@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  给"不在卡片里、却直接压在背景图上"的那一行文字用的底。
+
+  加了背景图之后，实时状态条是全页唯一一处正文直接叠在图上的地方；
+  没有这层底，11sp 的小字在深浅交错的画面上会时隐时现。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 用与指标卡同级的不透明度：这一行没有卡片保护，是全页对比度最吃紧的地方 -->
+    <solid android:color="@color/panel_metric" />
+    <corners android:radius="@dimen/pill_radius" />
+</shape>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标前景层：一个简化的温度计轮廓，示意"环境监测"。
+  纯矢量绘制，不依赖任何图片素材。
+
+  第二阶段只改了配色（白 -> 主强调青绿 #00D9A5，挖空色跟随新的图标背景），
+  形状未变。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 温度计外壳 -->
+    <path
+        android:fillColor="#00D9A5"
+        android:pathData="M54,28 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 z" />
+    <path
+        android:fillColor="#00D9A5"
+        android:pathData="M47,28 L61,28 L61,62 L47,62 z" />
+    <!-- 底部球泡 -->
+    <path
+        android:fillColor="#00D9A5"
+        android:pathData="M54,70 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0 z" />
+    <!-- 中间水银柱（用背景色挖出对比） -->
+    <path
+        android:fillColor="#12202E"
+        android:pathData="M51,34 L57,34 L57,60 L51,60 z" />
+</vector>

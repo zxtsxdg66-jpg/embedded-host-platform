@@ -1,0 +1,1334 @@
+[
+ {
+  "q": "站台暖和吗",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": true
+ },
+ {
+  "q": "站台现在凉快吗",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": true
+ },
+ {
+  "q": "站厅现在暖和吗",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": true
+ },
+ {
+  "q": "这边现在冷不冷",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "报一下实时气温",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "这边现在凉快吗",
+  "label": "current_value",
+  "channel": "temperature",
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": true
+ },
+ {
+  "q": "站台现在潮湿吗",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "这里的湿度咋样",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站台潮湿吗",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站台现在湿不湿",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "这边干燥吗",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站台干燥吗",
+  "label": "current_value",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "实时分贝报一下",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站厅现在安静不安静",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "当前分贝报一下",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站厅现在吵吗",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "当前噪音报一下",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "实时噪音报一下",
+  "label": "current_value",
+  "channel": "noise",
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "今天气温最高是多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "开机以来气温最高是多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "开机以来温度最高到过多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "今天温度最高到过多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "今天温度最高是多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "开机以来气温最高到过多少",
+  "label": "maximum",
+  "channel": "temperature",
+  "rule": "maximum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最潮的时候湿度多少",
+  "label": "maximum",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最高到过多少",
+  "label": "maximum",
+  "channel": "humidity",
+  "rule": "maximum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最大是多少",
+  "label": "maximum",
+  "channel": "humidity",
+  "rule": "maximum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最高是多少",
+  "label": "maximum",
+  "channel": "humidity",
+  "rule": "maximum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最大到过多少",
+  "label": "maximum",
+  "channel": "humidity",
+  "rule": "maximum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最响的时候多少分贝",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最吵的时候多少分贝",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最高值是多少",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最响的时候有多大声",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最吵的时候有多大声",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最大值是多少",
+  "label": "maximum",
+  "channel": "noise",
+  "rule": "maximum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温最小到过多少",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "minimum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最凉快的时候多少度",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "气温最低到过多少",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "minimum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最冷的时候多少度",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "minimum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温最小是多少",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "minimum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温最低是多少",
+  "label": "minimum",
+  "channel": "temperature",
+  "rule": "minimum",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最低值是多少",
+  "label": "minimum",
+  "channel": "humidity",
+  "rule": "minimum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度最小值是多少",
+  "label": "minimum",
+  "channel": "humidity",
+  "rule": "minimum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最干燥那会儿湿度多少",
+  "label": "minimum",
+  "channel": "humidity",
+  "rule": "minimum",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最低到过多少",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最小是多少",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最小到过多少",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音最低是多少",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最安静的时候多少分贝",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "最静的时候多少分贝",
+  "label": "minimum",
+  "channel": "noise",
+  "rule": "minimum",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温均值是多少",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温平均有多少",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温平均是多少",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "温度平均是多少",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "整体来看平均多少度",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "温度均值是多少",
+  "label": "average",
+  "channel": "temperature",
+  "rule": "average",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度一般在多少",
+  "label": "average",
+  "channel": "humidity",
+  "rule": "average",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度平均在多少",
+  "label": "average",
+  "channel": "humidity",
+  "rule": "average",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度通常在多少",
+  "label": "average",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度均值是多少",
+  "label": "average",
+  "channel": "humidity",
+  "rule": "average",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度均值多少",
+  "label": "average",
+  "channel": "humidity",
+  "rule": "average",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音平均多少分贝",
+  "label": "average",
+  "channel": "noise",
+  "rule": "average",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音平均水平怎样",
+  "label": "average",
+  "channel": "noise",
+  "rule": "average",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "分贝均值是多少",
+  "label": "average",
+  "channel": "noise",
+  "rule": "average",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站里温度超限没",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站里热得有没有超标",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站里温度有没有超标",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "温度超标了吗",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "气温越限了吗",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "站里热得超限没",
+  "label": "alarm_state",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度是不是超出范围",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度是不是不正常",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度报警了没",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "alarm_state",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度有没有超出范围",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "alarm_state",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度有没有不正常",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度超限了没",
+  "label": "alarm_state",
+  "channel": "humidity",
+  "rule": "alarm_state",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音超没超标",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站台吵得超限了吗",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音有没有超限",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "分贝超没超标",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "站台吵得超标了吗",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "分贝有没有超限",
+  "label": "alarm_state",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "温度上限是多少",
+  "label": "threshold_info",
+  "channel": "temperature",
+  "rule": "threshold_info",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "温度报警线是多少",
+  "label": "threshold_info",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "气温到多少度算超标",
+  "label": "threshold_info",
+  "channel": "temperature",
+  "rule": "alarm_state",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度多少算不正常",
+  "label": "threshold_info",
+  "channel": "humidity",
+  "rule": "threshold_info",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "湿度正常范围是多少",
+  "label": "threshold_info",
+  "channel": "humidity",
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "湿度报警线是多少",
+  "label": "threshold_info",
+  "channel": "humidity",
+  "rule": "alarm_state",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "噪音标准是多少",
+  "label": "threshold_info",
+  "channel": "noise",
+  "rule": "threshold_info",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音上限是多少",
+  "label": "threshold_info",
+  "channel": "noise",
+  "rule": "threshold_info",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "噪音报警线是多少",
+  "label": "threshold_info",
+  "channel": "noise",
+  "rule": "alarm_state",
+  "rule_ch": "noise",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "超过多少分贝算超标",
+  "label": "threshold_info",
+  "channel": "noise",
+  "rule": "threshold_info",
+  "rule_ch": "noise",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇在工作吗",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "为啥排风开了",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇现在在工作吗",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇现在开着吗",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风机开着吗",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇什么状态",
+  "label": "fan_state",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "现在多少个设备连着",
+  "label": "device_list",
+  "channel": null,
+  "rule": "device_list",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "目前有几台设备在线",
+  "label": "device_list",
+  "channel": null,
+  "rule": "device_list",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "目前多少个传感器在线",
+  "label": "device_list",
+  "channel": null,
+  "rule": "device_list",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "目前有几台传感器连着",
+  "label": "device_list",
+  "channel": null,
+  "rule": "device_list",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "目前多少个传感器连着",
+  "label": "device_list",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": true
+ },
+ {
+  "q": "现在多少个设备在线",
+  "label": "device_list",
+  "channel": null,
+  "rule": "device_list",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "帮忙把风扇启动",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "麻烦把风扇启动",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "帮忙把排风打开",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "太热了开下通风",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "有点闷开下通风",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "太热了开下风扇",
+  "label": "fan_on",
+  "channel": null,
+  "rule": "fan_on",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "把通风停掉",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_off",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风关了吧",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_off",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风停一下",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_off",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇先关掉",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_off",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风先关掉",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_off",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "别让风扇转了",
+  "label": "fan_off",
+  "channel": null,
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "通风设成自动",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "通风改为自动",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "通风切到自动",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇改为自动",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇切到自动",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "风扇让系统自己决定开关",
+  "label": "fan_auto",
+  "channel": null,
+  "rule": "fan_auto",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "通风温度触发线设到29度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "排风温度阈值调成32度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "set_vent_threshold",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风温度阈值改为32度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "set_vent_threshold",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风温度阈值调成27度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "set_vent_threshold",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风温度触发线设到27度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "通风温度阈值改为29度",
+  "label": "set_vent_threshold",
+  "channel": "temperature",
+  "rule": "set_vent_threshold",
+  "rule_ch": "temperature",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风湿度阈值调成70",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "set_vent_threshold",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "通风湿度触发线改为72",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "通风湿度阈值改为72",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "set_vent_threshold",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "排风湿度触发线改为70",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "排风湿度触发线改为72",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "fan_state",
+  "rule_ch": null,
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "排风湿度阈值改为78",
+  "label": "set_vent_threshold",
+  "channel": "humidity",
+  "rule": "set_vent_threshold",
+  "rule_ch": "humidity",
+  "rule_ok": true,
+  "rule_help": false
+ },
+ {
+  "q": "帮我点个外卖",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "帮我打个车",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "附近有厕所吗",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "今天天气怎么样",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "手机噪音太大怎么办",
+  "label": "unknown",
+  "channel": null,
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "你几岁了",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "帮我查一下湿疹怎么治",
+  "label": "unknown",
+  "channel": null,
+  "rule": "current_value",
+  "rule_ch": "humidity",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "空调温度调到 26 度",
+  "label": "unknown",
+  "channel": null,
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "明天温度多少",
+  "label": "unknown",
+  "channel": null,
+  "rule": "current_value",
+  "rule_ch": "temperature",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "下一班车几点到",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "推荐一首歌",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "你是谁",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ },
+ {
+  "q": "站台的广播声音能调小吗",
+  "label": "unknown",
+  "channel": null,
+  "rule": "current_value",
+  "rule_ch": "noise",
+  "rule_ok": false,
+  "rule_help": false
+ },
+ {
+  "q": "介绍一首歌",
+  "label": "unknown",
+  "channel": null,
+  "rule": "help",
+  "rule_ch": null,
+  "rule_ok": true,
+  "rule_help": true
+ }
+]

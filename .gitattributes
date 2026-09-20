@@ -1,0 +1,14 @@
+# 默认让 git 处理文本换行
+* text=auto
+
+# Windows 批处理必须是 CRLF。裸 LF 会让 cmd.exe 的行结构整个散掉——
+# 它会把注释碎片当命令执行，报出与真正原因毫无关联的错误（退出码 255）。
+# 本项目为这件事栽过两次，因此在这里钉死，并另有测试守卫（tests/scripts/test_batch_launchers.py）。
+*.bat text eol=crlf
+
+# 二进制资源不做换行转换
+*.png binary
+*.webp binary
+*.jpg binary
+*.ico binary
+*.jar binary

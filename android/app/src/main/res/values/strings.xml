@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  界面文案统一在此维护，不在 Kotlin 里写死中文（第二阶段 UI 方案 P0-9）。
+  面向最终用户，不出现 WebSocket / HTTP / Exception 等开发者词汇 —— 那些只进运行日志。
+-->
+<resources>
+    <string name="app_name">地铁站环境监测</string>
+
+    <!-- ===== 首页头部 ===== -->
+    <string name="home_title">地铁站环境监测</string>
+    <!-- 站点名称写死（2026-08-16 用户确认，见 UI 方案第 14 节决策 3） -->
+    <string name="site_name">站厅公共区</string>
+    <string name="home_subtitle_devices">%1$s · %2$d 台设备</string>
+    <string name="home_subtitle_loading">%1$s · 正在获取设备…</string>
+
+    <!-- ===== 连接状态（六态，见 UI 方案 9.1） ===== -->
+    <string name="conn_disconnected">未连接</string>
+    <string name="conn_connecting">正在连接…</string>
+    <string name="conn_online">系统在线</string>
+    <string name="conn_stalled">已连接，暂无数据</string>
+    <string name="conn_reconnecting">自动重连中</string>
+    <string name="conn_error">网络异常</string>
+
+    <!-- ===== 数据来源提示 ===== -->
+    <string name="banner_simulated">模拟数据 · 当前由 PC 软件模拟生成，非真实 STM32 采集值</string>
+
+    <!-- ===== 指标卡 ===== -->
+    <string name="label_temperature">温度</string>
+    <string name="label_humidity">湿度</string>
+    <string name="label_noise">噪声</string>
+    <string name="value_placeholder">--</string>
+    <string name="metric_waiting">等待数据</string>
+    <string name="metric_normal">正常</string>
+    <string name="metric_alarm">超限</string>
+    <string name="metric_stats_range">最低 %1$s   最高 %2$s</string>
+    <string name="metric_stats_average">平均 %1$s   样本 %2$d</string>
+    <string name="metric_threshold_above">高于上限 %1$s %2$s</string>
+    <string name="metric_threshold_below">低于下限 %1$s %2$s</string>
+    <!-- 必须明确标注数据范围，避免被误认为 PC 端存储的历史数据 -->
+    <string name="metric_series_hint">本次连接以来</string>
+
+    <!-- ===== 实时状态条 ===== -->
+    <string name="realtime_label">实时</string>
+    <string name="realtime_waiting">等待数据推送…</string>
+    <string name="realtime_updated">%1$s前更新 · 本次会话已接收 %2$d 条</string>
+    <string name="realtime_stalled">数据已停止更新 · 最后一条在 %1$s前</string>
+    <string name="realtime_offline">未在接收数据</string>
+    <string name="duration_seconds">%1$d 秒</string>
+    <string name="duration_minutes">%1$d 分钟</string>
+
+    <!-- ===== 设备状态 ===== -->
+    <string name="section_device">设备状态</string>
+    <string name="device_online">在线</string>
+    <string name="device_offline">离线</string>
+    <string name="device_idle">空闲</string>
+    <string name="device_occupied">被占用（%1$s）</string>
+    <string name="device_loading">正在获取设备列表…</string>
+    <string name="device_empty">PC 端未注册任何设备</string>
+    <string name="device_failed">设备列表获取失败，请检查 PC 端是否已启动</string>
+    <string name="device_status_failed">状态获取失败</string>
+
+    <!-- ===== 运行日志 ===== -->
+    <string name="section_log">运行日志</string>
+    <string name="log_empty">暂无记录</string>
+
+    <!-- ===== 连接设置页 ===== -->
+    <string name="settings_title">连接设置</string>
+    <string name="settings_section_server">PC 网关地址</string>
+    <string name="settings_hint_host">PC 局域网 IP</string>
+    <string name="settings_hint_port">端口</string>
+    <string name="settings_save">保存并重新连接</string>
+    <string name="settings_current">当前地址：%1$s</string>
+    <string name="settings_note">手机需与 PC 连接同一个 Wi-Fi 或热点。请填写 PC 的局域网 IP（Windows 下用 ipconfig 查看），不要填 localhost 或 127.0.0.1 —— 那在手机上指向手机自己。Android 模拟器请使用 10.0.2.2。</string>
+    <string name="settings_error_host">请填写 PC 的局域网 IP</string>
+    <string name="settings_error_port">端口需为 1–65535 之间的数字</string>
+    <string name="settings_saved">已保存，返回后将自动重新连接</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_about_body">地铁站公共空间环境监测系统 · 移动客户端\n数据来源：PC 上位机网关（局域网 REST + WebSocket）\n本客户端不直接连接 STM32。历史数据存在 PC 上，本机不另存一份——手机看到的与 PC 是同一份。</string>
+    <string name="settings_version">版本 %1$s</string>
+
+    <!-- ===== 内容描述（无障碍） ===== -->
+    <string name="cd_status_indicator">系统连接状态</string>
+    <string name="cd_settings">打开连接设置</string>
+    <string name="cd_reconnect">立即重新连接</string>
+
+    <!-- ===== 日志文案（面向排障，仍然中文） ===== -->
+    <string name="log_connecting">正在连接 %1$s</string>
+    <string name="log_health_ok">PC 可达，运行模式 %1$s</string>
+    <string name="log_health_failed">连接失败：%1$s</string>
+    <string name="log_ws_connected">实时通道已建立</string>
+    <string name="log_ws_disconnected">实时通道断开：%1$s</string>
+    <string name="log_other_channel">其它通道数据：%1$s = %2$s</string>
+    <string name="log_alarm">报警：%1$s %2$s 超过阈值 %3$s</string>
+    <string name="log_malformed">收到无法解析的数据（已丢弃）：%1$s</string>
+    <string name="log_unknown">未知消息类型（已忽略）：%1$s</string>
+    <string name="log_address_changed">网关地址已变更，正在重新连接</string>
+    <!-- ===== 环境问答页（2026-09-08 新增） ===== -->
+    <string name="assistant_title">环境问答</string>
+    <string name="assistant_hint">问点什么，例如：现在温度多少</string>
+    <string name="assistant_send">发送</string>
+    <string name="assistant_thinking">正在回答…</string>
+    <string name="assistant_greeting">可以问当前读数、最值、是否超标、阈值、风扇状态与在线设备。数字全部来自 PC 端实测数据。</string>
+    <string name="assistant_failed">没能连上 PC 网关：%1$s</string>
+    <string name="assistant_ws_connecting">正在建立实时通道…</string>
+    <string name="assistant_ws_connected">实时通道已建立，模型的回答会稍后替换</string>
+    <string name="assistant_ws_disconnected">实时通道断开：%1$s</string>
+    <string name="assistant_role_user">我</string>
+    <string name="assistant_source_template">系统</string>
+    <string name="assistant_source_model">模型改写</string>
+    <string name="assistant_source_model_intent">模型识别</string>
+    <string name="assistant_source_fallback">未识别</string>
+    <string name="cd_assistant">打开环境问答</string>
+
+    <!-- ===== 历史读数页（2026-09-17 新增） ===== -->
+    <string name="history_title">历史读数</string>
+    <string name="history_summary">共 %1$d 条 · 数据存在 PC 上</string>
+    <string name="history_value">%1$s %2$s</string>
+    <string name="history_invalid">无效</string>
+    <string name="history_loading">正在读取…</string>
+    <string name="history_empty">这条通道还没有记录。PC 端开始采集后再回来看。</string>
+    <string name="history_failed">没能读到历史数据：%1$s</string>
+    <string name="history_no_device">还没获取到设备，请先回首页等待连接成功。</string>
+    <string name="cd_history">打开历史读数</string>
+    <string name="cd_history_refresh">重新读取</string>
+</resources>

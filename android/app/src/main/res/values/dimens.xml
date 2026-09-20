@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 间距全部取 4 的倍数；圆角统一 8dp（卡片）/ 4dp（Chip、按钮），不用大圆角。 -->
+<resources>
+
+    <dimen name="page_margin">16dp</dimen>
+    <dimen name="card_gap">12dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_radius">8dp</dimen>
+    <dimen name="pill_radius">4dp</dimen>
+    <dimen name="stroke_width">1dp</dimen>
+
+    <dimen name="status_dot">8dp</dimen>
+    <dimen name="sparkline_height">36dp</dimen>
+
+    <!-- 字号：数值与单位保持约 2.75 倍差，确保单位不抢焦点 -->
+    <dimen name="text_metric_value">44sp</dimen>
+    <dimen name="text_metric_unit">16sp</dimen>
+    <dimen name="text_metric_name">13sp</dimen>
+    <dimen name="text_title">18sp</dimen>
+    <dimen name="text_body">14sp</dimen>
+    <dimen name="text_caption">11sp</dimen>
+    <dimen name="text_hint">10sp</dimen>
+
+</resources>

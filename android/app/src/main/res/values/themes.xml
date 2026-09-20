@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  固定深色（2026-08-16 用户确认，见 docs/10_AndroidClient/第二阶段_UI优化方案.md 第 14 节）：
+  不使用 DayNight，也不提供 values-night/ —— 与 PC 上位机深色仪表盘视觉同源，
+  长时间盯屏低疲劳，且只需要调一套配色、验一套效果。
+
+  这里显式覆盖 Material3 的语义色槽位，让 MaterialButton / TextInputLayout /
+  MaterialCardView 等组件不必逐个指定颜色就能落在本项目的配色里。
+-->
+<resources>
+
+    <style name="Theme.EnvMonitor" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/bg_base</item>
+        <item name="colorPrimaryContainer">@color/bg_elevated</item>
+        <item name="colorOnPrimaryContainer">@color/accent</item>
+
+        <item name="colorSurface">@color/bg_card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/bg_elevated</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/stroke_card</item>
+
+        <item name="colorError">@color/state_alarm</item>
+        <item name="colorOnError">@color/bg_base</item>
+
+        <item name="android:colorBackground">@color/bg_base</item>
+        <item name="android:windowBackground">@color/bg_base</item>
+        <item name="android:statusBarColor">@color/bg_base</item>
+        <item name="android:navigationBarColor">@color/bg_base</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_tertiary</item>
+    </style>
+
+</resources>

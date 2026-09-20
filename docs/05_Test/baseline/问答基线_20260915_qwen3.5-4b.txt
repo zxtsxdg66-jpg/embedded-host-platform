@@ -1,0 +1,114 @@
+模型：已接入
+
+OK   2.6s [    template→model       ] 现在温度多少                   期望 current_value/temperature 得到 current_value/temperature
+OK   2.7s [    template→model       ] 湿度现在是多少                  期望 current_value/humidity 得到 current_value/humidity
+OK   2.0s [    template→model       ] 噪声多大                     期望 current_value/noise 得到 current_value/noise
+OK   2.0s [    template→model       ] 外面冷不冷                    期望 current_value/temperature 得到 current_value/temperature
+OK   2.0s [    template→model       ] 屋里热吗                     期望 current_value/temperature 得到 current_value/temperature
+OK   2.0s [    template→model       ] 现在几度                     期望 current_value/temperature 得到 current_value/temperature
+OK   2.6s [    template→model       ] 空气干不干                    期望 current_value/humidity 得到 current_value/humidity
+OK   2.6s [    template→model       ] 潮不潮                      期望 current_value/humidity 得到 current_value/humidity
+OK   2.1s [    template→model       ] 现在多少读                    期望 current_value/temperature 得到 current_value/temperature
+OK   2.0s [    template→model       ] 燥音多少                     期望 current_value/noise 得到 current_value/noise
+OK   2.0s [    template→model       ] 有点热呢                     期望 current_value/temperature 得到 current_value/temperature
+OK   2.7s [    template→model       ] 好闷啊                      期望 current_value/humidity 得到 current_value/humidity
+OK   2.1s [    template→model       ] 吵不吵                      期望 current_value/noise 得到 current_value/noise
+OK   2.1s [    template→model       ] 这会儿安静吗                   期望 current_value/noise 得到 current_value/noise
+OK   2.0s [    template→model       ] 温度怎么样了                   期望 current_value/temperature 得到 current_value/temperature
+OK   2.7s [    template→model       ] 湿度情况如何                   期望 current_value/humidity 得到 current_value/humidity
+OK   2.3s [    template→model       ] 温度最高多少                   期望 maximum/temperature 得到 maximum/temperature
+OK   2.3s [    template→model       ] 湿度最低是多少                  期望 minimum/humidity 得到 minimum/humidity
+OK   2.3s [    template→model       ] 噪声峰值多少                   期望 maximum/noise 得到 maximum/noise
+OK   1.5s [    template→model       ] 这一阵子最吵到多少                期望 maximum/noise 得到 maximum/noise
+OK   3.9s [    template→model       ] 今天最热的时候多少度               期望 maximum/temperature 得到 maximum/temperature
+OK   2.3s [    template→model       ] 最干的时候湿度多少                期望 minimum/humidity 得到 minimum/humidity
+OK   2.3s [    template→model       ] 温度到过的最低点是多少              期望 minimum/temperature 得到 minimum/temperature
+OK   2.4s [    template→model       ] 最闹腾的时候有多响                期望 maximum/noise 得到 maximum/noise
+OK   3.3s [    template→model       ] 温度平均多少                   期望 average/temperature 得到 average/temperature
+OK   3.6s [    template→model       ] 噪声的平均值是多少                期望 average/noise 得到 average/noise
+OK   3.7s [    template→model       ] 这一阵子平均多少度                期望 average/temperature 得到 average/temperature
+OK   3.5s [    template→model       ] 平时湿度大概在什么水平              期望 average/humidity 得到 average/humidity
+OK  10.4s [    template→model       ] 噪声超标了吗                   期望 alarm_state/noise 得到 alarm_state/noise
+OK  10.2s [    template→model       ] 温度超了没有                   期望 alarm_state/temperature 得到 alarm_state/temperature
+OK   7.6s [    template→model       ] 湿度正常吗                    期望 alarm_state/humidity 得到 alarm_state/humidity
+OK   8.2s [    template→model       ] 站里是不是太热了                 期望 alarm_state/temperature 得到 alarm_state/temperature
+OK  11.8s [    template→model       ] 声音是不是太大了                 期望 alarm_state/noise 得到 alarm_state/noise
+OK   8.4s [    template→model       ] 湿度有没有报警                  期望 alarm_state/humidity 得到 alarm_state/humidity
+OK   4.9s [    template→model       ] 噪声的报警阈值是多少               期望 threshold_info/noise 得到 threshold_info/noise
+OK   3.0s [    template→model       ] 温度阈值设的多少                 期望 threshold_info/temperature 得到 threshold_info/temperature
+OK   4.4s [    template→model       ] 多大声算超标                   期望 threshold_info/noise 得到 threshold_info/noise
+OK   3.4s [    template→model       ] 湿度低于多少会报警                期望 threshold_info/humidity 得到 threshold_info/humidity
+OK   2.4s [    template→model       ] 阀值是多少                    期望 threshold_info/None 得到 threshold_info/humidity
+OK   3.2s [    template→model       ] 噪声阀值多少                   期望 threshold_info/noise 得到 threshold_info/noise
+OK   3.9s [    template→model       ] 现在温度多少，还差多少超限            期望 current_value/temperature 得到 current_value/temperature
+OK   3.9s [    template→model       ] 温度快超了吗                   期望 current_value/temperature 得到 current_value/temperature
+OK  20.0s [    template→template    ] 测试一下报警发声                 期望 announce_request/None 得到 announce_request/None
+OK  20.0s [    template→template    ] 试一下语音播报能不能响              期望 announce_request/None 得到 announce_request/None
+OK  11.4s [    template→model       ] 风扇在转吗                    期望 fan_state/None 得到 fan_state/None
+OK   6.3s [    template→model       ] 风扇为什么在转                  期望 fan_state/None 得到 fan_state/None
+OK   6.2s [    template→model       ] 那个吹风的开着没                 期望 fan_state/None 得到 fan_state/None
+OK   6.1s [    template→model       ] 风扇开着吗                    期望 fan_state/None 得到 fan_state/None
+OK  10.3s [    template→model       ] 风扇开了没                    期望 fan_state/None 得到 fan_state/None
+OK   7.5s [    template→model       ] 风扇是自动的吗                  期望 fan_state/None 得到 fan_state/None
+OK   7.5s [    template→model       ] 通风现在什么状态                 期望 fan_state/None 得到 fan_state/None
+OK   9.0s [    template→template    ] 有几个设备在线                  期望 device_list/None 得到 device_list/None
+OK   5.9s [    template→template    ] 现在连了几台机器                 期望 device_list/None 得到 device_list/None
+OK   6.1s [    template→template    ] 设备都连上了吗                  期望 device_list/None 得到 device_list/None
+OK   3.7s [     pending→template    ] 把风扇打开                    期望 fan_on/None 得到 fan_on/None
+OK   3.6s [     pending→template    ] 开一下风扇                    期望 fan_on/None 得到 fan_on/None
+OK   3.7s [     pending→template    ] 让风扇转起来                   期望 fan_on/None 得到 fan_on/None
+OK   3.7s [     pending→template    ] 太热了让那个吹风的转起来             期望 fan_on/None 得到 fan_on/None
+OK   3.6s [     pending→template    ] 通风开起来                    期望 fan_on/None 得到 fan_on/None
+OK   3.7s [     pending→template    ] 开风扇                      期望 fan_on/None 得到 fan_on/None
+OK   3.7s [     pending→template    ] 能开风扇不                    期望 fan_on/None 得到 fan_on/None
+OK   3.7s [     pending→template    ] 把风扇开了                    期望 fan_on/None 得到 fan_on/None
+OK   3.8s [     pending→template    ] 帮我开风扇                    期望 fan_on/None 得到 fan_on/None
+OK   3.6s [     pending→template    ] 可以开风扇吗                   期望 fan_on/None 得到 fan_on/None
+OK   3.6s [     pending→template    ] 关掉风扇                     期望 fan_off/None 得到 fan_off/None
+OK   3.6s [     pending→template    ] 把风扇停了                    期望 fan_off/None 得到 fan_off/None
+OK   3.7s [     pending→template    ] 别吹了关上吧                   期望 fan_off/None 得到 fan_off/None
+OK   3.6s [     pending→template    ] 风扇关闭                     期望 fan_off/None 得到 fan_off/None
+NG   3.6s [     pending→template    ] 那你开开呗                    期望 bare_switch/None 得到 fan_on/None
+NG   3.6s [     pending→template    ] 打开                       期望 bare_switch/None 得到 fan_on/None
+NG   3.6s [     pending→template    ] 关了吧                      期望 bare_switch/None 得到 fan_off/None
+OK   3.7s [     pending→template    ] 别开风扇                     期望 fan_off/None 得到 fan_off/None
+OK   3.6s [     pending→template    ] 风扇交给自动                   期望 fan_auto/None 得到 fan_auto/None
+OK   3.6s [     pending→template    ] 风扇改成自动模式                 期望 fan_auto/None 得到 fan_auto/None
+OK   3.6s [     pending→template    ] 让通风自动控制                  期望 fan_auto/None 得到 fan_auto/None
+OK   4.0s [     pending→template    ] 把通风温度阈值调到 28 度           期望 set_vent_threshold/temperature 得到 set_vent_threshold/temperature
+OK   4.0s [     pending→template    ] 通风湿度阈值设成 75              期望 set_vent_threshold/humidity 得到 set_vent_threshold/humidity
+OK   4.0s [     pending→template    ] 通风阈值调到 26 度              期望 set_vent_threshold/temperature 得到 set_vent_threshold/temperature
+OK   4.1s [     pending→template    ] 把通风温度阈值改成 31             期望 set_vent_threshold/temperature 得到 set_vent_threshold/temperature
+OK   3.6s [     pending→fallback    ] 今天股市怎么样                  期望 None/None 得到 help/None
+OK   3.6s [     pending→fallback    ] 你叫什么名字                   期望 None/None 得到 help/None
+OK   3.6s [     pending→fallback    ] 帮我订张票                    期望 None/None 得到 help/None
+OK   3.5s [     pending→fallback    ] 明天会下雨吗                   期望 None/None 得到 help/None
+OK   3.7s [     pending→fallback    ] 给我讲个笑话                   期望 None/None 得到 help/None
+OK   3.6s [     pending→fallback    ] 北京到上海多远                  期望 None/None 得到 help/None
+OK   3.6s [     pending→fallback    ] 地铁几点收班                   期望 None/None 得到 help/None
+OK   3.6s [     pending→fallback    ] 你是什么模型                   期望 None/None 得到 help/None
+
+==============================================================================
+总体：84/87 = 96.6%
+
+按类别：
+  问    54/57 =  94.7%
+  指令   22/22 = 100.0%
+  范围外   8/ 8 = 100.0%
+
+规则命中：87/87 = 100.0%（这些问句不需要模型，零延迟且每次一致）
+改写采纳：49/87 = 56.3%（其余退回模板：超时，或数字未过接地校验）
+
+复核拦下（意图判对但等确认）：0
+错误执行（不该动设置却动了）：3
+
+未通过的 3 条：
+  问    那你开开呗                    期望 bare_switch/None 得到 fan_on/None [template]
+  问    打开                       期望 bare_switch/None 得到 fan_on/None [template]
+  问    关了吧                      期望 bare_switch/None 得到 fan_off/None [template]
+
+  先查规则词表再改提示词：多数错答是关键词缺失，补一个词能把这句话变成零延迟且恒定的规则命中。
+
+耗时：中位 3.6s，最长 20.0s
+来源分布： {'model': 49, 'template': 30, 'fallback': 8}
+模型客户端计数： {'请求数': 90, '超时数': 0, '失败数': 0}

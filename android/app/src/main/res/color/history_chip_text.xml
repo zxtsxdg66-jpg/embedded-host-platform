@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  历史页通道 Chip 的文字颜色。
+
+  选中时用深色压在 accent 绿底上：浅色字压亮绿底几乎看不清，这是把
+  bg_pill_selectable 的选中色定为 accent 之后必然要配的一步。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/bg_base" />
+    <item android:color="@color/text_secondary" />
+</selector>

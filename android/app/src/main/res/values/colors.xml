@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  深色工业监控配色，与 PC 上位机 src/ui/theme.py 的深色仪表盘同源。
+
+  分层只靠三级：页面底色 -> 卡片色 -> 1dp 描边。
+  刻意不使用渐变、彩色阴影、发光效果（见第二阶段 UI 方案 6.2 节）。
+-->
+<resources>
+
+    <!-- 背景与分隔：不用纯黑，避免 OLED 上过硬 -->
+    <color name="bg_base">#0D1520</color>
+    <color name="bg_card">#16212E</color>
+    <color name="bg_elevated">#1F2C3D</color>
+    <color name="stroke_card">#243347</color>
+
+    <!-- 文字三级 -->
+    <!--
+      次级/三级文字比纯深色主题下提亮了一档（#8FA3B8 -> #A8BACD，#5A6E85 -> #7C90A8）。
+      原因：面板改为半透明后，文字背后的实际亮度会被背景图抬高，按最坏情况
+      （背景取纯白像素）复算，原来的两个色值分别掉到约 4.0:1 与 2.5:1；
+      提亮后回到约 5.2:1 与 3.2:1，层级关系不变。
+    -->
+    <color name="text_primary">#E8EEF5</color>
+    <color name="text_secondary">#A8BACD</color>
+    <color name="text_tertiary">#7C90A8</color>
+
+    <!-- 主强调：青绿，取自 PC 端主强调色 -->
+    <color name="accent">#00D9A5</color>
+
+    <!--
+      背景图之上的分层（对应 PC 端 ui/theme.py 的 rgba 分档思路）。
+      分档原则：数值越重要的面板越不透明，保证读数永远不压在背景细节上。
+        指标卡 0.88 (E0) > 辅助卡 0.80 (CC) > 顶部状态区 0.75 (BF)
+      遮罩 0.40 (66)：用户 2026-08-16 选定的中等强度。
+    -->
+    <color name="scrim">#330D1520</color>
+    <color name="panel_metric">#D116212E</color>
+    <color name="panel_header">#C716212E</color>
+    <color name="panel_aux">#BD16212E</color>
+
+    <!-- 状态色 -->
+    <color name="state_warn">#FFB454</color>
+    <color name="state_warn_bg">#26FFB454</color>
+    <color name="state_warn_stroke">#55FFB454</color>
+    <color name="state_alarm">#FF5C5C</color>
+    <color name="state_idle">#5A6E85</color>
+
+</resources>

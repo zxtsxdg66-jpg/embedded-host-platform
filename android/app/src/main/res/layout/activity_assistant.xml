@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  环境问答页。背景层与首页、设置页保持一致（背景图 + 遮罩）。
+
+  版面自上而下：标题栏 -> 对话区（可滚动，占满剩余高度）-> 输入行。
+  对话区用 LinearLayout 逐条加视图而不是 RecyclerView：一次会话只有十几条消息，
+  且模型补送时需要直接改写某一条已显示的气泡，持有视图引用比通过适配器定位更直接。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_base">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/app_background" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 标题栏 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/panel_header"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="@dimen/page_margin"
+            android:paddingBottom="10dp">
+
+            <ImageButton
+                android:id="@+id/buttonBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/assistant_title"
+                android:padding="8dp"
+                android:src="@drawable/ic_back" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/assistant_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_title" />
+
+                <TextView
+                    android:id="@+id/textConnection"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/assistant_ws_connecting"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="@dimen/text_hint"
+                    tools:text="实时通道已建立" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 对话区 -->
+        <ScrollView
+            android:id="@+id/scrollMessages"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:padding="@dimen/page_margin"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/containerMessages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <TextView
+            android:id="@+id/textThinking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/page_margin"
+            android:paddingEnd="@dimen/page_margin"
+            android:paddingBottom="4dp"
+            android:text="@string/assistant_thinking"
+            android:textColor="@color/text_tertiary"
+            android:textSize="@dimen/text_hint"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!-- 输入行 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/panel_header"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="@dimen/page_margin">
+
+            <EditText
+                android:id="@+id/inputQuestion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_inline_panel"
+                android:hint="@string/assistant_hint"
+                android:imeOptions="actionSend"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLines="3"
+                android:padding="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_tertiary"
+                android:textSize="@dimen/text_body" />
+
+            <Button
+                android:id="@+id/buttonSend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/assistant_send" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

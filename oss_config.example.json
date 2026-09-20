@@ -1,0 +1,8 @@
+{
+  "endpoint": "oss-cn-hangzhou.aliyuncs.com",
+  "bucket": "your-bucket-name",
+  "access_key_id": "LTAI************",
+  "access_key_secret": "********************************",
+  "prefix": "env-monitor/",
+  "console_login_url": "https://signin.aliyun.com/login.htm?username=<RAM 用户名>%40<账号ID>.onaliyun.com"
+}

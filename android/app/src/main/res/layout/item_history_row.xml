@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  一条历史读数：左边时刻、右边数值，无效读数另加一个小标记。
+
+  刻意做成一行两列而不是卡片：这张表是用来纵向扫的（找某个时刻、看趋势），
+  卡片的留白会让一屏装不下几条，反而更难看出变化。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/textTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:textColor="@color/text_tertiary"
+        android:textSize="@dimen/text_body"
+        tools:text="12:00:05" />
+
+    <TextView
+        android:id="@+id/textValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_body"
+        tools:text="25.50 °C" />
+
+    <!--
+      无效读数不隐藏也不丢弃：它是链路质量的证据（PC 端同样照存不删，
+      见 History_And_Cloud_Design.md 4.1 节）。默认不占位，出现时才显示。
+    -->
+    <TextView
+        android:id="@+id/textFlag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="@string/history_invalid"
+        android:textColor="@color/text_tertiary"
+        android:textSize="@dimen/text_hint"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+</LinearLayout>

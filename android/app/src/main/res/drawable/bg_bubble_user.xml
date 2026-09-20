@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  用户气泡：比助手气泡亮一档，用主强调色的低透明度填充区分说话人，
+  而不是换一种形状——形状一致，读起来是一段对话而不是两种控件。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#2600D9A5" />
+    <corners android:radius="@dimen/card_radius" />
+    <stroke
+        android:width="@dimen/stroke_width"
+        android:color="#5500D9A5" />
+</shape>
