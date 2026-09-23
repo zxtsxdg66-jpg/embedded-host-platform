@@ -2,7 +2,7 @@
 
 网关（`src/gateway`）的又一个客户端，与 `android/` 同性质：只经 REST 与 WebSocket 通信，
 不 import 任何 Python 符号，不进 `pytest`/`mypy src` 的范围，没有 npm 构建链。
-设计与取舍见 [`docs/02_Architecture/Web_Console_Design.md`](../docs/02_Architecture/Web_Console_Design.md)。
+设计与取舍见 [`docs/decisions/08-web-console.md`](../docs/decisions/08-web-console.md)。
 
 ## 四个页签
 

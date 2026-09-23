@@ -86,6 +86,7 @@ Windows 下根目录的 `.bat` 可以直接双击，文件名写明了用途。�
 | [`docs/architecture.md`](docs/architecture.md) | 包的划分与依赖规则、三种运行模式为什么共用一套代码、数据怎么流动 |
 | [`docs/protocol.md`](docs/protocol.md) | 帧格式、CRC、命令码分配、字节流拼帧 |
 | [`docs/verification.md`](docs/verification.md) | 测试策略、实测数据、故障注入、真实缺陷复盘、问答评测 |
+| [`docs/decisions/`](docs/decisions/README.md) | 八个设计决策：问题、选项、取舍、实测结果 |
 | [`web/README.md`](web/README.md) | 浏览器控制台 |
 
 ---
