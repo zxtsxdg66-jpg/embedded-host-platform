@@ -1,0 +1,205 @@
+1/148 站台暖和吗 rule=help A=current_value/temperature B=current_value/temperature
+2/148 站台现在凉快吗 rule=help A=alarm_state/temperature B=alarm_state/temperature
+3/148 站厅现在暖和吗 rule=help A=alarm_state/temperature B=current_value/temperature
+4/148 这边现在冷不冷 rule=current_value A=current_value/temperature B=current_value/temperature
+5/148 报一下实时气温 rule=current_value A=current_value/temperature B=current_value/temperature
+6/148 这边现在凉快吗 rule=help A=alarm_state/temperature B=current_value/temperature
+7/148 站台现在潮湿吗 rule=current_value A=alarm_state/humidity B=alarm_state/humidity
+8/148 这里的湿度咋样 rule=current_value A=current_value/humidity B=current_value/humidity
+9/148 站台潮湿吗 rule=current_value A=alarm_state/humidity B=None/None
+10/148 站台现在湿不湿 rule=current_value A=alarm_state/humidity B=alarm_state/humidity
+11/148 这边干燥吗 rule=current_value A=current_value/humidity B=current_value/humidity
+12/148 站台干燥吗 rule=current_value A=alarm_state/humidity B=None/None
+13/148 实时分贝报一下 rule=current_value A=current_value/noise B=current_value/noise
+14/148 站厅现在安静不安静 rule=current_value A=alarm_state/noise B=alarm_state/noise
+15/148 当前分贝报一下 rule=current_value A=current_value/noise B=current_value/noise
+16/148 站厅现在吵吗 rule=current_value A=alarm_state/noise B=None/None
+17/148 当前噪音报一下 rule=current_value A=current_value/noise B=current_value/noise
+18/148 实时噪音报一下 rule=current_value A=current_value/noise B=current_value/noise
+19/148 今天气温最高是多少 rule=maximum A=maximum/temperature B=maximum/temperature
+20/148 开机以来气温最高是多少 rule=maximum A=maximum/temperature B=maximum/temperature
+21/148 开机以来温度最高到过多少 rule=maximum A=maximum/temperature B=maximum/temperature
+22/148 今天温度最高到过多少 rule=maximum A=maximum/temperature B=maximum/temperature
+23/148 今天温度最高是多少 rule=maximum A=maximum/temperature B=maximum/temperature
+24/148 开机以来气温最高到过多少 rule=maximum A=maximum/temperature B=maximum/temperature
+25/148 最潮的时候湿度多少 rule=current_value A=maximum/humidity B=maximum/humidity
+26/148 湿度最高到过多少 rule=maximum A=maximum/humidity B=maximum/humidity
+27/148 湿度最大是多少 rule=maximum A=maximum/humidity B=maximum/humidity
+28/148 湿度最高是多少 rule=maximum A=maximum/humidity B=maximum/humidity
+29/148 湿度最大到过多少 rule=maximum A=maximum/humidity B=maximum/humidity
+30/148 最响的时候多少分贝 rule=maximum A=maximum/noise B=maximum/noise
+31/148 最吵的时候多少分贝 rule=maximum A=maximum/noise B=maximum/noise
+32/148 噪音最高值是多少 rule=maximum A=maximum/noise B=maximum/noise
+33/148 最响的时候有多大声 rule=maximum A=maximum/noise B=maximum/noise
+34/148 最吵的时候有多大声 rule=maximum A=maximum/noise B=maximum/noise
+35/148 噪音最大值是多少 rule=maximum A=maximum/noise B=maximum/noise
+36/148 气温最小到过多少 rule=minimum A=minimum/temperature B=minimum/temperature
+37/148 最凉快的时候多少度 rule=current_value A=minimum/temperature B=minimum/temperature
+38/148 气温最低到过多少 rule=minimum A=minimum/temperature B=minimum/temperature
+39/148 最冷的时候多少度 rule=minimum A=minimum/temperature B=current_value/temperature
+40/148 气温最小是多少 rule=minimum A=minimum/temperature B=minimum/temperature
+41/148 气温最低是多少 rule=minimum A=minimum/temperature B=minimum/temperature
+42/148 湿度最低值是多少 rule=minimum A=minimum/humidity B=minimum/humidity
+43/148 湿度最小值是多少 rule=minimum A=minimum/humidity B=minimum/humidity
+44/148 最干燥那会儿湿度多少 rule=minimum A=minimum/humidity B=current_value/humidity
+45/148 噪音最低到过多少 rule=minimum A=minimum/noise B=minimum/noise
+46/148 噪音最小是多少 rule=minimum A=minimum/noise B=minimum/noise
+47/148 噪音最小到过多少 rule=minimum A=minimum/noise B=minimum/noise
+48/148 噪音最低是多少 rule=minimum A=minimum/noise B=minimum/noise
+49/148 最安静的时候多少分贝 rule=minimum A=minimum/noise B=minimum/noise
+50/148 最静的时候多少分贝 rule=minimum A=minimum/noise B=minimum/noise
+51/148 气温均值是多少 rule=average A=average/temperature B=current_value/temperature
+52/148 气温平均有多少 rule=average A=average/temperature B=average/temperature
+53/148 气温平均是多少 rule=average A=average/temperature B=average/temperature
+54/148 温度平均是多少 rule=average A=average/temperature B=average/temperature
+55/148 整体来看平均多少度 rule=average A=average/temperature B=average/temperature
+56/148 温度均值是多少 rule=average A=average/temperature B=current_value/temperature
+57/148 湿度一般在多少 rule=average A=threshold_info/humidity B=threshold_info/humidity
+58/148 湿度平均在多少 rule=average A=average/humidity B=average/humidity
+59/148 湿度通常在多少 rule=current_value A=threshold_info/humidity B=threshold_info/humidity
+60/148 湿度均值是多少 rule=average A=average/humidity B=average/humidity
+61/148 湿度均值多少 rule=average A=average/humidity B=average/humidity
+62/148 噪音平均多少分贝 rule=average A=average/noise B=average/noise
+63/148 噪音平均水平怎样 rule=average A=average/noise B=average/noise
+64/148 分贝均值是多少 rule=average A=average/noise B=average/noise
+65/148 站里温度超限没 rule=alarm_state A=alarm_state/temperature B=alarm_state/temperature
+66/148 站里热得有没有超标 rule=alarm_state A=alarm_state/temperature B=alarm_state/temperature
+67/148 站里温度有没有超标 rule=alarm_state A=alarm_state/temperature B=alarm_state/temperature
+68/148 温度超标了吗 rule=alarm_state A=alarm_state/temperature B=alarm_state/temperature
+69/148 气温越限了吗 rule=current_value A=alarm_state/temperature B=alarm_state/temperature
+70/148 站里热得超限没 rule=alarm_state A=alarm_state/temperature B=alarm_state/temperature
+71/148 湿度是不是超出范围 rule=current_value A=alarm_state/humidity B=alarm_state/humidity
+72/148 湿度是不是不正常 rule=current_value A=alarm_state/humidity B=alarm_state/humidity
+73/148 湿度报警了没 rule=alarm_state A=alarm_state/humidity B=alarm_state/humidity
+74/148 湿度有没有超出范围 rule=alarm_state A=alarm_state/humidity B=alarm_state/humidity
+75/148 湿度有没有不正常 rule=current_value A=alarm_state/humidity B=alarm_state/humidity
+76/148 湿度超限了没 rule=alarm_state A=alarm_state/humidity B=alarm_state/humidity
+77/148 噪音超没超标 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+78/148 站台吵得超限了吗 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+79/148 噪音有没有超限 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+80/148 分贝超没超标 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+81/148 站台吵得超标了吗 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+82/148 分贝有没有超限 rule=alarm_state A=alarm_state/noise B=alarm_state/noise
+83/148 温度上限是多少 rule=threshold_info A=threshold_info/temperature B=threshold_info/temperature
+84/148 温度报警线是多少 rule=alarm_state A=threshold_info/temperature B=threshold_info/temperature
+85/148 气温到多少度算超标 rule=alarm_state A=threshold_info/temperature B=threshold_info/temperature
+86/148 湿度多少算不正常 rule=threshold_info A=threshold_info/humidity B=threshold_info/humidity
+87/148 湿度正常范围是多少 rule=current_value A=threshold_info/humidity B=threshold_info/humidity
+88/148 湿度报警线是多少 rule=alarm_state A=threshold_info/humidity B=threshold_info/humidity
+89/148 噪音标准是多少 rule=threshold_info A=threshold_info/noise B=threshold_info/noise
+90/148 噪音上限是多少 rule=threshold_info A=threshold_info/noise B=threshold_info/noise
+91/148 噪音报警线是多少 rule=alarm_state A=threshold_info/noise B=threshold_info/noise
+92/148 超过多少分贝算超标 rule=threshold_info A=threshold_info/noise B=threshold_info/noise
+93/148 风扇在工作吗 rule=fan_state A=fan_state/None B=fan_state/temperature
+94/148 为啥排风开了 rule=fan_state A=fan_state/None B=fan_state/temperature
+95/148 风扇现在在工作吗 rule=fan_state A=fan_state/None B=fan_state/temperature
+96/148 风扇现在开着吗 rule=fan_state A=fan_state/None B=fan_state/temperature
+97/148 排风机开着吗 rule=fan_state A=None/None B=fan_state/temperature
+98/148 风扇什么状态 rule=fan_state A=fan_state/None B=fan_state/temperature
+99/148 现在多少个设备连着 rule=device_list A=device_list/None B=device_list/temperature
+100/148 目前有几台设备在线 rule=device_list A=device_list/None B=device_list/None
+101/148 目前多少个传感器在线 rule=device_list A=device_list/None B=device_list/temperature
+102/148 目前有几台传感器连着 rule=device_list A=device_list/None B=device_list/temperature
+103/148 目前多少个传感器连着 rule=help A=device_list/None B=device_list/temperature
+104/148 现在多少个设备在线 rule=device_list A=device_list/None B=device_list/None
+105/148 帮忙把风扇启动 rule=fan_on A=fan_on/None B=fan_on/temperature
+106/148 麻烦把风扇启动 rule=fan_on A=fan_on/None B=fan_on/temperature
+107/148 帮忙把排风打开 rule=fan_on A=fan_on/None B=fan_on/temperature
+108/148 太热了开下通风 rule=fan_on A=fan_on/None B=fan_on/temperature
+109/148 有点闷开下通风 rule=fan_on A=fan_on/None B=fan_on/temperature
+110/148 太热了开下风扇 rule=fan_on A=fan_on/None B=fan_on/temperature
+111/148 把通风停掉 rule=fan_off A=fan_off/None B=fan_off/temperature
+112/148 排风关了吧 rule=fan_off A=fan_off/None B=fan_off/temperature
+113/148 排风停一下 rule=fan_off A=fan_off/None B=fan_off/temperature
+114/148 风扇先关掉 rule=fan_off A=fan_off/None B=fan_off/temperature
+115/148 排风先关掉 rule=fan_off A=fan_off/None B=fan_off/temperature
+116/148 别让风扇转了 rule=fan_state A=fan_off/None B=fan_off/temperature
+117/148 通风设成自动 rule=fan_auto A=fan_auto/None B=fan_auto/temperature
+118/148 通风改为自动 rule=fan_auto A=fan_auto/None B=fan_auto/temperature
+119/148 通风切到自动 rule=fan_auto A=fan_auto/None B=fan_auto/temperature
+120/148 风扇改为自动 rule=fan_auto A=fan_auto/None B=fan_auto/temperature
+121/148 风扇切到自动 rule=fan_auto A=fan_auto/None B=fan_auto/temperature
+122/148 风扇让系统自己决定开关 rule=fan_off A=fan_auto/None B=fan_auto/temperature
+123/148 通风温度触发线设到29度 rule=fan_state A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+124/148 排风温度阈值调成32度 rule=set_vent_threshold A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+125/148 排风温度阈值改为32度 rule=set_vent_threshold A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+126/148 排风温度阈值调成27度 rule=set_vent_threshold A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+127/148 排风温度触发线设到27度 rule=fan_state A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+128/148 通风温度阈值改为29度 rule=set_vent_threshold A=set_vent_threshold/temperature B=set_vent_threshold/temperature
+129/148 排风湿度阈值调成70 rule=set_vent_threshold A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+130/148 通风湿度触发线改为72 rule=fan_state A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+131/148 通风湿度阈值改为72 rule=set_vent_threshold A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+132/148 排风湿度触发线改为70 rule=fan_state A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+133/148 排风湿度触发线改为72 rule=fan_state A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+134/148 排风湿度阈值改为78 rule=set_vent_threshold A=set_vent_threshold/humidity B=set_vent_threshold/humidity
+135/148 帮我点个外卖 rule=help A=None/None B=None/None
+136/148 帮我打个车 rule=help A=None/None B=None/None
+137/148 附近有厕所吗 rule=help A=None/None B=None/None
+138/148 今天天气怎么样 rule=help A=None/None B=None/None
+139/148 手机噪音太大怎么办 rule=current_value A=None/None B=None/None
+140/148 你几岁了 rule=help A=None/None B=None/None
+141/148 帮我查一下湿疹怎么治 rule=current_value A=None/None B=None/None
+142/148 空调温度调到 26 度 rule=current_value A=None/None B=set_vent_threshold/temperature
+143/148 明天温度多少 rule=current_value A=current_value/temperature B=current_value/temperature
+144/148 下一班车几点到 rule=help A=None/None B=None/None
+145/148 推荐一首歌 rule=help A=None/None B=None/None
+146/148 你是谁 rule=help A=None/None B=None/None
+147/148 站台的广播声音能调小吗 rule=current_value A=None/None B=None/None
+148/148 介绍一首歌 rule=help A=None/None B=None/None
+
+题数 148（范围内 134，范围外 14）
+== 实验 1：只跑规则 ==
+  总体正确 119/148 = 80.4%
+  范围内正确 110/134 = 82.1%
+  范围内落空(HELP，交模型) 5/134 = 3.7%
+  范围内**答错**(规则自信地错) 19/134 = 14.2%
+  范围外被规则误接 5/14 = 35.7%
+    ✗ 最潮的时候湿度多少  期望 maximum/humidity  规则 current_value/humidity
+    ✗ 最凉快的时候多少度  期望 minimum/temperature  规则 current_value/temperature
+    ✗ 湿度通常在多少  期望 average/humidity  规则 current_value/humidity
+    ✗ 气温越限了吗  期望 alarm_state/temperature  规则 current_value/temperature
+    ✗ 湿度是不是超出范围  期望 alarm_state/humidity  规则 current_value/humidity
+    ✗ 湿度是不是不正常  期望 alarm_state/humidity  规则 current_value/humidity
+    ✗ 湿度有没有不正常  期望 alarm_state/humidity  规则 current_value/humidity
+    ✗ 温度报警线是多少  期望 threshold_info/temperature  规则 alarm_state/temperature
+    ✗ 气温到多少度算超标  期望 threshold_info/temperature  规则 alarm_state/temperature
+    ✗ 湿度正常范围是多少  期望 threshold_info/humidity  规则 current_value/humidity
+    ✗ 湿度报警线是多少  期望 threshold_info/humidity  规则 alarm_state/humidity
+    ✗ 噪音报警线是多少  期望 threshold_info/noise  规则 alarm_state/noise
+    ✗ 别让风扇转了  期望 fan_off/None  规则 fan_state/None
+    ✗ 风扇让系统自己决定开关  期望 fan_auto/None  规则 fan_off/None
+    ✗ 通风温度触发线设到29度  期望 set_vent_threshold/temperature  规则 fan_state/None
+    ✗ 排风温度触发线设到27度  期望 set_vent_threshold/temperature  规则 fan_state/None
+    ✗ 通风湿度触发线改为72  期望 set_vent_threshold/humidity  规则 fan_state/None
+    ✗ 排风湿度触发线改为70  期望 set_vent_threshold/humidity  规则 fan_state/None
+    ✗ 排风湿度触发线改为72  期望 set_vent_threshold/humidity  规则 fan_state/None
+    ✗ 手机噪音太大怎么办  期望 unknown/None  规则 current_value/noise
+    ✗ 帮我查一下湿疹怎么治  期望 unknown/None  规则 current_value/humidity
+    ✗ 空调温度调到 26 度  期望 unknown/None  规则 current_value/temperature
+    ✗ 明天温度多少  期望 unknown/None  规则 current_value/temperature
+    ✗ 站台的广播声音能调小吗  期望 unknown/None  规则 current_value/noise
+== 实验 2：模型直分类（绕过规则）==
+  [A] 现行自由文本+parse_reply
+    总体正确 135/148 = 91.2%
+    范围内正确 122/134 = 91.0%
+    范围内拒收/无法解析 1/134 = 0.7%
+    范围外正确拒绝 13/14 = 92.9%
+    耗时 中位 4.06s  最长 6.21s
+    组合(规则优先+模型兜底)总体正确 121/148 = 81.8%
+  [B] JSON Schema 约束
+    总体正确 133/148 = 89.9%
+    范围内正确 121/134 = 90.3%
+    范围内拒收/无法解析 3/134 = 2.2%
+    范围外正确拒绝 12/14 = 85.7%
+    耗时 中位 1.84s  最长 2.92s
+    组合(规则优先+模型兜底)总体正确 123/148 = 83.1%
+  A/B 分歧题：
+    站厅现在暖和吗 期望 current_value/temperature | A alarm_state/temperature ✗ raw='alarm_state temperature' | B current_value/temperature ✓
+    这边现在凉快吗 期望 current_value/temperature | A alarm_state/temperature ✗ raw='alarm_state temperature' | B current_value/temperature ✓
+    最冷的时候多少度 期望 minimum/temperature | A minimum/temperature ✓ raw='minimum temperature' | B current_value/temperature ✗
+    最干燥那会儿湿度多少 期望 minimum/humidity | A minimum/humidity ✓ raw='minimum humidity' | B current_value/humidity ✗
+    气温均值是多少 期望 average/temperature | A average/temperature ✓ raw='average temperature' | B current_value/temperature ✗
+    温度均值是多少 期望 average/temperature | A average/temperature ✓ raw='average temperature' | B current_value/temperature ✗
+    排风机开着吗 期望 fan_state/None | A None/None ✗ raw='fan_state device_list' | B fan_state/temperature ✓
+    空调温度调到 26 度 期望 unknown/None | A None/None ✓ raw='unknown' | B set_vent_threshold/temperature ✗
+exit=0
