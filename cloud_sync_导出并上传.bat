@@ -5,7 +5,7 @@ rem Double-clickable entry for the archive export (and, from P3, the upload).
 rem
 rem 手动触发：系统运行期间只往历史库写，不含定时器与后台上传。想上云时
 rem 双击这个，它把尚未导出的整点时段一次补齐。详见 scripts\cloud_sync.py
-rem 与 docs\02_Architecture\History_And_Cloud_Design.md 第 5.1 节。
+rem 与 docs/decisions/06-history.md。
 rem
 rem 放在项目根目录，与 run_gui_模拟数据界面.bat / start_llm_启动本地模型.bat 等入口并排——所有可双击
 rem 的入口集中在一处。

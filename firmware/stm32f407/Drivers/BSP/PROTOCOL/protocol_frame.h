@@ -1,7 +1,7 @@
 /**
  ****************************************************************************************************
  * @file        protocol_frame.h
- * @brief       通用帧协议编解码，与 docs/03_Communication/Protocol_Design.md 及 PC 端
+ * @brief       通用帧协议编解码，与 docs/protocol.md 及 PC 端
  *              src/protocol/frame.py + encoder.py + decoder.py 严格一致，不擅自修改字段
  *              定义或字节序。
  *
@@ -47,7 +47,7 @@
 /* 与 src/application/manager.py 的 DATA_REPORT_CODE / COMMAND_ACK_CODE 一致 */
 #define PROTOCOL_CMD_DATA_REPORT        0x01u
 #define PROTOCOL_CMD_COMMAND_ACK        0x02u
-/* 0x10 起为业务命令区间，见 docs/03_Communication/Protocol_Design.md */
+/* 0x10 起为业务命令区间，见 docs/protocol.md */
 #define PROTOCOL_CMD_BUSINESS_MIN       0x10u
 
 /* 固定分配的业务命令码（0x10~0x1F 为保留区间）。

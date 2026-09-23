@@ -6,7 +6,7 @@ rem
 rem 只读：列出云上已有的归档，并打开阿里云控制台的文件列表页。
 rem 它不上传、不删除、不改动任何东西——要上传请用 cloud_sync_导出并上传.bat。
 rem
-rem 详见 scripts\cloud_view.py 与 docs\06_UserGuide\User_Manual.md 4.3 节。
+rem 详见 scripts\cloud_view.py 与 docs/getting-started.md。
 
 rem Show Chinese text correctly (65001 = UTF-8).
 chcp 65001 >nul 2>&1

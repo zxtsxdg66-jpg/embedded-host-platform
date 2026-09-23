@@ -9,7 +9,7 @@
  *
  * 但原样引入的厂商驱动（LCD、TOUCH/gt9xxx、TOUCH/ft5206）里有 #include 这个路径的语句，
  * 它们真正需要的只是 printf 的声明。既然要保持"厂商文件一字不改"这条纪律
- * （见 docs/09_STM32Hardware/STM32F407_硬件落地方案.md），就不去删它们的 include，
+ * （见 docs/hardware.md），就不去删它们的 include，
  * 而是在这里提供一个只拉 <stdio.h> 的垫片。
  *
  * printf 本身的重定向在 Drivers/BSP/DEBUG_LOG/debug_log.c —— 那里声明了

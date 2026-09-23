@@ -3,7 +3,7 @@
  * @file        main.c
  * @brief       STM32F407 探索者V3 固件 —— 三传感器采集上报 + 通风 + 语音告警 + 板载 LCD
  *
- * 对应 docs/09_STM32Hardware/STM32F407_硬件落地方案.md 的开发路线，本文件已完成：
+ * 对应 docs/hardware.md 的开发路线，本文件已完成：
  *   LED/最小工程 -> USART1 -> PC握手 -> USART3 -> Modbus噪声传感器 -> 软件I2C -> AHT20 -> 三传感器数据统一上报
  * 全部七步的软件逻辑，以及其后扩展的通风风扇、语音告警播报、板载 2.8 寸 LCD 仪表盘。
  *
@@ -21,7 +21,7 @@
  * 截至 2026-09-07 **只完成了编译（0 Error / 0 Warning）与静态核查，一次都还没有
  * 烧录到板子上运行过**（烧录器不在手边）。引脚占用、Keil 工程文件清单、HAL 依赖
  * 闭包均已逐项核对，但这些都不能替代实机。首次烧录后应按
- * docs/05_Test/Project_Status_Context.md 的验证清单逐项确认。
+ * docs/verification.md 的验证清单逐项确认。
  * 另：语音数据当前仍是静音占位（alert_pcm.c 的 sample_count = 0），需先用
  * scripts/wav_to_c.py 生成真实音频再重新编译，否则播报流程会跑通但不出声。
  *

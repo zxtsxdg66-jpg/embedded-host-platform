@@ -3,7 +3,7 @@
  * @file        soft_i2c.h
  * @brief       软件模拟 I2C（GPIO 位翻转），供 AHT20 温湿度传感器使用。
  *
- * 引脚选择说明（对应 docs/09_STM32Hardware/STM32F407_硬件落地方案.md D.2/D.5 节
+ * 引脚选择说明（对应 docs/hardware.md D.2/D.5 节
  * "待确认"项的选定结果）：SDA=PE0，SCL=PE1。选择依据——《探索者V3硬件参考手册》
  * 引脚分配表明确将 PE0/PE1 标注为 "FSMC_NBL0"/"FSMC_NBL1"、"SRAM 专用"、
  * 共用标记为 "N"。

@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 /* HH_07.06 出厂默认波特率，若已用配置工具改过，需要在此同步修改，
- * 见 docs/09_STM32Hardware/STM32F407_硬件落地方案.md D.4 节 */
+ * 见 docs/hardware.md D.4 节 */
 #define NOISE_USART_DEFAULT_BAUDRATE   115200u
 
 void noise_usart_init(uint32_t baudrate);

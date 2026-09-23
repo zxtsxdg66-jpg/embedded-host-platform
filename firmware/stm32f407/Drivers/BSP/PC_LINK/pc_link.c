@@ -8,7 +8,7 @@
 
 /* ------------------------------------------------------------------------ */
 /* USART1 (PA9=TX / PA10=RX) 引脚与外设定义
- * 与 docs/09_STM32Hardware/STM32F407_硬件落地方案.md D.1/D.6 节一致：
+ * 与 docs/hardware.md D.1/D.6 节一致：
  * USART1 经开发板 P10 跳线默认接板载 CH340C（USB_UART 口），无需额外接线。 */
 #define PC_LINK_TX_GPIO_PORT            GPIOA
 #define PC_LINK_TX_GPIO_PIN             GPIO_PIN_9

@@ -7,7 +7,7 @@ rem 和 cloud_sync_导出并上传.bat 跑的是同一个脚本，只多一个 -
 rem 它在补齐已结束时段之后，再把「当前这一小时到现在为止」截一份快照传上去。
 rem 归档只处理已经结束的整点，所以整点之前「把现在的数据传上去」原本做不到，
 rem 而演示要做的恰好是这件事。快照不登记台账，整点过后那一小时仍会完整导出
-rem 一份归档。详见 docs\02_Architecture\History_And_Cloud_Design.md 第 5.4 节。
+rem 一份归档。详见 docs/decisions/06-history.md。
 rem
 rem 放在项目根目录，与 cloud_sync_导出并上传.bat 并排——所有可双击的入口集中在一处。
 
