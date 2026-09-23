@@ -42,6 +42,7 @@ from application.alert_dispatcher import AlertCommandDispatcher
 from application.answer_dispatcher import AnswerDispatcher
 from application.fan_dispatcher import FanCommandDispatcher
 from application.history_recorder import HistoryRecorder
+from application.link_monitor import LinkEventCallback, LinkMonitor, LinkStatistics
 from application.manager import DeviceManager
 from communication.interface import CommunicationChannel
 from core.models import ChannelId, ClientId, CommandType, DeviceId
@@ -122,6 +123,10 @@ class ApplicationRuntime:
         # ventilation thresholds are deliberately separate from the alarm
         # thresholds rather than more rules inside SensorDataProcessor.
         self._ventilation = VentilationController()
+        # What the serial link is doing, for the web console's protocol
+        # inspector (2026-09-23). Idle in Simulator mode, which has no byte
+        # stream; a hardware/virtual launcher hands it to the receiver.
+        self.link_monitor = LinkMonitor()
         # Set by enable_fan_control(); until then ventilation decisions are
         # computed and published but never turned into device commands.
         self._fan_dispatcher: FanCommandDispatcher | None = None
@@ -544,6 +549,14 @@ class ApplicationRuntime:
         the object returned at wiring time.
         """
         return self._fan_dispatcher
+
+    def get_link_statistics(self) -> LinkStatistics:
+        """Counters from :attr:`link_monitor`; inactive in Simulator mode."""
+        return self.link_monitor.statistics()
+
+    def subscribe_link_events(self, callback: LinkEventCallback) -> None:
+        """Register ``callback`` for every frame and link anomaly."""
+        self.link_monitor.subscribe(callback)
 
     def subscribe_fan_decision(self, callback: FanDecisionCallback) -> None:
         """Register ``callback`` for every future ventilation decision.

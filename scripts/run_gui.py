@@ -239,6 +239,7 @@ def build_hardware_runtime(
         wire_id=registration.wire_id,
         channel=channel,
         data_service=runtime.data_service,
+        monitor=runtime.link_monitor,
     )
     runner = HardwareRuntimeRunner(receiver)
     return runtime, runner

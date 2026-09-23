@@ -86,6 +86,7 @@ from question_log import QuestionLog  # noqa: E402  (same scripts/ directory)
 
 from api.local_api import LocalApi  # noqa: E402
 from gateway.server import (  # noqa: E402
+    assistant_detail_sink,
     assistant_sink,
     create_app,
     set_question_observer,
@@ -170,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
     gateway_app = create_app(
         LocalApi(runtime), subscriptions=targets, mode_label=gateway_mode
     )
+    # Browser console at /web/ (web/README.md), same as run_api_server.py.
+    run_api_server.mount_web_console(gateway_app)
     server, _thread = _start_gateway_thread(gateway_app, args.host, args.port)
 
     qt_app = QApplication.instance() or QApplication(sys.argv)
@@ -247,6 +250,9 @@ def main(argv: list[str] | None = None) -> int:
             on_assistant_answer=logging_answer_sink(
                 question_log, deliver_assistant_answer
             ),
+            # The trace goes only to the gateway: the web console shows it,
+            # the desktop panel does not (2026-09-23).
+            on_assistant_detail=assistant_detail_sink(gateway_app),
         )
     )
     runner.start()

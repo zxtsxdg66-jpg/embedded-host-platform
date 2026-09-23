@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>嵌入式上位机控制台</title>
+<meta name="description" content="嵌入式上位机平台的 Web 控制台：实时监测、串口协议检查器与可追溯的环境问答；无网关时回放真实实测数据。">
+<link rel="stylesheet" href="css/console.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">
+      <div class="frame" aria-hidden="true"><span>AA</span><span>55</span><span class="dim">ID</span><span class="dim">CMD</span><span class="dim">LEN</span><span class="dim">…</span><span class="dim">CRC-32</span></div>
+      <h1>嵌入式上位机控制台</h1>
+    </div>
+    <div class="source">
+      <span class="badge" id="badge">正在连接…</span>
+      <input class="field mono" id="gateway-url" size="22" aria-label="网关地址" placeholder="http://127.0.0.1:8000">
+      <button class="btn" id="btn-connect" type="button">连接网关</button>
+      <button class="btn" id="btn-replay" type="button">回放实测记录</button>
+    </div>
+  </header>
+
+  <div class="replay-bar" id="replay-bar" hidden>
+    <div class="seg" id="replay-session" role="group" aria-label="回放会话">
+      <button type="button" data-session="hour" aria-pressed="true">一小时稳定性实验</button>
+      <button type="button" data-session="faults" aria-pressed="false">故障注入会话</button>
+    </div>
+    <button class="btn" id="replay-play" type="button">暂停</button>
+    <div class="seg" id="replay-speed" role="group" aria-label="回放速度">
+      <button type="button" data-speed="1" aria-pressed="false">1×</button>
+      <button type="button" data-speed="10" aria-pressed="true">10×</button>
+      <button type="button" data-speed="60" aria-pressed="false">60×</button>
+    </div>
+    <div class="grow">
+      <input type="range" id="replay-seek" min="0" max="1000" value="0" aria-label="回放进度">
+      <span class="mono" id="replay-clock">00:00 / 00:00</span>
+    </div>
+    <span class="note" id="replay-note"></span>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="控制台视图">
+    <button role="tab" id="tab-monitor" aria-controls="monitor" aria-selected="true">监测</button>
+    <button role="tab" id="tab-link" aria-controls="link" aria-selected="false">串口链路<span class="count" id="link-alert"></span></button>
+    <button role="tab" id="tab-assistant" aria-controls="assistant" aria-selected="false">环境问答</button>
+    <button role="tab" id="tab-history" aria-controls="history" aria-selected="false">历史</button>
+  </nav>
+
+  <main>
+    <!-- 监测 -->
+    <section class="view" id="monitor" role="tabpanel" aria-labelledby="tab-monitor">
+      <div class="cards" id="cards"></div>
+      <div class="grid-main">
+        <div class="panel">
+          <div class="panel-head"><h2>实时曲线</h2><span class="hint" id="chart-hint">最近 10 分钟 · 悬停查看读数</span></div>
+          <div class="chart"><canvas id="c-live" height="420"></canvas></div>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <div class="panel-head"><h2>通风</h2><span class="pill idle" id="fan-mode">—</span></div>
+            <div class="fan-state"><strong id="fan-run">等待判定</strong></div>
+            <p class="fan-reason" id="fan-reason"></p>
+            <div class="seg" id="fan-modes" role="group" aria-label="风扇模式">
+              <button type="button" data-mode="AUTO" aria-pressed="false">自动</button>
+              <button type="button" data-mode="MANUAL_ON" aria-pressed="false">手动常开</button>
+              <button type="button" data-mode="MANUAL_OFF" aria-pressed="false">手动常关</button>
+            </div>
+            <form class="fan-form" id="fan-form">
+              <label>温度阈值 ℃<input class="field mono" id="th-temp" type="number" step="0.5"></label>
+              <label>湿度阈值 %RH<input class="field mono" id="th-humi" type="number" step="1"></label>
+              <button class="btn primary" type="submit">应用</button>
+            </form>
+            <div class="toast" id="fan-toast"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>设备与链路</h2><span class="hint" id="mode-label"></span></div>
+            <ul class="devices" id="devices"></ul>
+            <dl class="kv" id="link-mini" style="margin-top:10px"></dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 串口链路 -->
+    <section class="view" id="link" role="tabpanel" aria-labelledby="tab-link" hidden>
+      <div class="inactive" id="link-inactive" hidden></div>
+      <div class="counters" id="counters"></div>
+      <div class="link-grid">
+        <div class="panel">
+          <div class="panel-head"><h2>逐帧记录</h2>
+            <label class="hint"><input type="checkbox" id="only-bad"> 只看异常</label></div>
+          <p class="hint" id="link-scope" style="margin:-4px 0 8px"></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>时间</th><th>判定</th><th>长度</th><th>原始字节</th></tr></thead>
+              <tbody id="frames"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" id="frame-detail">
+          <h2>帧解析</h2>
+          <p class="empty">点左侧任意一行查看</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 环境问答 -->
+    <section class="view" id="assistant" role="tabpanel" aria-labelledby="tab-assistant" hidden>
+      <div class="qa-grid">
+        <div class="panel">
+          <div class="panel-head"><h2>对话</h2><span class="hint" id="qa-hint"></span></div>
+          <div class="chat" id="chat" aria-live="polite"></div>
+          <form class="ask" id="ask-form">
+            <input class="field" id="ask-input" placeholder="例如：现在温度多少 / 噪声超标了吗 / 把风扇打开" autocomplete="off">
+            <button class="btn primary" type="submit">提问</button>
+          </form>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>这句回答是怎么来的</h2></div>
+          <div class="trace" id="trace"><p class="empty">点左侧任意一条回答查看</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 历史 -->
+    <section class="view" id="history" role="tabpanel" aria-labelledby="tab-history" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>历史读数</h2>
+          <div class="hist-tools">
+            <select class="field" id="hist-channel" aria-label="通道">
+              <option value="temperature">温度</option><option value="humidity">湿度</option><option value="noise">噪声</option>
+            </select>
+            <button class="btn" id="hist-load" type="button">查询</button>
+          </div>
+        </div>
+        <p class="hint" id="hist-hint"></p>
+        <div class="chart"><canvas id="c-hist" height="300"></canvas></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>数字一律来自数据服务，模型只负责措辞；网页只经网关的 REST 与 WebSocket 说话，不直连串口。</span>
+    <span id="foot-note"></span>
+  </footer>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/sources.js"></script>
+<script src="js/views.js"></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>

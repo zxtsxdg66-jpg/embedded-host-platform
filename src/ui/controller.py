@@ -68,17 +68,30 @@ def _offer_tag(answer: Answer) -> str:
     """The action tag for ``answer``, or "" when it carries no offer.
 
     An offer needs something to act on, not just a kind that could have
-    one. For the upload offer that means a *positive* pending count:
+    one. For the upload offer that means the ledger could be read at all:
 
-    - ``0`` -- everything is already up, and the answer says so. A button
-      under it would do nothing and imply there was something left.
     - ``None`` -- the ledger could not be read, and the answer tells the
       user to run ``cloud_sync_导出并上传.bat`` themselves. Offering a button
-      contradicts the sentence sitting directly above it.
+      contradicts the sentence sitting directly above it. Caught by
+      running the window rather than by a test: the button appeared under
+      "我查不到还有多少没传", which reads as the assistant not trusting its
+      own advice.
+    - ``0`` -- **offered since 2026-09-21.** It used to be excluded for the
+      same reason as ``None``: a button with nothing behind it. That reason
+      stopped being true when the button started passing ``--snapshot``.
+      Zero pending hours means every *finished* hour is up; the hour in
+      progress is never archived (see ``scripts/cloud_sync.py``), so there
+      is still something to send, and ``CLOUD_SYNC_NONE_TEXT`` now says so.
+      Keeping the old rule would have left the commonest demo state -- all
+      caught up, data arriving right now -- as the one state with no way to
+      upload.
 
-    Both were caught by running the window rather than by a test: the
-    button appeared under "我查不到还有多少没传", which reads as the
-    assistant not trusting its own advice.
+    What is deliberately *not* a precondition: whether the current hour
+    actually holds any readings. Knowing that means querying the history
+    store, and the assistant does not query history by design
+    (``docs/02_Architecture/History_And_Cloud_Design.md`` 第 2 节). The
+    script prints "当前时段还没有读数" and exits 0 in that case, which is
+    the honest outcome and costs one console line.
     """
     if answer.intent is None:
         return ""
@@ -86,8 +99,7 @@ def _offer_tag(answer: Answer) -> str:
     if not tag:
         return ""
     if answer.intent.kind is IntentKind.CLOUD_SYNC_HINT:
-        pending = answer.facts.pending_uploads if answer.facts else None
-        if not pending:
+        if (answer.facts.pending_uploads if answer.facts else None) is None:
             return ""
     # 查看没有这个前提：云上有没有东西要连上才知道，而"什么都没有"
     # 本身也是一个值得看到的答案。

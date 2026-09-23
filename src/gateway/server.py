@@ -13,7 +13,17 @@ api/, service/, or application/:
   GET  /devices/{device_id}/commands/{cmd_id}   -- ApiInterface.get_command_result
   GET  /devices/{id}/channels/{channel}/history -- ApiInterface.query_history
   POST /assistant/ask                           -- ApiInterface.ask
-  WS   /ws                    -- data / alarm_status / statistics / assistant
+  GET  /ventilation                             -- ApiInterface.get_ventilation_settings
+  PUT  /ventilation/thresholds  -- ApiInterface.set_ventilation_thresholds
+  PUT  /ventilation/mode                        -- ApiInterface.set_fan_mode
+  GET  /link/statistics                         -- ApiInterface.get_link_statistics
+  WS   /ws  -- data / alarm_status / statistics / assistant / fan_decision /
+              assistant_detail / link_event
+
+Ventilation, added 2026-09-23 for the web console
+(docs/02_Architecture/Web_Console_Design.md section 4). Same kind of thin
+translation as history: the four ApiInterface methods existed since the
+ventilation feature landed; only this server had not exposed them.
 
 History, added 2026-09-17. It used to be listed here as *deliberately not
 implemented*, and that note is kept rather than deleted because the
@@ -35,6 +45,7 @@ trusted network.
 from __future__ import annotations
 
 import asyncio
+import math
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
@@ -50,13 +61,20 @@ from gateway.channel_units import channel_unit
 from gateway.event_hub import EventHub
 from gateway.events import (
     alarm_status_message,
+    answer_detail,
     assistant_answer_message,
+    assistant_detail_message,
     data_point_message,
+    fan_decision_message,
     isoformat_or_none,
+    link_event_message,
+    link_statistics_payload,
     statistics_message,
+    ventilation_payload,
 )
 from service.assistant.models import Answer
 from service.command_models import Command
+from service.ventilation_controller import FanDecision, FanMode
 
 DEFAULT_CLIENT_ID = "android-client"
 
@@ -79,6 +97,19 @@ class AskRequest(BaseModel):
     """Body of POST /assistant/ask."""
 
     question: str
+
+
+class ThresholdsRequest(BaseModel):
+    """Body of PUT /ventilation/thresholds. A field left out stays unchanged."""
+
+    temperature_max: float | None = None
+    humidity_max: float | None = None
+
+
+class ModeRequest(BaseModel):
+    """Body of PUT /ventilation/mode: a :class:`FanMode` member name."""
+
+    mode: str
 
 
 def _command_result_payload(result: Any) -> dict[str, Any]:
@@ -166,6 +197,18 @@ def create_app(
             statistics_message(device_id, channel, stats)
         )
     )
+
+    # The latest decision is kept so GET /ventilation can say what the fan
+    # is doing *now*: a client that connects between two readings would
+    # otherwise see settings but no state until the next reading arrives.
+    latest_decision: list[FanDecision] = []
+
+    def on_fan_decision(decision: FanDecision) -> None:
+        latest_decision[:] = [decision]
+        hub.publish(fan_decision_message(decision))
+
+    api.subscribe_fan_decision(on_fan_decision)
+    api.subscribe_link_events(lambda event: hub.publish(link_event_message(event)))
 
     # -- REST ----------------------------------------------------------
 
@@ -306,7 +349,57 @@ def create_app(
         observer: QuestionObserver | None = getattr(app.state, "on_question", None)
         if observer is not None:
             observer(question, answer)
-        return {"text": answer.text, "source": answer.source.value}
+        # intent/facts/trace added 2026-09-23 for the web console; the phone
+        # reads text/source as before and ignores the rest.
+        return {
+            "text": answer.text,
+            "source": answer.source.value,
+            **answer_detail(answer),
+        }
+
+    # -- ventilation ----------------------------------------------------
+
+    @app.get("/ventilation")
+    def ventilation() -> dict[str, Any]:
+        decision = latest_decision[0] if latest_decision else None
+        return ventilation_payload(api.get_ventilation_settings(), decision)
+
+    @app.put("/ventilation/thresholds")
+    def set_thresholds(body: ThresholdsRequest) -> dict[str, Any]:
+        """Change either or both thresholds; the reply is the new settings.
+
+        Only non-finite values are refused here. What range is sensible
+        depends on the sensor and the site, which this generic gateway does
+        not know -- the same reason the controller itself has no bounds.
+        """
+        values = (body.temperature_max, body.humidity_max)
+        if all(v is None for v in values):
+            raise HTTPException(status_code=400, detail="no threshold given")
+        if any(v is not None and not math.isfinite(v) for v in values):
+            raise HTTPException(
+                status_code=400, detail="threshold must be a finite number"
+            )
+        api.set_ventilation_thresholds(body.temperature_max, body.humidity_max)
+        return ventilation()
+
+    @app.put("/ventilation/mode")
+    def set_mode(body: ModeRequest) -> dict[str, Any]:
+        try:
+            mode = FanMode[body.mode]
+        except KeyError as exc:
+            names = ", ".join(m.name for m in FanMode)
+            raise HTTPException(
+                status_code=400,
+                detail=f"unknown mode {body.mode!r}; expected one of {names}",
+            ) from exc
+        api.set_fan_mode(mode)
+        return ventilation()
+
+    # -- link ------------------------------------------------------------
+
+    @app.get("/link/statistics")
+    def link_statistics() -> dict[str, Any]:
+        return link_statistics_payload(api.get_link_statistics())
 
     # -- WebSocket ------------------------------------------------------
 
@@ -358,3 +451,20 @@ def assistant_sink(app: FastAPI) -> Callable[[str, str], None]:
         hub.publish(assistant_answer_message(text, source))
 
     return publish
+
+
+def assistant_detail_sink(app: FastAPI) -> Callable[[Answer], None]:
+    """Build the callback that pushes a late answer's trace to WS clients.
+
+    The companion of :func:`assistant_sink`, taking the whole Answer
+    because the trace lives on it. Kept separate rather than changing
+    ``assistant_sink``'s ``(text, source)`` shape, which the desktop
+    controller's sink shares.
+    """
+    hub: EventHub = app.state.hub
+
+    def publish(answer: Answer) -> None:
+        hub.publish(assistant_detail_message(answer))
+
+    return publish
+

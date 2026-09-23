@@ -39,5 +39,11 @@ def test_api_interface_declares_expected_abstract_members() -> None:
             # presentation may only reach the platform through this facade.
             # Purely additive -- no existing member changed.
             "query_history",
+            # Serial link monitoring, added 2026-09-23 with explicit
+            # authorisation, for the web console's protocol inspector
+            # (docs/02_Architecture/Web_Console_Design.md section 5).
+            # Purely additive -- no existing member changed.
+            "get_link_statistics",
+            "subscribe_link_events",
         }
     )

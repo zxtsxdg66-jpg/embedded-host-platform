@@ -44,6 +44,11 @@ api.ApiInterface ────┤
   接了模型的客户端多收一条替换消息。
 
 - `events.py`：四种 WebSocket 消息（`data` / `alarm_status` / `statistics` / `assistant`）的序列化，字段全部取自 `DataPoint` / `ThresholdStatus` / `ChannelStatistics`，未发明字段；唯一由服务端附加的是 `unit`（`DataPoint` 本身没有单位字段，且未为此给它加字段）。
+- **2026-09-23 新增（Web 控制台，`docs/02_Architecture/Web_Console_Design.md`）**：
+  - 通风：`GET /ventilation`（阈值、模式与最近一次决策）、`PUT /ventilation/thresholds`（非有限数值返回 400）、`PUT /ventilation/mode`（`AUTO`/`MANUAL_ON`/`MANUAL_OFF`，其余返回 400），对应 `get_ventilation_settings`/`set_ventilation_thresholds`/`set_fan_mode`；WebSocket 增发 `fan_decision` 消息
+  - 链路：`GET /link/statistics`（对应 `get_link_statistics`），WebSocket 增发 `link_event` 消息（原始字节以空格分隔的大写十六进制给出）
+  - 问答追溯：`POST /assistant/ask` 的响应在 `text`/`source` 之外附带 `answer_detail()` 给出的意图、事实、模板原句与每次模型改写的出口校验判定（`trace`）；`assistant_detail_sink(app)` 是 `assistant_sink` 的详细版，迟到的模型结果以 `assistant_detail` 消息补送。原有字段与 `assistant` 消息不变，Android 客户端无需改动
+  - 网关包本身**不知道 `web/` 的存在**：页面由 `scripts/run_api_server.py` 的 `mount_web_console()` 挂在 `/web/`（`run_all.py` 同样调用），`--no-web` 可关闭
 - `channel_units.py`：channel → 展示单位映射。**这是 `ui/channel_display.py` 的一份有意为之的重复**，理由见下方"已知遗留问题"。
 
 订阅关系由**调用方装配**而非本包自行发现：`create_app()` 的 `subscriptions` 参数（`(device_id, channel_id)` 列表）由组合根 `scripts/run_api_server.py` 传入——"有哪些通道"是组合决策，与 `SimulatorRuntimeRunner` 的 targets 同理。

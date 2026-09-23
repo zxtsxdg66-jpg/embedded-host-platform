@@ -15,6 +15,11 @@ P3 的上传要紧接在导出之后，"导出→上传"是一条连贯动作，
 
 1. **只导出已经结束的小时。** 当前这个小时还在写入，导出它会得到半截数据，
    而台账一旦记了就不会再补——那一小时的后半段就永久丢了。
+   ``--snapshot``（2026-09-21）是这条的**受控例外**：它也导当前这一小时，
+   但**不登记台账**，文件名另带分钟并标明"快照"。整点过后那一小时仍会按
+   常规完整导出一次，所以"后半段永久丢了"的路径没有被打开——代价只是云上
+   多一份与整点归档重叠、且一眼看得出是快照的文件。为什么需要它见第 5.4 节：
+   没有它，"把现在的数据传上去"这件事在整点之前无法做到，而那正是演示要做的。
 2. **先写文件、再登记台账。** 反过来的话，文件写失败但台账已记，那个时段
    再也不会被补导出。
 3. **先写临时文件再改名。** 中途失败（U 盘拔了、磁盘满）不会留下一个半截
@@ -123,6 +128,26 @@ def slot_bounds(slot: str) -> tuple[datetime, datetime]:
 def file_name_for(slot: str) -> str:
     """归档文件名，与 ``scripts/collect_thesis_data.py`` 同一套命名习惯。"""
     return f"env_{slot}.csv"
+
+
+SNAPSHOT_MARK = "快照"
+"""快照文件名里的那两个字。
+
+写在文件名上而不是只写进备注列：这份文件会躺在 OSS 的清单里，与同一小时的
+整点归档并排显示。**看清单的人不会打开每个文件**，所以"这是半截数据"必须
+在名字上看得见，否则 ``env_20260921_14.csv`` 与它的快照看起来是同一类东西，
+而它们的完整程度并不一样。
+"""
+
+
+def snapshot_file_name(slot: str, moment: datetime) -> str:
+    """当前时段快照的文件名，如 ``env_20260921_14_1435_快照.csv``。
+
+    带分钟而不只带小时，有两个用处：清单里按名字排序就是按截取时刻排序；
+    同一小时里点两次按钮不会互相覆盖——除非同一分钟内点了两次，那种情况
+    **有意让它覆盖**，因为一分钟内的两份快照没有区别，留两份只是清单噪声。
+    """
+    return f"env_{slot}_{moment.astimezone():%H%M}_{SNAPSHOT_MARK}.csv"
 
 
 _SCAN_FLOOR = datetime(2000, 1, 1, tzinfo=timezone.utc)
@@ -272,6 +297,31 @@ def _wide_rows(points: list[HistoryPoint]) -> list[list[object]]:
     return rows
 
 
+def _write_csv(
+    export_dir: Path, file_name: str, rows: list[list[object]]
+) -> Path:
+    """把宽表写成一个 CSV，返回落盘后的路径。
+
+    两条约定在这里，归档与快照共用（抽出来正是为了它们不会各有一套）：
+
+    * **先写 ``.tmp`` 再改名。** 中途失败（磁盘满、目标目录被拔掉）留下的是
+      一个临时文件，而不是一个半截 CSV 被当成完整归档。
+    * **``utf-8-sig``，带 BOM。** 中文 Windows 上的 Excel 打开无 BOM 的
+      UTF-8 CSV 会按 GBK 解，中文表头直接是乱码。这一条不是猜的——本项目
+      2026-09-17 与 09-18 各被 GBK 咬过一次（``✓`` 在控制台抛
+      ``UnicodeEncodeError``，且崩在保存之前）。表头是中文，就必须带 BOM。
+    """
+    target = export_dir / file_name
+    temporary = target.with_suffix(".csv.tmp")
+    export_dir.mkdir(parents=True, exist_ok=True)
+    with temporary.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(CSV_COLUMNS)
+        writer.writerows(rows)
+    temporary.replace(target)
+    return target
+
+
 def export_slot(
     store: SqliteHistoryStore,
     ledger: SqliteExportLedger,
@@ -289,25 +339,106 @@ def export_slot(
     if not points:
         return None
 
-    target = export_dir / file_name_for(slot)
-    temporary = target.with_suffix(".csv.tmp")
-    export_dir.mkdir(parents=True, exist_ok=True)
-    rows = _wide_rows(points)
-    # utf-8-**sig**：带 BOM。中文 Windows 上的 Excel 打开无 BOM 的 UTF-8
-    # CSV 会按 GBK 解，中文表头直接是乱码。这一条不是猜的——本项目 2026-09-17
-    # 与 09-18 各被 GBK 咬过一次（`✓` 在控制台抛 UnicodeEncodeError，
-    # 且崩在保存之前）。表头改成中文的同一刻就必须带上 BOM。
-    with temporary.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(CSV_COLUMNS)
-        writer.writerows(rows)
-    temporary.replace(target)
+    target = _write_csv(export_dir, file_name_for(slot), _wide_rows(points))
 
     # 台账记的是**读数条数**而不是表格行数：它是这个时段收到了多少数据的
     # 口径，不该因为换了一种排版方式就变。宽表把三条读数并成一行，
     # 若改记行数，历史台账与新台账就不是一个东西了。
     ledger.record_export(slot, target.name, len(points), now)
     return len(points)
+
+
+def export_snapshot(
+    store: SqliteHistoryStore,
+    export_dir: Path,
+    now: datetime,
+) -> tuple[Path, int] | None:
+    """导出当前这一小时到现在为止的读数。库里这一小时没数据则返回 None。
+
+    与 :func:`export_slot` 的区别只有一处，但那一处是全部要点：
+    **它不碰台账。** 台账是"这个时段已经归档了，不必再导"的唯一依据，
+    而这份文件按定义是半截的——记进去就等于宣布那一小时处理完了，
+    后半段的读数会永久留在库里不再导出，而且没有任何提示。
+
+    所以整点过后 :func:`pending_slots` 仍会把这一小时列为待导出，
+    照常完整导出一份 ``env_<slot>.csv``。云上于是有两个文件：一份快照、
+    一份归档，内容重叠而前者是后者的前缀。这是**有意付出的代价**，
+    换来的是"现在就把数据传上去"在整点之前也能做到。
+
+    时间上界取 ``now`` 而不是时段终点：取终点会把区间开到未来，
+    虽然库里本来也没有未来的读数，但那样写出来的意图是错的——
+    这个函数要的是"到此刻为止"。
+    """
+    slot = slot_of(now)
+    start, _ = slot_bounds(slot)
+    points = store.query_range(start, now)
+    if not points:
+        return None
+    target = _write_csv(export_dir, snapshot_file_name(slot, now), _wide_rows(points))
+    return target, len(points)
+
+
+def _upload_snapshot(target: Path, config_path: Path) -> int:
+    """把一份快照送上云，返回失败个数（0 或 1）。
+
+    不走 :func:`_upload_pending` 那条路，因为那条路的每一步都绕着台账转：
+    它从待发队列取文件、上传成功后 ``mark_uploaded``。快照在台账里没有行，
+    也不该有——它不是某个时段的归档，重传它的办法是再点一次按钮，
+    而不是等下次运行补传。
+
+    因此快照**没有断网补传**：失败就是失败，说清原因即可。这不是遗漏，
+    是它与归档的性质差别——归档必须最终一致，快照只要"现在这一份传上去"。
+    """
+    config = load_config(config_path)
+    if config is None:
+        print(
+            f"[cloud_sync] 快照 {target.name} 已写到本地；"
+            f"未配置 OSS（{config_path}），本次不上传。"
+        )
+        return 0
+    uploader = OssUploader(config)
+    print(f"[cloud_sync] 上传快照到 {uploader.destination}")
+    if uploader.upload(target):
+        print(f"[cloud_sync] {target.name} 已上传")
+        return 0
+    print(f"[cloud_sync] {target.name} 没传上：{uploader.last_reason}")
+    print(f"[cloud_sync] 排查用的原始信息：{uploader.last_error}")
+    print("[cloud_sync] 快照不进待发队列，要重传就再跑一次（或再点一次按钮）。")
+    return 1
+
+
+def _handle_snapshot(
+    store: SqliteHistoryStore,
+    export_dir: Path,
+    config_path: Path,
+    now: datetime,
+    *,
+    dry_run: bool,
+    no_upload: bool,
+) -> int:
+    """``--snapshot`` 那一段：导出当前时段、按需上传，返回失败个数。"""
+    slot = slot_of(now)
+    if dry_run:
+        start, _ = slot_bounds(slot)
+        count = len(store.query_range(start, now))
+        print(
+            f"[cloud_sync] 当前时段 {slot} 已有 {count} 条读数"
+            f"（--dry-run，未写文件）；快照会写成 "
+            f"{snapshot_file_name(slot, now)}"
+        )
+        return 0
+    result = export_snapshot(store, export_dir, now)
+    if result is None:
+        # 说清"当前时段"而不只说"没有数据"：库里可能有大量昨天的数据，
+        # 一句"没有数据"会被读成"库是空的"，那是两种完全不同的处境。
+        print(f"[cloud_sync] 当前时段 {slot} 还没有读数，没有快照可传。")
+        return 0
+    target, count = result
+    print(f"[cloud_sync] 快照 {target.name}  {count} 条读数")
+    if no_upload:
+        print("[cloud_sync] --no-upload，快照只写到本地。")
+        return 0
+    return _upload_snapshot(target, config_path)
 
 
 def _upload_pending(
@@ -390,6 +521,12 @@ def main(argv: list[str] | None = None) -> int:
         help=f"OSS 凭证文件，默认 {DEFAULT_CONFIG_PATH}",
     )
     parser.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="额外导出并上传「当前这一小时到现在为止」的快照。"
+        "不登记台账，整点过后该时段仍会完整导出一次",
+    )
+    parser.add_argument(
         "--slot",
         action="append",
         metavar="时段",
@@ -422,21 +559,49 @@ def main(argv: list[str] | None = None) -> int:
                 print("[cloud_sync] 用 --dry-run 看有哪些时段可选。")
                 return 1
             slots = [slot for slot in slots if slot in wanted]
-        if not slots:
-            print("[cloud_sync] 没有待导出的时段——已结束的小时都导过了。")
-        elif args.dry_run:
-            print(f"[cloud_sync] 待导出 {len(slots)} 个时段（--dry-run，未写文件）：")
-            for slot in slots:
-                print(f"  {slot} -> {file_name_for(slot)}")
+        if args.dry_run:
+            # **--dry-run 一个字节都不上传。** 2026-09-21 修：这一段原先只
+            # 负责"不写文件"，而它下面的上传块是无条件执行的——于是一次
+            # `--dry-run` 把上一次留在待发队列里的归档真的传上了 OSS。
+            # 实测撞到：演示前"先看一眼会发生什么"，结果桶里多了一个文件。
+            # 没有任何报错，输出里那句"已上传"看起来还像是好事。
+            #
+            # 顺带修掉第二个坑：队列清单原先只在"有待导出时段"那一支里印。
+            # 都导过了的时候（`not slots`），dry-run 只说一句"没有待导出的
+            # 时段"就完事，而队列里可能正积压着几个没传上去的——那恰好是
+            # 最需要先看一眼的处境。现在无论如何都印。
+            if slots:
+                print(
+                    f"[cloud_sync] 待导出 {len(slots)} 个时段（--dry-run，未写文件）："
+                )
+                for slot in slots:
+                    print(f"  {slot} -> {file_name_for(slot)}")
+            else:
+                print("[cloud_sync] 没有待导出的时段——已结束的小时都导过了。")
             # 演示前要确认的是"按下去会发生什么"，而待传队列与待导出是
             # 两件事——上一次断网留下的积压不会出现在上面那张表里。
             queued = ledger.pending_uploads()
             if wanted is not None:
                 queued = [r for r in queued if r.slot in wanted]
             if queued:
-                print(f"[cloud_sync] 另有 {len(queued)} 个时段在待传队列里：")
+                print(
+                    f"[cloud_sync] 另有 {len(queued)} 个时段在待传队列里"
+                    "（--dry-run，本次不传）："
+                )
                 for record in queued:
                     print(f"  {record.slot} -> {record.file_name}")
+            if args.snapshot:
+                _handle_snapshot(
+                    store,
+                    Path(args.dir),
+                    Path(args.oss_config),
+                    now.astimezone(),
+                    dry_run=True,
+                    no_upload=True,
+                )
+            return 0
+        if not slots:
+            print("[cloud_sync] 没有待导出的时段——已结束的小时都导过了。")
         else:
             export_dir = Path(args.dir)
             exported = 0
@@ -463,6 +628,20 @@ def main(argv: list[str] | None = None) -> int:
         elif pending:
             upload_failures = _upload_pending(
                 ledger, pending, Path(args.dir), Path(args.oss_config)
+            )
+
+        if args.snapshot:
+            # 放在归档之后：先把已经结束的时段补齐，再截当前这一小时。
+            # 反过来的话，快照里会包含刚刚才被归档走的读数吗？不会——
+            # 两者的时间区间不重叠。顺序在这里无关正确性，只关乎输出可读：
+            # 控制台上"补齐历史 → 截当前"读起来就是这件事的本来面目。
+            upload_failures += _handle_snapshot(
+                store,
+                Path(args.dir),
+                Path(args.oss_config),
+                now.astimezone(),
+                dry_run=False,
+                no_upload=args.no_upload,
             )
 
         if store.failures or ledger.failures:

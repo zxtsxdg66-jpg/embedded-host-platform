@@ -41,6 +41,10 @@ Capabilities, per the task this module was built for:
     与 8/9 两项一样属于纯增量：既有方法签名一个未动。历史记录本身是
     毕设的交付功能，设计见
     docs/02_Architecture/History_And_Cloud_Design.md
+11. get_link_statistics / subscribe_link_events -- 串口链路监视（2026-09-23
+    新增，经用户授权扩展）。供 Web 控制台的协议检查器使用；纯增量，
+    既有方法签名一个未动。设计见 docs/02_Architecture/Web_Console_Design.md
+    第 5 节
 """
 
 from __future__ import annotations
@@ -48,6 +52,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from application.link_monitor import LinkEventCallback, LinkStatistics
 from application.runtime import DeviceStatusView
 from core.models import ChannelId, ClientId, DeviceId
 from service.assistant.models import Answer
@@ -203,3 +208,21 @@ class ApiInterface(ABC):
         attached or the range holds nothing. Both are ordinary states: a
         view displays "no data", it does not recover from an exception.
         """
+
+    @abstractmethod
+    def get_link_statistics(self) -> LinkStatistics:
+        """Counters for the serial link: frames, resyncs, CRC failures.
+
+        Added 2026-09-23 for the web console's protocol inspector (see
+        docs/02_Architecture/Web_Console_Design.md section 5) -- the one
+        extension of this interface that work required. ``active`` is False
+        in Simulator mode, which has no byte stream to count.
+        """
+
+    @abstractmethod
+    def subscribe_link_events(self, callback: LinkEventCallback) -> None:
+        """Register ``callback`` for every frame and link anomaly.
+
+        Called on the runtime's driver thread; the callback must not block.
+        """
+

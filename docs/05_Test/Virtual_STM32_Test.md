@@ -68,6 +68,21 @@ CommandResult（SUCCESS/FAILED，或超时后
 
 两个进程之间**只共享协议规范，不共享代码**——`virtual_stm32.py` 里 `DATA_REPORT_CODE = 0x01`/`COMMAND_ACK_CODE = 0x02` 都是硬编码的字面量，而不是从 `src/application/manager.py` import 来的，这是刻意为之：真实 STM32 固件也只能在 C 代码里硬编码这些值，`virtual_stm32.py` 在这一点上应该表现得和真实固件一样。同样的原因，脚本里解析字节流、切出一帧的 `_extract_frame()` 也是独立实现的一份最小逻辑，没有 import `src/application/frame_stream.py`（PC 侧 `HardwareDeviceReceiver`/`DeviceManager` 共用的拼帧工具）——真实固件同样得在 C 里自己写这段逻辑，不能"共享 Python 代码"。
 
+## 进程内使用与故障注入（2026-09-23）
+
+循环逻辑已移入 `VirtualStm32` 类，它面向任意 `CommunicationChannel`：可以是上文的真实串口，也可以是 `communication.pipe.make_pipe_pair()` 的设备端。`scripts/run_api_server.py --mode virtual` 用的是后者，因此**不需要 com0com 或 socat**，主机侧的真实接收链路照样全程运行，启动方式见 [`Runtime_Mode.md`](Runtime_Mode.md)。
+
+`FaultPlan` 让它故意出错，每一项是一个概率：
+
+| 字段 | 默认（`--inject-faults`） | 做什么 | 主机侧应有的反应 |
+| --- | --- | --- | --- |
+| `split` | 0.25 | 把一帧拆成两次写入 | 静默拼回，不计错 |
+| `merge` | 0.3 | 把一轮三帧粘成一次写入 | 静默切开，不计错 |
+| `garbage` | 0.1 | 在帧前插入几个杂散字节 | 重同步一次（`resync`） |
+| `bitflip` | 0.03 | 翻转帧尾 CRC 的一个比特 | CRC 失败一次（`checksum_error`），该帧丢弃 |
+
+`VirtualStm32.injected` 记录实际注入的次数。给定 `seed` 时注入与传感器读数都可复现，`scripts/build_web_replay.py` 据此生成回放里的故障注入会话，并断言主机侧判出的重同步数、CRC 失败数与注入数**逐一相等**。命令行版本同样支持 `--inject-faults`。
+
 ## 如何启动虚拟设备
 
 ### 前置条件：一对相互连通的串口

@@ -23,6 +23,24 @@ Hardware mode -- real STM32 over a serial port::
     Same SerialChannel -> HardwareDeviceReceiver -> HardwareRuntimeRunner
     wiring scripts/run_gui.py already uses.
 
+Virtual mode -- no board, but a real byte stream (2026-09-23)::
+
+    python scripts/run_api_server.py --mode virtual
+    python scripts/run_api_server.py --mode virtual --inject-faults
+
+    Hardware-mode wiring end to end, except that SerialChannel is replaced
+    by one end of an in-memory pipe (communication/pipe.py) whose other end
+    is driven by scripts/virtual_stm32.py's VirtualStm32 on a thread. Frames
+    are real protocol frames and arrive without message boundaries, so the
+    host's frame sync, CRC check and the web console's protocol inspector
+    all see what they would see on a UART. ``--inject-faults`` makes the
+    virtual device split, merge, pad and corrupt frames on purpose. See
+    docs/02_Architecture/Web_Console_Design.md section 5.1.
+
+Web console (2026-09-23): unless ``--no-web`` is given, the ``web/``
+directory is served at ``/web/`` by this launcher -- the gateway package
+itself does not know it exists (CLAUDE.md).
+
 Note the two different "port" options: ``--port`` is the TCP port this HTTP
 server listens on; ``--port-serial`` is the STM32's serial port. They are
 named distinctly on purpose so they cannot be confused.
@@ -64,12 +82,14 @@ from automation_wiring import (  # noqa: E402
     make_poll_once,
 )  # noqa: E402
 from question_log import QuestionLog  # noqa: E402  (same scripts/ directory)
+from virtual_stm32 import DEFAULT_FAULTS, VirtualStm32  # noqa: E402
 
 from application.hardware_runner import HardwareRuntimeRunner  # noqa: E402
 from application.hardware_runtime import HardwareDeviceReceiver  # noqa: E402
 from application.runtime import ApplicationRuntime  # noqa: E402
 from application.simulator_runner import SimulatorRuntimeRunner  # noqa: E402
 from communication.loopback import LoopbackChannel  # noqa: E402
+from communication.pipe import make_pipe_pair  # noqa: E402
 from communication.serial import SerialChannel  # noqa: E402
 from device.capability import (  # noqa: E402
     ChannelDescriptor,
@@ -87,11 +107,13 @@ from device.sensors.noise import NoiseSensorSimulator  # noqa: E402
 from device.sensors.temperature import TemperatureSensorSimulator  # noqa: E402
 from device.state import ConnectionState, DeviceStatus  # noqa: E402
 from gateway.server import (  # noqa: E402
+    assistant_detail_sink,
     assistant_sink,
     create_app,
     set_question_observer,
 )
 from llm.ollama import DEFAULT_MODEL as DEFAULT_LLM_MODEL  # noqa: E402
+from service.assistant.models import Answer  # noqa: E402
 
 DEFAULT_HTTP_HOST = "0.0.0.0"
 DEFAULT_HTTP_PORT = 8000
@@ -183,6 +205,7 @@ def build_hardware_runtime(
         wire_id=registration.wire_id,
         channel=channel,
         data_service=runtime.data_service,
+        monitor=runtime.link_monitor,
     )
     runner = HardwareRuntimeRunner(receiver)
     targets = [
@@ -193,10 +216,94 @@ def build_hardware_runtime(
     return runtime, targets, runner
 
 
+VIRTUAL_DEVICE_ID = "virtual-stm32"
+VIRTUAL_INTERVAL_SECONDS = 3.0
+"""The real firmware's acquisition period, so the console looks like the board."""
+
+
+def build_virtual_runtime(
+    inject_faults: bool = False,
+) -> tuple[
+    ApplicationRuntime, list[tuple[str, str]], HardwareRuntimeRunner, threading.Event
+]:
+    """Hardware-mode composition over an in-memory pipe to a virtual STM32.
+
+    Identical to :func:`build_hardware_runtime` from the channel up -- the
+    same RemoteDevice, the same HardwareDeviceReceiver, the same runner --
+    which is the point: it exercises the real receive path. Returns the
+    event that stops the virtual device's thread.
+    """
+    runtime = ApplicationRuntime()
+    host_end, device_end = make_pipe_pair()
+    device = RemoteDevice(
+        device_id=VIRTUAL_DEVICE_ID,
+        capability=DeviceCapability(
+            commands=(CommandDescriptor(command_type="PING"),),
+            channels=(
+                ChannelDescriptor(channel_id=TEMPERATURE_CHANNEL),
+                ChannelDescriptor(channel_id=HUMIDITY_CHANNEL),
+                ChannelDescriptor(channel_id=NOISE_CHANNEL),
+            ),
+        ),
+        status=DeviceStatus(connection_state=ConnectionState.CONNECTED),
+    )
+    registration = runtime.devices.register(
+        device, host_end, accepted_commands=ACCEPTED_COMMANDS
+    )
+    runtime.watch_alarms_for(device)
+    enable_automations(runtime, device.device_id)
+    receiver = HardwareDeviceReceiver(
+        device_id=device.device_id,
+        wire_id=registration.wire_id,
+        channel=host_end,
+        data_service=runtime.data_service,
+        monitor=runtime.link_monitor,
+    )
+    runner = HardwareRuntimeRunner(receiver)
+
+    device_end.connect()
+    stop = threading.Event()
+    virtual = VirtualStm32(
+        device_end,
+        device_id=registration.wire_id,
+        interval_seconds=VIRTUAL_INTERVAL_SECONDS,
+        faults=DEFAULT_FAULTS if inject_faults else None,
+        verbose=False,
+    )
+    threading.Thread(
+        target=virtual.run, args=(stop,), name="virtual-stm32", daemon=True
+    ).start()
+    targets = [
+        (VIRTUAL_DEVICE_ID, TEMPERATURE_CHANNEL),
+        (VIRTUAL_DEVICE_ID, HUMIDITY_CHANNEL),
+        (VIRTUAL_DEVICE_ID, NOISE_CHANNEL),
+    ]
+    return runtime, targets, runner, stop
+
+
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+
+
+def mount_web_console(app: object) -> bool:
+    """Serve ``web/`` at ``/web/`` on the gateway app, if the directory exists.
+
+    Done here, in the composition root, so the gateway package never learns
+    that a web front end exists (CLAUDE.md). Returns False when there is no
+    ``web/`` directory -- the gateway works the same without it.
+    """
+    if not (WEB_DIR / "index.html").is_file():
+        return False
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/web", StaticFiles(directory=WEB_DIR, html=True), name="web")  # type: ignore[attr-defined]
+    return True
+
+
 def _start_runner_thread(
     runtime: ApplicationRuntime,
     runner: SimulatorRuntimeRunner | HardwareRuntimeRunner,
     on_assistant_answer: Callable[[str, str], None] | None = None,
+    on_assistant_detail: Callable[[Answer], None] | None = None,
 ) -> threading.Thread:
     """Drive ``runner.run_once()`` on a daemon thread.
 
@@ -210,7 +317,9 @@ def _start_runner_thread(
     improved one the model produces seconds later -- the same drift that once
     left ventilation dead in this launcher.
     """
-    poll_once = make_poll_once(runtime, runner, on_assistant_answer)
+    poll_once = make_poll_once(
+        runtime, runner, on_assistant_answer, on_assistant_detail
+    )
 
     def _loop() -> None:
         runner.start()
@@ -227,9 +336,25 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("simulator", "hardware"),
+        choices=("simulator", "hardware", "virtual"),
         default="simulator",
-        help="simulator (default, no hardware) or hardware (real serial port)",
+        help=(
+            "simulator (default, no hardware), hardware (real serial port), or "
+            "virtual (in-process virtual STM32 over a byte pipe)"
+        ),
+    )
+    parser.add_argument(
+        "--inject-faults",
+        action="store_true",
+        help=(
+            "with --mode virtual: the virtual device splits, merges, "
+            "pads and corrupts frames"
+        ),
+    )
+    parser.add_argument(
+        "--no-web",
+        action="store_true",
+        help="do not serve the web console at /web/",
     )
     parser.add_argument(
         "--host",
@@ -291,6 +416,11 @@ def main(argv: list[str] | None = None) -> int:
             device_id=args.device_id,
         )
         mode_label = "hardware"
+    elif args.mode == "virtual":
+        runtime, targets, runner, _stop_virtual = build_virtual_runtime(
+            args.inject_faults
+        )
+        mode_label = "virtual+faults" if args.inject_faults else "virtual"
     else:
         runtime, targets, runner = build_simulator_runtime()
         mode_label = "simulator"
@@ -321,12 +451,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[llm] 未接入本地模型，问答只用模板：{llm_detail}")
 
     _start_runner_thread(
-        runtime, runner, logging_answer_sink(question_log, assistant_sink(app))
+        runtime,
+        runner,
+        logging_answer_sink(question_log, assistant_sink(app)),
+        assistant_detail_sink(app),
     )
 
+    web_mounted = not args.no_web and mount_web_console(app)
+
     print(f"[gateway] mode={mode_label}")
-    if mode_label == "simulator":
+    if mode_label != "hardware":
         print("[gateway] NOTE: data is software-simulated, NOT from a real STM32.")
+    if web_mounted:
+        print(f"[gateway] web console at http://{args.host}:{args.port}/web/")
     print(f"[gateway] listening on http://{args.host}:{args.port}")
     print(f"[gateway] websocket at   ws://{args.host}:{args.port}/ws")
 

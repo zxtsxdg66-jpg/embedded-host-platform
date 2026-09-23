@@ -155,6 +155,21 @@ python scripts/run_all.py                     # 模拟模式，不需要硬件
 
 数据只被解码一次、发布一次，再扇出给界面与手机，所以这种方式**不比单开一个慢**。实现与线程模型见 `scripts/run_all.py` 的模块 docstring 与 `docs/05_Test/Project_Status_Context.md` 第 4 节"单串口双消费方"。
 
+## 没有板子也没有虚拟串口驱动：`--mode virtual`（2026-09-23）
+
+```bash
+python scripts/run_api_server.py --mode virtual                  # 虚拟 STM32，规规矩矩地发帧
+python scripts/run_api_server.py --mode virtual --inject-faults  # 故意拆帧、并帧、插杂散字节、翻转 CRC 比特
+```
+
+进程内起一个虚拟 STM32（`scripts/virtual_stm32.py` 的 `VirtualStm32`），经 `communication/pipe.py` 的字节管道接到**与硬件模式相同的** `RemoteDevice` + `HardwareDeviceReceiver` + `HardwareRuntimeRunner`。管道没有消息边界，所以拼帧、重同步、CRC 校验这条真实接收链路全部在跑，而不像 Simulator 模式那样绕开它。采集周期 3 s，与真实固件一致；设备 id 为 `virtual-stm32`。
+
+`--inject-faults` 下虚拟设备按固定概率制造四种故障（拆帧 25%、并帧 30%、杂散字节 10%、翻转 CRC 3%）。前三种是真实 UART 会对字节流做的事，主机应当静默吸收；第四种必须被 CRC 判出并计数。打开 Web 控制台的"串口链路"页可以逐条看到。
+
+## 浏览器控制台：`/web/`（2026-09-23）
+
+`run_api_server.py` 与 `run_all.py` 都把顶级目录 `web/` 挂在网关的 `/web/` 下，启动后浏览器打开 `http://127.0.0.1:8000/web/`（同一局域网内的其它设备把 IP 换成本机的）。`run_api_server.py --no-web` 可关闭。直接双击 `web/index.html` 也能打开：连不上网关时自动进入回放真实实测数据。详见 [`web/README.md`](../../web/README.md)。
+
 ## COM 口如何配置
 
 1. **确认真实串口号**：在 Windows 的"设备管理器 → 端口 (COM 和 LPT)"中查看 MCU/USB 转串口芯片被系统分配的端口号（如 `COM3`），或使用 `python -m serial.tools.list_ports`（`pyserial` 自带命令行工具）列出当前系统所有可用串口

@@ -19,16 +19,24 @@ a field, and nothing in src/ui/, src/service/, or src/api/ changed.
 
 from __future__ import annotations
 
+import dataclasses
+from enum import Enum
 from typing import Any
 
+from application.link_monitor import LinkEvent, LinkStatistics
 from gateway.channel_units import channel_unit
+from service.assistant.models import Answer, Facts
 from service.data_models import DataPoint
 from service.sensor_data_processor import ChannelStatistics, ThresholdStatus
+from service.ventilation_controller import FanDecision, VentilationSettings
 
 MESSAGE_TYPE_DATA = "data"
 MESSAGE_TYPE_ALARM_STATUS = "alarm_status"
 MESSAGE_TYPE_STATISTICS = "statistics"
 MESSAGE_TYPE_ASSISTANT = "assistant"
+MESSAGE_TYPE_FAN_DECISION = "fan_decision"
+MESSAGE_TYPE_ASSISTANT_DETAIL = "assistant_detail"
+MESSAGE_TYPE_LINK_EVENT = "link_event"
 
 
 def isoformat_or_none(value: Any) -> str | None:
@@ -109,3 +117,144 @@ def statistics_message(
         "average": statistics.average,
         "sample_count": statistics.sample_count,
     }
+
+
+def fan_decision_message(decision: FanDecision) -> dict[str, Any]:
+    """Serialize one FanDecision into a ``type: "fan_decision"`` message.
+
+    ``reason`` is presentation text by the controller's own contract (see
+    FanDecision's docstring): clients may show it but must not parse it.
+    """
+    return {
+        "type": MESSAGE_TYPE_FAN_DECISION,
+        "should_run": decision.should_run,
+        "mode": decision.mode.name,
+        "reason": decision.reason,
+    }
+
+
+def ventilation_payload(
+    settings: VentilationSettings, decision: FanDecision | None
+) -> dict[str, Any]:
+    """Body of GET /ventilation: current settings plus the latest decision.
+
+    ``decision`` is None until the first reading has been evaluated -- a
+    freshly started server has settings but has not decided anything yet,
+    and saying so is more honest than inventing an initial state.
+    """
+    return {
+        "temperature_max": settings.temperature_max,
+        "humidity_max": settings.humidity_max,
+        "mode": settings.mode.name,
+        "decision": None
+        if decision is None
+        else {
+            "should_run": decision.should_run,
+            "mode": decision.mode.name,
+            "reason": decision.reason,
+        },
+    }
+
+
+def _plain(value: Any) -> Any:
+    """JSON-ready form of a Facts field: enums by name, tuples as lists."""
+    if isinstance(value, Enum):
+        return value.name
+    if isinstance(value, tuple | list):
+        return [_plain(v) for v in value]
+    return value
+
+
+def facts_payload(facts: Facts | None) -> dict[str, Any] | None:
+    """Every populated field of a Facts object, generically.
+
+    Iterates the dataclass fields rather than naming them, so a field added
+    to Facts later reaches the web console without a change here. Empty
+    values (None, "") are dropped: Facts carries fields for every kind of
+    question, and most are unset for any one of them.
+    """
+    if facts is None:
+        return None
+    out: dict[str, Any] = {}
+    for field in dataclasses.fields(facts):
+        value = getattr(facts, field.name)
+        if value is None or value == "":
+            continue
+        out[field.name] = _plain(value)
+    return out
+
+
+def answer_detail(answer: Answer) -> dict[str, Any]:
+    """How an answer came about: the recognised intent, the facts it was
+    built from, and every model rewording with the exit checks' verdict.
+
+    Added 2026-09-23 for the web console's trace view
+    (docs/02_Architecture/Web_Console_Design.md section 6). Additive: the
+    Android client reads ``text``/``source`` and ignores the rest.
+    """
+    intent = answer.intent
+    return {
+        "intent": None
+        if intent is None
+        else {"kind": intent.kind.name, "channel": intent.channel},
+        "facts": facts_payload(answer.facts),
+        "trace": [
+            {
+                "template": attempt.template,
+                "reply": attempt.reply,
+                "verdict": attempt.verdict.value,
+                "retry": attempt.retry,
+            }
+            for attempt in answer.trace
+        ],
+    }
+
+
+def assistant_detail_message(answer: Answer) -> dict[str, Any]:
+    """A late answer with its trace, as a ``type: "assistant_detail"`` message.
+
+    Sent alongside the plain ``assistant`` message, not instead of it: the
+    phone keeps reading the message it always read.
+    """
+    return {
+        "type": MESSAGE_TYPE_ASSISTANT_DETAIL,
+        "text": answer.text,
+        "source": answer.source.value,
+        **answer_detail(answer),
+    }
+
+
+def link_event_message(event: LinkEvent) -> dict[str, Any]:
+    """One frame or link anomaly as a ``type: "link_event"`` message.
+
+    ``raw`` is sent as spaced hex ("AA 55 01 ...") because that is how a
+    person reads a frame, and it is what the inspector displays; a client
+    that wants bytes can split it.
+    """
+    return {
+        "type": MESSAGE_TYPE_LINK_EVENT,
+        "kind": event.kind,
+        "timestamp": isoformat_or_none(event.timestamp),
+        "raw": event.raw.hex(" ").upper(),
+        "length": len(event.raw),
+        "device_id": event.device_id,
+        "command_type": event.command_type,
+        "payload": event.payload,
+        "detail": event.detail,
+    }
+
+
+def link_statistics_payload(stats: LinkStatistics) -> dict[str, Any]:
+    """Body of GET /link/statistics."""
+    return {
+        "active": stats.active,
+        "bytes_received": stats.bytes_received,
+        "frames": stats.frames,
+        "resyncs": stats.resyncs,
+        "checksum_errors": stats.checksum_errors,
+        "decode_errors": stats.decode_errors,
+        "ignored": stats.ignored,
+        "payload_errors": stats.payload_errors,
+        "last_frame_at": isoformat_or_none(stats.last_frame_at),
+    }
+

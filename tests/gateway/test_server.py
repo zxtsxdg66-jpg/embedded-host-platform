@@ -19,7 +19,7 @@ from application.simulator_runner import SimulatorRuntimeRunner
 from communication.loopback import LoopbackChannel
 from device.sensors.channels import TEMPERATURE_CHANNEL
 from device.sensors.temperature import TemperatureSensorSimulator
-from gateway.server import assistant_sink, create_app
+from gateway.server import assistant_detail_sink, assistant_sink, create_app
 
 DEVICE_ID = "sim-temp"
 
@@ -234,7 +234,9 @@ def test_websocket_receives_published_data_point(
         runner = SimulatorRuntimeRunner(runtime, [(DEVICE_ID, TEMPERATURE_CHANNEL)])
         runner.run_once()
 
-        messages = [websocket.receive_json() for _ in range(3)]
+        # Four, not three, since 2026-09-23: a temperature reading also feeds
+        # the ventilation controller, whose decision now reaches the socket.
+        messages = [websocket.receive_json() for _ in range(4)]
 
     data_messages = [m for m in messages if m["type"] == "data"]
     assert len(data_messages) == 1
@@ -248,15 +250,16 @@ def test_websocket_receives_published_data_point(
 def test_websocket_receives_statistics_and_alarm_status(
     client: TestClient, runtime: ApplicationRuntime
 ) -> None:
-    """All three message types must reach the client from one data point:
-    the data itself, its statistics snapshot, and its threshold status."""
+    """Every message type a temperature reading causes must reach the
+    client: the data itself, its statistics snapshot, its threshold status,
+    and -- since 2026-09-23 -- the ventilation decision it fed."""
     with client.websocket_connect("/ws") as websocket:
         runner = SimulatorRuntimeRunner(runtime, [(DEVICE_ID, TEMPERATURE_CHANNEL)])
         runner.run_once()
 
-        types = {websocket.receive_json()["type"] for _ in range(3)}
+        types = {websocket.receive_json()["type"] for _ in range(4)}
 
-    assert types == {"data", "statistics", "alarm_status"}
+    assert types == {"data", "statistics", "alarm_status", "fan_decision"}
 
 
 def test_websocket_disconnect_is_clean(
@@ -388,3 +391,117 @@ def test_a_rejected_question_is_not_reported(
         client.post("/assistant/ask", json={"question": "   "})
 
     assert seen == []
+
+
+# -- ventilation (2026-09-23, web console) -----------------------------------
+
+
+def test_ventilation_reports_settings_before_any_decision(client: TestClient) -> None:
+    body = client.get("/ventilation").json()
+    assert body["mode"] == "AUTO"
+    assert body["temperature_max"] == 30.0
+    assert body["humidity_max"] == 80.0
+    assert body["decision"] is None
+
+
+def test_ventilation_includes_the_latest_decision(
+    client: TestClient, runtime: ApplicationRuntime
+) -> None:
+    SimulatorRuntimeRunner(runtime, [(DEVICE_ID, TEMPERATURE_CHANNEL)]).run_once()
+    decision = client.get("/ventilation").json()["decision"]
+    assert decision is not None
+    assert decision["mode"] == "AUTO"
+    assert isinstance(decision["should_run"], bool)
+    assert decision["reason"]
+
+
+def test_set_thresholds_changes_only_the_given_one(client: TestClient) -> None:
+    body = client.put("/ventilation/thresholds", json={"temperature_max": 26.5}).json()
+    assert body["temperature_max"] == 26.5
+    assert body["humidity_max"] == 80.0
+    assert client.get("/ventilation").json()["temperature_max"] == 26.5
+
+
+def test_set_thresholds_rejects_an_empty_request(client: TestClient) -> None:
+    assert client.put("/ventilation/thresholds", json={}).status_code == 400
+
+
+def test_set_mode_switches_to_manual(client: TestClient) -> None:
+    body = client.put("/ventilation/mode", json={"mode": "MANUAL_ON"}).json()
+    assert body["mode"] == "MANUAL_ON"
+
+
+def test_set_mode_rejects_an_unknown_name(client: TestClient) -> None:
+    response = client.put("/ventilation/mode", json={"mode": "TURBO"})
+    assert response.status_code == 400
+    assert "MANUAL_ON" in response.json()["detail"]
+
+
+def test_setting_change_reaches_websocket_as_a_fan_decision(client: TestClient) -> None:
+    """A settings change re-evaluates immediately (the controller's own
+    contract), so a watching client learns the new state without waiting
+    for the next reading."""
+    with client.websocket_connect("/ws") as websocket:
+        client.put("/ventilation/mode", json={"mode": "MANUAL_OFF"})
+        message = websocket.receive_json()
+    assert message["type"] == "fan_decision"
+    assert message["mode"] == "MANUAL_OFF"
+    assert message["should_run"] is False
+
+
+# -- answer detail (2026-09-23, web console trace view) -----------------------
+
+
+def test_ask_reply_carries_intent_and_facts(
+    client: TestClient, runtime: ApplicationRuntime
+) -> None:
+    SimulatorRuntimeRunner(runtime, [(DEVICE_ID, TEMPERATURE_CHANNEL)]).run_once()
+    body = client.post("/assistant/ask", json={"question": "现在温度多少"}).json()
+    assert body["intent"] == {
+        "kind": "CURRENT_VALUE", "channel": TEMPERATURE_CHANNEL
+    }
+    assert body["facts"]["kind"] == "CURRENT_VALUE"
+    assert isinstance(body["facts"]["value"], float)
+    assert body["trace"] == []  # no model in this fixture
+
+
+def test_facts_payload_drops_unset_fields(
+    client: TestClient, runtime: ApplicationRuntime
+) -> None:
+    SimulatorRuntimeRunner(runtime, [(DEVICE_ID, TEMPERATURE_CHANNEL)]).run_once()
+    reply = client.post("/assistant/ask", json={"question": "现在温度多少"})
+    facts = reply.json()["facts"]
+    assert None not in facts.values()
+    assert "" not in facts.values()
+
+
+def test_late_answer_detail_reaches_websocket_with_its_trace(
+    client: TestClient,
+) -> None:
+    from service.assistant.models import (
+        Answer,
+        AnswerSource,
+        CheckVerdict,
+        RephraseAttempt,
+    )
+
+    answer = Answer(
+        text="现在的温度是 24.8℃。",
+        source=AnswerSource.MODEL,
+        trace=(
+            RephraseAttempt(
+                "温度现在是 24.8℃。", "24.8℃，请注意保暖。", CheckVerdict.ADVICE
+            ),
+            RephraseAttempt(
+                "温度现在是 24.8℃。", "现在的温度是 24.8℃。",
+                CheckVerdict.ACCEPTED, retry=True,
+            ),
+        ),
+    )
+    with client.websocket_connect("/ws") as websocket:
+        assistant_detail_sink(client.app)(answer)  # type: ignore[arg-type]
+        message = websocket.receive_json()
+    assert message["type"] == "assistant_detail"
+    assert [a["verdict"] for a in message["trace"]] == ["advice", "accepted"]
+    assert message["trace"][1]["retry"] is True
+

@@ -15,6 +15,10 @@
 - `serial.py`：`SerialChannel` —— 基于 [pyserial](https://pyserial.readthedocs.io/) 的真实 UART/USB 串口实现，第一个非模拟的 `CommunicationChannel`
 - `exceptions.py` 新增：`SerialPortNotFoundError`（串口不存在）/ `SerialConnectionError`（连接失败）/ `SerialReadTimeoutError`（读取失败或超时）/ `SerialWriteError`（写入失败或超时）—— pyserial 自身的异常在本模块边界被统一转译，调用方无需 import `pyserial`
 
+已实现（2026-09-23，Web 控制台的 `virtual` 运行模式）：
+
+- `pipe.py`：`PipeChannel` 与 `make_pipe_pair() -> (host_end, device_end)`：两个背靠背的内存通道端，相当于一根不存在的零调制解调器线。**与 `LoopbackChannel` 的区别正是它存在的理由**：回环把每次 `send()` 原样作为一次 `receive()` 交回，保留了消息边界，而真实串口没有这个性质（论文第 5 章 5.3 节，这曾让四个缺陷在 Simulator 模式下藏住）；管道一端的 `receive()` 返回已到达的**全部**字节，不论分几次写入，所以帧会粘连，拆开写会出现半帧。线程安全（虚拟设备在自己的线程写，主机在驱动线程读）。与其它具体通道一样**只能在 `application` 或 `scripts` 中创建**。设计见 `docs/02_Architecture/Web_Console_Design.md` 第 5.1 节
+
 尚未实现（不在本次范围内）：
 
 - USB（作为独立通信方式，区别于 USB 转串口场景）、TCP-IP、蓝牙等其他真实通信方式（详见 `docs/03_Communication/Communication_Design.md`）

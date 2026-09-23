@@ -52,6 +52,7 @@ def test_main_window_can_be_shown_with_launcher_composition(qtbot) -> None:
     window.show()
 
     assert window.isVisible()
+    window.close()
 
 
 def test_launcher_registers_the_three_environmental_sensors(qtbot) -> None:
@@ -85,6 +86,18 @@ def test_simulator_runner_drives_data_into_the_ui(qtbot) -> None:
 
     assert window._data_panel.row_count() == 1
     assert float(window._data_panel._latest_table.item(0, 2).text()) > 0
+    # **必须收尾关窗**，不是礼貌而是防崩（2026-09-21 定位）。
+    # 一个 show() 过、且刚喂进数据的窗口，会留下一个尚未处理的 paint 事件；
+    # pytest-qt 在用例结束后先 _process_events()、随后销毁 addWidget 登记的
+    # 控件，那个 paint 便可能落在已开始析构的控件上，表现为
+    # `Windows fatal exception: access violation`，栈顶在
+    # `chart_widget._draw_grid` —— 整个 pytest 进程当场死掉，**没有失败用例、
+    # 没有统计行**，看起来像是随机的环境问题。
+    #
+    # 它对用例总数敏感：本文件之外随便再加四个用例（哪怕是 `assert True`）
+    # 就能稳定复现，所以它多年来一直擦着边过。三个 show() 过窗口的用例里
+    # 只有喂过数据的会崩——空图表那条 `_draw` 早早返回，画不到 _draw_grid。
+    window.close()
 
 
 def test_simulator_runner_targets_all_three_channels(qtbot) -> None:
@@ -184,6 +197,7 @@ def test_hardware_mode_data_reaches_the_ui_via_runner_run_once(qtbot) -> None:
     # 2026-09-18: 温度按两位小数显示（ui/channel_display.CHANNEL_DECIMALS），
     # 所以这里断言的是渲染后的文本；上链路送来的仍是 25.5 这个原值。
     assert window._data_panel._latest_table.item(0, 2).text() == "25.50"
+    window.close()  # 同上：喂过数据的窗口不关，teardown 时可能崩在 paint 里
 
 
 def test_hardware_mode_device_channels_are_watched_for_alarms(qtbot) -> None:

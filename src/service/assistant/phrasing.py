@@ -19,7 +19,13 @@ import re
 
 from device.sensors.channels import HUMIDITY_CHANNEL, TEMPERATURE_CHANNEL
 from service.assistant import control
-from service.assistant.models import AnswerSource, Facts, Intent, IntentKind
+from service.assistant.models import (
+    AnswerSource,
+    CheckVerdict,
+    Facts,
+    Intent,
+    IntentKind,
+)
 
 _FAN_MODE_LABELS = {
     "AUTO": "自动",
@@ -53,9 +59,23 @@ its own invites a second attempt at rephrasing the same request. Naming
 the three places, and what the button actually does, answers the question
 behind the question."""
 
-CLOUD_SYNC_NONE_TEXT = "归档都已经传上去了，没有待传的时段。"
-"""都传完时的回话。说清楚"没有待传"而不是沉默——用户问了，
-"没事可做"本身就是答案，而且它顺带确认了上传这件事确实发生过。"""
+CLOUD_SYNC_NONE_TEXT = (
+    "已经结束的时段都传上去了。当前这一小时还没结束，要归档得等到整点——"
+    "想把到现在为止的读数先传一份，点下面的按钮。"
+)
+"""都传完时的回话。
+
+原来只说"没有待传的时段"（2026-09-18 到 09-21）。那句话是准确的，
+但它是**一条死路**：用户问"现在的数据能传吗"，得到"没什么要传的"，
+而当前这一小时确实还有读数没上去——只是归档按整点切，它还不算"待传"。
+2026-09-21 起按钮背后接了快照（``--snapshot``），于是这一档有事可做了，
+话就得跟着改：说清"已结束的都传了"与"当前这一小时另说"是两件事。
+
+不含数字，因此"当前这一小时有多少条"这个数**刻意不说**——那要查历史库，
+而"不让问答去查历史"是这套设计明确划下的界
+（``docs/02_Architecture/History_And_Cloud_Design.md`` 第 2 节）。
+说得出来的只有"还没结束"，那不是数，永远为真。
+"""
 
 CLOUD_SYNC_UNKNOWN_TEXT = (
     "我查不到还有多少没传。归档台账没接上或者打不开，"
@@ -75,8 +95,17 @@ def cloud_sync_text(pending: int) -> str:
     这一句**可以交模型改写**，与两条拒绝句不同：它带数字，接地校验因此
     真的能管住它（``pending`` 已登记进 ``Facts.pending_uploads``），
     而拒绝句不带数字，校验对它们无从下手。
+
+    2026-09-21 起把"连同当前这一小时"写进句子里，因为按钮从这天起带
+    ``--snapshot``：它除了补齐这 N 个已结束的时段，还会截一份当前时段的
+    快照。**按钮做什么，话就得说什么**——这一条与当初给它加按钮时定的
+    同一个道理，一句话与一个控件对不上比不给控件更糟。当前这一小时有
+    多少条读数**不说**：那要查历史库，界已经划在那里了。
     """
-    return f"有 {pending} 个时段还没上传。要现在传的话，点下面的按钮。"
+    return (
+        f"有 {pending} 个时段还没上传。点下面的按钮，"
+        f"会把这 {pending} 个时段连同当前这一小时到现在为止的读数一起传上去。"
+    )
 
 
 CLOUD_VIEW_TEXT = (
@@ -604,22 +633,40 @@ def choose(
     the facts did not support ("目前该区域已恢复正常" on a reading well
     inside its limits).
     """
+    text, source, _ = judge(template_text, model_text, facts, expanded=expanded)
+    return text, source
+
+
+def judge(
+    template_text: str,
+    model_text: str | None,
+    facts: Facts | None,
+    expanded: bool = False,
+) -> tuple[str, AnswerSource, CheckVerdict]:
+    """:func:`choose`, plus which check decided.
+
+    Split out 2026-09-23 so a caller can show *why* a rewording was used or
+    refused. The checks, their order and their outcomes are exactly those
+    :func:`choose` always applied -- ``choose`` is now this function with
+    the verdict dropped, and a test compares the two on every case the
+    phrasing tests exercise.
+    """
     if model_text is None:
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.NO_REPLY
     candidate = model_text.strip()
     if len(candidate) < 2:
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.TOO_SHORT
     if not numbers_are_grounded(candidate, facts):
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.UNGROUNDED_NUMBER
     if _claims_an_alarm(candidate, facts):
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.UNSUPPORTED_ALARM
     if _adds_an_unsupported_judgement(template_text, candidate, facts):
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.UNSUPPORTED_JUDGEMENT
     if _gives_advice(candidate) and not _gives_advice(template_text):
-        return template_text, AnswerSource.TEMPLATE
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.ADVICE
     if not expanded and _is_padded(template_text, candidate):
-        return template_text, AnswerSource.TEMPLATE
-    return candidate, AnswerSource.MODEL
+        return template_text, AnswerSource.TEMPLATE, CheckVerdict.TOO_LONG
+    return candidate, AnswerSource.MODEL, CheckVerdict.ACCEPTED
 
 
 def facts_brief(facts: Facts) -> str:

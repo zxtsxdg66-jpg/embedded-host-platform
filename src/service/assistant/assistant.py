@@ -34,7 +34,14 @@ from service.assistant import intent as intent_rules
 from service.assistant.control import ControlExecutor
 from service.assistant.export_status_port import ExportStatus
 from service.assistant.llm_port import LlmClient, NullLlmClient
-from service.assistant.models import Answer, AnswerSource, Facts, Intent, IntentKind
+from service.assistant.models import (
+    Answer,
+    AnswerSource,
+    Facts,
+    Intent,
+    IntentKind,
+    RephraseAttempt,
+)
 from service.assistant.retrieval import DeviceLister, FactRetriever
 from service.sensor_data_processor import SensorDataProcessor
 from service.ventilation_controller import VentilationController
@@ -285,6 +292,9 @@ class Assistant:
         """Whether the job in flight is the explain one, whose output is
         exempt from the length cap."""
         self._retry_used: bool = False
+        # Every rewording behind the answer being prepared, refused ones
+        # included; handed out as Answer.trace. Read-only record (2026-09-23).
+        self._pending_attempts: list[RephraseAttempt] = []
         """Whether this question has already had its one retry."""
         self._pending_placeholder: bool = False
         """Whether what ``ask`` returned was :data:`phrasing.THINKING_TEXT`.
@@ -992,6 +1002,7 @@ class Assistant:
         self._pending_placeholder = False
         self._pending_expanded = False
         self._retry_used = False
+        self._pending_attempts = []
 
     def poll_rephrasing(self) -> Answer | None:
         """Collect a finished model result, if one is ready.
@@ -1042,12 +1053,20 @@ class Assistant:
         attempt. The caller already handles None on every cycle, so the
         retry costs it nothing.
         """
-        text, source = phrasing.choose(
+        text, source, verdict = phrasing.judge(
             self._pending_template,
             self._pending_reply,
             self._pending_facts,
             expanded=self._pending_expanded,
         )
+        # Recorded before the retry decision, so a refused first attempt is
+        # kept even when the retry is what finally answers.
+        self._pending_attempts.append(RephraseAttempt(
+            template=self._pending_template,
+            reply=self._pending_reply,
+            verdict=verdict,
+            retry=self._retry_used,
+        ))
         if (
             source is AnswerSource.TEMPLATE
             and not self._retry_used
@@ -1060,6 +1079,7 @@ class Assistant:
             source=source,
             intent=self._pending_intent,
             facts=self._pending_facts,
+            trace=tuple(self._pending_attempts),
         )
         self._discard_pending()
         return answer

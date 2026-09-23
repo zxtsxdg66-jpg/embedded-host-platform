@@ -357,10 +357,15 @@ def test_the_view_tag_and_the_panel_agree() -> None:
     assert set(OFFER_TAGS.values()) <= set(_ACTION_LABELS)
 
 
-def test_only_a_positive_pending_count_offers_the_button() -> None:
-    """0 与 None 都不给按钮，各有各的理由：0 是"都传完了"，
-    给了按钮等于说还有事可做；None 是"台账读不到"，
-    而那句答话让用户自己去双击 bat——按钮会跟紧挨着的这句话打架。"""
+def test_an_unreadable_ledger_offers_no_button_but_zero_pending_does() -> None:
+    """None 不给按钮：那句答话让用户自己去双击 bat，按钮会跟紧挨着的
+    这句话打架。
+
+    **0 给按钮**（2026-09-21 改）。它原来也不给，理由是"都传完了、
+    按钮背后没事可做"——那个理由随按钮带上 ``--snapshot`` 一起失效了：
+    0 说的是"已结束的小时都传完了"，而当前这一小时按定义永远不会被归档，
+    所以仍有东西可传。不改的话，**最常见的演示状态**（历史都传完、
+    数据正在进来）恰好是唯一没法上传的状态。"""
     from service.assistant.models import (
         Answer,
         AnswerSource,
@@ -379,7 +384,7 @@ def test_only_a_positive_pending_count_offers_the_button() -> None:
         )
 
     assert _offer_tag(answer(12)) == "cloud_sync"
-    assert _offer_tag(answer(0)) == ""
+    assert _offer_tag(answer(0)) == "cloud_sync"
     assert _offer_tag(answer(None)) == ""
 
 

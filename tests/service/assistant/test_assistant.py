@@ -1363,3 +1363,65 @@ def test_a_question_sharing_the_sentence_with_a_delete_request_is_dropped() -> N
 
     assert answer.text == phrasing.DELETE_REFUSAL_TEXT
     assert "76.3" not in answer.text
+
+
+# -- Answer.trace: a read-only record of every rewording (2026-09-23) -------
+
+
+def test_the_trace_keeps_a_refused_attempt_and_the_retry_that_answered() -> None:
+    """The web console shows what the exit checks stopped. The refused first
+    attempt must survive into the answer the retry produced -- otherwise the
+    one interception worth showing is exactly the one that disappears."""
+    from service.assistant.models import CheckVerdict
+
+    llm = _ScriptedLlm("噪声 76.3dB。请注意保持安静。", then="现在的噪声是 76.3dB。")
+    assistant, _ = _assistant(llm)
+    assistant.ask("现在噪声多少")
+    answer = _drain(assistant)
+
+    assert isinstance(answer, Answer)
+    first, second = answer.trace
+    assert first.reply == "噪声 76.3dB。请注意保持安静。"
+    assert first.verdict is not CheckVerdict.ACCEPTED
+    assert first.retry is False
+    assert second.reply == "现在的噪声是 76.3dB。"
+    assert second.verdict is CheckVerdict.ACCEPTED
+    assert second.retry is True
+    assert first.template == second.template
+
+
+def test_the_trace_of_a_twice_refused_rewording_explains_the_template() -> None:
+    llm = _ScriptedLlm(
+        "噪声 76.3dB。请注意保持安静。", then="噪声 76.3dB。也请注意休息。"
+    )
+    assistant, _ = _assistant(llm)
+    assistant.ask("现在噪声多少")
+    answer = _drain(assistant)
+
+    assert isinstance(answer, Answer)
+    assert answer.source is AnswerSource.TEMPLATE
+    assert len(answer.trace) == 2
+    assert all(a.verdict.value != "accepted" for a in answer.trace)
+
+
+def test_an_answer_without_a_model_has_an_empty_trace() -> None:
+    assistant, _ = _assistant()
+    assert assistant.ask("现在噪声多少").trace == ()
+
+
+def test_a_new_question_does_not_inherit_the_previous_trace() -> None:
+    """Pending state is discarded per question; the trace must be too, or a
+    rewording refused for one question would be shown under the next."""
+    llm = _ScriptedLlm("噪声 76.3dB。请注意保持安静。", then="现在的噪声是 76.3dB。")
+    assistant, _ = _assistant(llm)
+    assistant.ask("现在噪声多少")
+    assistant.ask("现在噪声多少")  # abandons the first before any poll
+    answer = _drain(assistant)
+    assert isinstance(answer, Answer)
+    # The second question's first attempt already gets the good reply
+    # (the scripted client switches after one submit), so exactly one
+    # attempt -- nothing carried over from the abandoned question.
+    (only,) = answer.trace
+    assert only.reply == "现在的噪声是 76.3dB。"
+    assert only.retry is False
+

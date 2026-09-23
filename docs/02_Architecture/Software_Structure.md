@@ -96,7 +96,8 @@ project_root/
 ├── scripts/                启动入口与验证工具（组合根，非示例代码）
 ├── tests/                  测试代码，结构与 src/ 一一对应，另加 integration/ 与 scripts/
 ├── firmware/stm32f407/     STM32F407 固件（Keil MDK 工程，独立工具链，不共用构建/测试流程）
-└── android/                Android 客户端（Kotlin + Gradle 工程，独立工具链）
+├── android/                Android 客户端（Kotlin + Gradle 工程，独立工具链）
+└── web/                    Web 控制台（原生 JS，网关的客户端，2026-09-23 设立，见 Web_Console_Design.md）
 ```
 
 ### `src/` 下的 10 个包
@@ -106,8 +107,8 @@ project_root/
 | 包 | 对应架构层 | 职责 |
 | --- | --- | --- |
 > **顶级目录（不属于 `src/`，各自独立的工具链）**：`firmware/stm32f407/`（Keil MDK + HAL）、
-> `android/`（Gradle + Kotlin）、`training/`（本地模型训练，2026-09-18 设立）。
-> 三者都不进 `pytest` 与 `mypy src` 的范围，依赖也不写进 `pyproject.toml`；
+> `android/`（Gradle + Kotlin）、`training/`（本地模型训练，2026-09-18 设立）、`web/`（Web 控制台，2026-09-23 设立）。
+> 四者都不进 `pytest` 与 `mypy src` 的范围，依赖也不写进 `pyproject.toml`；
 > **`src/` 与它们互不 import**。训练与平台的交接面是 Ollama 的模型名，不是 Python 符号，
 > 因此训练怎么改动都伤不到已稳定的运行期代码。约定见 `training/README.md`。
 

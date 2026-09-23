@@ -51,12 +51,14 @@ from __future__ import annotations
 
 import json
 
+from application import link_monitor as link
 from application.frame_stream import FrameStreamBuffer
+from application.link_monitor import LinkMonitor
 from application.manager import DATA_REPORT_CODE
 from communication.interface import CommunicationChannel
 from core.models import ChannelId, DeviceId
 from protocol.decoder import decode
-from protocol.exceptions import ProtocolError
+from protocol.exceptions import ChecksumError, ProtocolError
 from service.data_models import DataPoint
 from service.data_service import DataService
 
@@ -71,6 +73,10 @@ class HardwareDeviceReceiver:
     to carry (the Hardware-mode counterpart to DeviceManager's
     auto-assigned wire ids for Simulator mode) -- it must match whatever
     the connected MCU firmware was configured to send.
+
+    ``monitor`` (optional, added 2026-09-23) is told about every frame and
+    every anomaly, for the web console's protocol inspector. It only
+    listens: without one, this class behaves exactly as it always did.
     """
 
     def __init__(
@@ -79,6 +85,7 @@ class HardwareDeviceReceiver:
         wire_id: int,
         channel: CommunicationChannel,
         data_service: DataService,
+        monitor: LinkMonitor | None = None,
     ) -> None:
         self._device_id = device_id
         self._wire_id = wire_id
@@ -87,9 +94,14 @@ class HardwareDeviceReceiver:
         self.error_count = 0
         self.ignored_frame_count = 0
         self._stream = FrameStreamBuffer(on_discard=self._count_discard)
+        self._monitor = monitor
+        if monitor is not None:
+            monitor.attach()
 
     def _count_discard(self) -> None:
         self.error_count += 1
+        if self._monitor is not None:
+            self._monitor.event(link.RESYNC)
 
     @property
     def device_id(self) -> DeviceId:
@@ -150,28 +162,50 @@ class HardwareDeviceReceiver:
 
         raw = self._channel.receive()
         if raw:
+            if self._monitor is not None:
+                self._monitor.record_bytes(len(raw))
             self._stream.feed(raw)
         return self._stream.extract_frame()
 
     def _process_frame(self, raw: bytes) -> DataPoint | None:
+        monitor = self._monitor
         try:
             frame = decode(raw)
-        except ProtocolError:
+        except ProtocolError as exc:
             self.error_count += 1
+            if monitor is not None:
+                kind = (
+                    link.CHECKSUM_ERROR
+                    if isinstance(exc, ChecksumError)
+                    else link.DECODE_ERROR
+                )
+                monitor.event(kind, raw=raw, detail=str(exc))
             return None
 
+        text = frame.payload.decode("utf-8", errors="replace")
         if frame.device_id != self._wire_id or frame.command_type != DATA_REPORT_CODE:
             self.ignored_frame_count += 1
+            if monitor is not None:
+                monitor.event(link.IGNORED, raw=raw, device_id=frame.device_id,
+                              command_type=frame.command_type, payload=text)
             return None
 
         try:
             body = json.loads(frame.payload.decode("utf-8"))
             channel_id: ChannelId = body["channel"]
             value = body["value"]
-        except (ValueError, KeyError):
+        except (ValueError, KeyError) as exc:
             self.error_count += 1
+            if monitor is not None:
+                monitor.event(
+                    link.PAYLOAD_ERROR, raw=raw, device_id=frame.device_id,
+                    command_type=frame.command_type, payload=text, detail=str(exc),
+                )
             return None
 
         point = DataPoint(device_id=self._device_id, channel=channel_id, value=value)
+        if monitor is not None:
+            monitor.event(link.FRAME, raw=raw, device_id=frame.device_id,
+                          command_type=frame.command_type, payload=text)
         self._data_service.publish(point)
         return point

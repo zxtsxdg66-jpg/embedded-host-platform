@@ -56,14 +56,35 @@ Usage
 
 See docs/05_Test/Virtual_STM32_Test.md for how to pair this with
 ``scripts/run_gui.py --mode hardware`` using a virtual COM port pair.
+
+In-process use (2026-09-23)
+---------------------------
+The loop now lives in :class:`VirtualStm32`, which talks to any
+``CommunicationChannel`` -- a real serial port as before, or the device end
+of ``communication.pipe.make_pipe_pair()``. ``scripts/run_api_server.py
+--mode virtual`` uses the latter, so the host's real receive chain runs
+without a board *or* a virtual COM driver
+(docs/02_Architecture/Web_Console_Design.md section 5.1).
+
+It can also misbehave on purpose (:class:`FaultPlan`): split a frame
+across writes, glue a cycle's frames into one write, put stray bytes
+between frames, flip a bit in a CRC. The first three are what a real UART
+does to a byte stream and must be absorbed silently by the host's frame
+sync; the fourth must be caught by the CRC and counted. Watching that
+happen live is what the web console's protocol inspector is for. The
+device side still imports nothing from ``application``: it agrees with the
+host only through the protocol specification, as real firmware would.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import random
 import sys
+import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 # Allow running this script directly without first requiring
@@ -72,6 +93,7 @@ _SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
+from communication.interface import CommunicationChannel  # noqa: E402
 from communication.serial import SerialChannel  # noqa: E402
 from device.sensors.channels import (  # noqa: E402
     HUMIDITY_CHANNEL,
@@ -161,10 +183,12 @@ def _extract_frame(buffer: bytearray) -> bytes | None:
 
 
 def _drain_and_ack_commands(
-    channel: SerialChannel,
+    channel: CommunicationChannel,
     device_id: int,
     buffer: bytearray,
     listen_seconds: float,
+    stop: threading.Event | None = None,
+    verbose: bool = True,
 ) -> None:
     """Spend ``listen_seconds`` listening for command frames addressed to
     ``device_id`` and acknowledging every one of them with a
@@ -176,7 +200,7 @@ def _drain_and_ack_commands(
     accept/reject in its own firmware.
     """
     elapsed = 0.0
-    while elapsed < listen_seconds:
+    while elapsed < listen_seconds and not (stop is not None and stop.is_set()):
         raw = channel.receive()
         if raw:
             buffer.extend(raw)
@@ -200,9 +224,134 @@ def _drain_and_ack_commands(
                 payload=ack_payload,
             )
             channel.send(encode(ack))
-            print(f"[virtual-stm32] acked command_type={frame.command_type}")
+            if verbose:
+                print(f"[virtual-stm32] acked command_type={frame.command_type}")
         time.sleep(_COMMAND_POLL_CHUNK_SECONDS)
         elapsed += _COMMAND_POLL_CHUNK_SECONDS
+
+
+@dataclass(frozen=True)
+class FaultPlan:
+    """How often each kind of misbehaviour happens, as probabilities.
+
+    ``garbage`` bytes never include 0xAA, the first header byte, so each
+    injection costs the host exactly one resync -- a stray byte that
+    happened to start a false header would add a decode error on top,
+    which is realistic but makes the counters harder to read in a demo.
+    """
+
+    split: float = 0.0
+    """A frame is written in two pieces with a short pause between."""
+    merge: float = 0.0
+    """A whole cycle's frames go out in a single write."""
+    garbage: float = 0.0
+    """1-6 stray bytes precede a frame."""
+    bitflip: float = 0.0
+    """One bit of a frame's CRC is flipped, so the host must reject it."""
+
+
+DEFAULT_FAULTS = FaultPlan(split=0.25, merge=0.3, garbage=0.1, bitflip=0.03)
+"""What ``--inject-faults`` uses: enough of each to see within a minute."""
+
+_SPLIT_PAUSE_SECONDS = 0.05
+
+
+class VirtualStm32:
+    """The device side of the link: reports three channels, acks commands.
+
+    ``channel`` must already be connected. :meth:`run` loops until
+    ``stop`` is set, so it can live on a thread in-process or on the main
+    thread of the command-line script.
+    """
+
+    def __init__(
+        self,
+        channel: CommunicationChannel,
+        device_id: int = DEFAULT_DEVICE_ID,
+        interval_seconds: float = DEFAULT_INTERVAL_SECONDS,
+        faults: FaultPlan | None = None,
+        seed: int | None = None,
+        verbose: bool = True,
+    ) -> None:
+        self._channel = channel
+        self._device_id = device_id
+        self._interval = interval_seconds
+        self._faults = faults or FaultPlan()
+        self._rng = random.Random(seed)
+        self._verbose = verbose
+        # With a seed the readings are seeded too, so a whole session is
+        # reproducible: split points depend on frame lengths, which depend on
+        # the values' digits -- an unseeded sensor made every run differ.
+        def sensor_rng(offset: int) -> random.Random | None:
+            return None if seed is None else random.Random(seed + offset)
+
+        self._sensors = (
+            (TemperatureSensorSimulator(rng=sensor_rng(1)), TEMPERATURE_CHANNEL),
+            (HumiditySensorSimulator(rng=sensor_rng(2)), HUMIDITY_CHANNEL),
+            (NoiseSensorSimulator(rng=sensor_rng(3)), NOISE_CHANNEL),
+        )
+        self._command_buffer = bytearray()
+        self.injected: dict[str, int] = {
+            "split": 0, "merge": 0, "garbage": 0, "bitflip": 0,
+        }
+        """How many of each fault were actually injected -- what the host's
+        counters should be checked against."""
+
+    def _chance(self, rate: float) -> bool:
+        return rate > 0 and self._rng.random() < rate
+
+    def _garbage(self) -> bytes:
+        pool = [b for b in range(256) if b != HEADER[0]]
+        return bytes(self._rng.choice(pool) for _ in range(self._rng.randint(1, 6)))
+
+    def _prepare(self, frame: bytes) -> bytes:
+        """Apply the per-frame faults: a flipped CRC bit, stray bytes before it."""
+        if self._chance(self._faults.bitflip):
+            buf = bytearray(frame)
+            buf[-1 - self._rng.randrange(CRC_SIZE)] ^= 1 << self._rng.randrange(8)
+            frame = bytes(buf)
+            self.injected["bitflip"] += 1
+        if self._chance(self._faults.garbage):
+            frame = self._garbage() + frame
+            self.injected["garbage"] += 1
+        return frame
+
+    def _write(self, data: bytes) -> None:
+        if len(data) > 2 and self._chance(self._faults.split):
+            cut = self._rng.randrange(1, len(data))
+            self._channel.send(data[:cut])
+            time.sleep(_SPLIT_PAUSE_SECONDS)
+            self._channel.send(data[cut:])
+            self.injected["split"] += 1
+        else:
+            self._channel.send(data)
+
+    def cycle(self) -> None:
+        """Send one report per channel, faults applied."""
+        frames = []
+        for sensor, channel_id in self._sensors:
+            # Two decimals, as the real firmware reports -- full floats made the
+            # frames longer than any board would send them.
+            value = round(sensor.generate(channel_id).value, 2)
+            frame = build_frame(self._device_id, channel_id, value)
+            frames.append(self._prepare(frame))
+            if self._verbose:
+                print(f"[virtual-stm32] sent {channel_id}={value:.2f}")
+        if self._chance(self._faults.merge):
+            self.injected["merge"] += 1
+            self._write(b"".join(frames))
+        else:
+            for frame in frames:
+                self._write(frame)
+
+    def run(self, stop: threading.Event | None = None) -> None:
+        """Report, then listen for commands for one interval; repeat."""
+        while not (stop is not None and stop.is_set()):
+            self.cycle()
+            _drain_and_ack_commands(
+                self._channel, self._device_id, self._command_buffer,
+                self._interval, stop=stop, verbose=self._verbose,
+            )
 
 
 def run(
@@ -210,6 +359,7 @@ def run(
     device_id: int = DEFAULT_DEVICE_ID,
     baudrate: int = DEFAULT_BAUDRATE,
     interval_seconds: float = DEFAULT_INTERVAL_SECONDS,
+    faults: FaultPlan | None = None,
 ) -> None:
     """Connect to ``port`` and send temperature/humidity/noise
     DATA_REPORT frames on a loop until interrupted (Ctrl+C)."""
@@ -220,28 +370,11 @@ def run(
         f"device_id={device_id}, interval={interval_seconds}s "
         "(Ctrl+C to stop)"
     )
-
-    temperature = TemperatureSensorSimulator()
-    humidity = HumiditySensorSimulator()
-    noise = NoiseSensorSimulator()
-    channels = (
-        (temperature, TEMPERATURE_CHANNEL),
-        (humidity, HUMIDITY_CHANNEL),
-        (noise, NOISE_CHANNEL),
-    )
-    command_buffer = bytearray()
-
+    device = VirtualStm32(channel, device_id, interval_seconds, faults=faults)
     try:
-        while True:
-            for sensor, channel_id in channels:
-                value = sensor.generate(channel_id).value
-                channel.send(build_frame(device_id, channel_id, value))
-                print(f"[virtual-stm32] sent {channel_id}={value:.2f}")
-            _drain_and_ack_commands(
-                channel, device_id, command_buffer, interval_seconds
-            )
+        device.run()
     except KeyboardInterrupt:
-        print("\n[virtual-stm32] stopping")
+        print(f"\n[virtual-stm32] stopping; injected {device.injected}")
     finally:
         channel.disconnect()
 
@@ -273,6 +406,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=DEFAULT_INTERVAL_SECONDS,
         help=f"seconds between report cycles (default: {DEFAULT_INTERVAL_SECONDS})",
     )
+    parser.add_argument(
+        "--inject-faults",
+        action="store_true",
+        help="split/merge frames, add stray bytes and flip CRC bits (see FaultPlan)",
+    )
     return parser.parse_args(argv)
 
 
@@ -283,6 +421,7 @@ def main() -> int:
         device_id=args.device_id,
         baudrate=args.baudrate,
         interval_seconds=args.interval,
+        faults=DEFAULT_FAULTS if args.inject_faults else None,
     )
     return 0
 

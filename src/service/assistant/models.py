@@ -413,6 +413,46 @@ class AnswerSource(Enum):
     """
 
 
+class CheckVerdict(Enum):
+    """What the exit checks made of one model rewording.
+
+    Added 2026-09-23 so the web console can show *why* a rewording was
+    used or refused (docs/02_Architecture/Web_Console_Design.md section 6).
+    It records a decision :func:`phrasing.judge` already made; nothing
+    branches on it except the display.
+    """
+
+    ACCEPTED = "accepted"
+    NO_REPLY = "no_reply"
+    TOO_SHORT = "too_short"
+    UNGROUNDED_NUMBER = "ungrounded_number"
+    """A number in the rewording is not among the Facts."""
+    UNSUPPORTED_ALARM = "unsupported_alarm"
+    """It claims an alarm the Facts do not carry."""
+    UNSUPPORTED_JUDGEMENT = "unsupported_judgement"
+    """It passes a verdict the template did not."""
+    ADVICE = "advice"
+    """It gives advice the template did not."""
+    TOO_LONG = "too_long"
+    """Materially longer than what it reworded (rewording job only)."""
+
+
+@dataclass(frozen=True)
+class RephraseAttempt:
+    """One rewording the model produced, and the exit checks' verdict on it.
+
+    ``reply`` is the model's text verbatim -- including when it was
+    refused, which is the point: a reader can see what the checks stopped.
+    ``retry`` is True for the one stricter second attempt the assistant
+    makes after a refusal.
+    """
+
+    template: str
+    reply: str
+    verdict: CheckVerdict
+    retry: bool = False
+
+
 @dataclass(frozen=True)
 class Answer:
     """What :meth:`assistant.Assistant.ask` returns."""
@@ -421,3 +461,6 @@ class Answer:
     source: AnswerSource
     intent: Intent | None = None
     facts: Facts | None = None
+    trace: tuple[RephraseAttempt, ...] = ()
+    """Every model rewording behind this answer, in order (empty when the
+    model was not asked to reword). Read-only record, added 2026-09-23."""

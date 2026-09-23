@@ -28,6 +28,7 @@ from api.exceptions import (
     DeviceNotFoundError,
 )
 from api.interface import ApiInterface
+from application.link_monitor import LinkEventCallback, LinkStatistics
 from application.runtime import ApplicationRuntime, DeviceStatusView
 from core.exceptions import NotFoundError, OperationTimeoutError, StateTransitionError
 from core.models import ChannelId, ClientId, DeviceId
@@ -138,3 +139,10 @@ class LocalApi(ApiInterface):
         there is none.
         """
         return self._runtime.query_history(device_id, channel_id, start, end, limit)
+
+    def get_link_statistics(self) -> LinkStatistics:
+        return self._runtime.get_link_statistics()
+
+    def subscribe_link_events(self, callback: LinkEventCallback) -> None:
+        self._runtime.subscribe_link_events(callback)
+

@@ -9,12 +9,17 @@
 还有一条不在验收标准里、但更容易悄悄出错的：**当前这个小时不能导**。
 它还在写入，导出会得到半截数据，而台账一旦记了就不会再补——那一小时的
 后半段会永久丢失，且没有任何迹象。
+
+`--snapshot`（2026-09-21）是上一条的**受控例外**，见文件末尾那一组。
+它的全部安全性系于一件事：**不登记台账**。所以那一组用例里最要紧的不是
+"文件写出来了"，而是"台账仍然是空的、那个时段仍然待导出"。
 """
 
 from __future__ import annotations
 
 import codecs
 import csv
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -22,11 +27,13 @@ from scripts.cloud_sync import (
     CSV_COLUMNS,
     _wide_rows,
     export_slot,
+    export_snapshot,
     file_name_for,
     main,
     pending_slots,
     slot_bounds,
     slot_of,
+    snapshot_file_name,
 )
 from service.history import HistoryPoint
 from storage.export_ledger import SqliteExportLedger
@@ -677,3 +684,319 @@ def test_dry_run_also_lists_what_is_queued_for_upload(tmp_path: Path) -> None:
     code = main(["--db", str(database), "--dir", str(export_dir), "--dry-run"])
 
     assert code == 0
+
+
+# -- 当前时段快照（2026-09-21） ------------------------------------------------
+
+
+def _with_current_hour(tmp_path: Path, count: int = 4):
+    """一个只有"当前这一小时"数据的库，外加**截取时刻**。
+
+    刻意不放已结束时段的数据：快照那一组要验的是"当前小时"这条路，
+    混进待导出的时段会让"台账为空"这个断言失去意义。
+
+    **为什么要把截取时刻一起返回，而不是让用例各自取 `datetime.now()`。**
+    第一版就是那么写的，写的时候是 09:42，四条读数按"整点 + 0/1/2/3 分钟"
+    摆在 09:00–09:03，`now` 是 09:42，全落在区间里，绿。**而它在每小时的
+    前几分钟必然失败**——09:53 改完代码再跑，时间已是 10:0x，`now` 只到
+    10:01，四条里只覆盖得到一条，`assert count == 4` 当场变成 `1 == 4`。
+    快照的区间是"这一小时开头到此刻"，所以**用例不能同时让读数位置和此刻
+    都跟着挂钟走**。现在读数按秒摆在整点之后，截取时刻取 `整点 + count 秒`，
+    与挂钟无关。
+
+    残留的一处竞态无法消除也不必消除：若恰在整点前一秒开跑，跑的过程中
+    小时翻页，这一小时就成了"已结束"。既有用例用 `_hour_start(2)` 绕开它，
+    而"当前小时"这条路按定义绕不开。
+    """
+    database = tmp_path / "history.sqlite"
+    store = SqliteHistoryStore(database)
+    hour_start = _hour_start(0)
+    points = [
+        HistoryPoint(
+            device_id=DEVICE,
+            channel="temperature",
+            value=25.0 + index,
+            timestamp=(hour_start + timedelta(seconds=index)).astimezone(
+                timezone.utc
+            ),
+            valid=True,
+        )
+        for index in range(count)
+    ]
+    store.append_many(points)
+    ledger = SqliteExportLedger(database)
+    moment = hour_start + timedelta(seconds=count)
+    return store, ledger, database, moment
+
+
+def test_a_snapshot_covers_the_unfinished_current_hour(tmp_path: Path) -> None:
+    """常规导出永远碰不到这一小时，快照必须能碰到——这就是它存在的理由。"""
+    store, ledger, _, now = _with_current_hour(tmp_path, count=4)
+
+    assert pending_slots(store, ledger, datetime.now(timezone.utc)) == []
+
+    result = export_snapshot(store, tmp_path / "exports", now)
+
+    assert result is not None
+    target, count = result
+    assert count == 4
+    assert target.is_file()
+    store.close()
+    ledger.close()
+
+
+def test_a_snapshot_leaves_the_ledger_untouched(tmp_path: Path) -> None:
+    """**这一条是快照整套设计的地基。**
+
+    台账是"这个时段已经归档、不必再导"的唯一依据，而快照按定义是半截的。
+    记进去就等于宣布那一小时处理完了，后半段的读数会永久留在库里不再导出，
+    而且没有任何提示——正是文件开头那条"当前小时不能导"要防的事。
+    所以整点过后，这一小时仍然必须是"待导出"。
+    """
+    store, ledger, _, now = _with_current_hour(tmp_path)
+
+    export_snapshot(store, tmp_path / "exports", now)
+
+    assert ledger.all_records() == []
+    # 把"现在"推到下一个整点之后：那一小时结束了，它必须重新出现在待导出里。
+    later = (now + timedelta(hours=1)).astimezone(timezone.utc)
+    assert slot_of(now.astimezone(timezone.utc)) in pending_slots(store, ledger, later)
+    store.close()
+    ledger.close()
+
+
+def test_a_snapshot_file_name_says_it_is_a_snapshot(tmp_path: Path) -> None:
+    """清单里它会与同一小时的整点归档并排显示，而看清单的人不会逐个打开。
+    "这是半截数据"必须在名字上看得见。"""
+    moment = _hour_start(0) + timedelta(minutes=35)
+    name = snapshot_file_name(slot_of(moment.astimezone(timezone.utc)), moment)
+
+    assert name.endswith("_快照.csv")
+    assert f"{moment:%H%M}" in name
+    assert name != file_name_for(slot_of(moment.astimezone(timezone.utc)))
+
+
+def test_two_snapshots_in_the_same_minute_overwrite_rather_than_pile_up(
+    tmp_path: Path,
+) -> None:
+    """同一分钟内的两份快照没有区别，留两份只是清单噪声。
+    跨分钟就该各留一份——所以这里验的是"同一分钟"这个条件本身。"""
+    moment = _hour_start(0) + timedelta(minutes=12)
+    slot = slot_of(moment.astimezone(timezone.utc))
+
+    same = snapshot_file_name(slot, moment)
+    later = snapshot_file_name(slot, moment + timedelta(seconds=30))
+    next_minute = snapshot_file_name(slot, moment + timedelta(minutes=1))
+
+    assert same == later
+    assert same != next_minute
+
+
+def test_a_current_hour_with_no_readings_yields_no_snapshot(tmp_path: Path) -> None:
+    """库里可能有大量昨天的数据而这一小时一条都没有。不产生空文件。"""
+    database = tmp_path / "history.sqlite"
+    store = SqliteHistoryStore(database)
+    store.append_many(_points_in(_hour_start(5), 3))
+
+    now = datetime.now().astimezone()
+    assert export_snapshot(store, tmp_path / "exports", now) is None
+    assert not (tmp_path / "exports").exists()
+    store.close()
+
+
+def test_the_snapshot_csv_has_the_same_columns_as_an_archive(tmp_path: Path) -> None:
+    """同一份表头、同一套小数位。两种文件会被并排看、被前后拼起来，
+    列对不齐就白做了——这也是抽出 `_write_csv` 的目的。"""
+    store, ledger, _, now = _with_current_hour(tmp_path, count=2)
+
+    result = export_snapshot(store, tmp_path / "exports", now)
+
+    assert result is not None
+    rows = _read_csv(result[0])
+    assert rows[0] == CSV_COLUMNS
+    assert len(rows) == 1 + 2
+    store.close()
+    ledger.close()
+
+
+def test_the_snapshot_file_starts_with_a_bom_too(tmp_path: Path) -> None:
+    """快照与归档一样要被 Excel 打开。少了 BOM 中文表头就是乱码。"""
+    store, ledger, _, now = _with_current_hour(tmp_path, count=1)
+
+    result = export_snapshot(store, tmp_path / "exports", now)
+
+    assert result is not None
+    assert result[0].read_bytes().startswith(codecs.BOM_UTF8)
+    store.close()
+    ledger.close()
+
+
+def test_snapshot_via_main_writes_a_file_and_exits_zero(tmp_path: Path) -> None:
+    """走 `main` 这一路，因为按钮与 .bat 都是从这里进来的。"""
+    store, ledger, database, _ = _with_current_hour(tmp_path, count=3)
+    store.close()
+    ledger.close()
+    export_dir = tmp_path / "exports"
+
+    code = main(
+        ["--db", str(database), "--dir", str(export_dir), "--snapshot", "--no-upload"]
+    )
+
+    assert code == 0
+    snapshots = list(export_dir.glob("*_快照.csv"))
+    assert len(snapshots) == 1
+
+
+def test_snapshot_dry_run_writes_nothing(tmp_path: Path) -> None:
+    """演示前要能先看一眼会发生什么，而不是先产生一个文件。"""
+    store, ledger, database, _ = _with_current_hour(tmp_path, count=3)
+    store.close()
+    ledger.close()
+    export_dir = tmp_path / "exports"
+
+    code = main(
+        ["--db", str(database), "--dir", str(export_dir), "--snapshot", "--dry-run"]
+    )
+
+    assert code == 0
+    assert not export_dir.exists()
+
+
+def test_without_the_flag_nothing_touches_the_current_hour(tmp_path: Path) -> None:
+    """默认行为必须一字不变：无人值守跑这个脚本的仍然只该拿到整点归档。"""
+    store, ledger, database, _ = _with_current_hour(tmp_path, count=3)
+    store.close()
+    ledger.close()
+    export_dir = tmp_path / "exports"
+
+    code = main(["--db", str(database), "--dir", str(export_dir), "--no-upload"])
+
+    assert code == 0
+    written = list(export_dir.glob("*.csv")) if export_dir.exists() else []
+    assert written == []
+
+
+# -- --dry-run 必须真的什么都不做（2026-09-21 修的真实缺陷） -------------------
+
+
+def test_dry_run_does_not_upload_a_queued_archive(tmp_path, monkeypatch) -> None:
+    """**实测撞到过的真缺陷。**
+
+    `--dry-run` 原先只管"不写文件"，它下面的上传块是无条件执行的。于是
+    演示前"先看一眼会发生什么"，把上一次留在待发队列里的归档真的传上了
+    OSS——桶里凭空多一个文件，全程无报错，输出里那句"已上传"看着还像好事。
+
+    这里不靠"有没有凭证"来蒙对：凭证存在时才会走到上传，所以必须把
+    `_upload_pending` 换成哨兵，断言它压根没被调用。
+    """
+    from scripts import cloud_sync as module
+
+    store, ledger, slot, database = _prepared(tmp_path, count=2)
+    export_dir = tmp_path / "exports"
+    export_slot(store, ledger, slot, export_dir, datetime.now(timezone.utc))
+    store.close()
+    ledger.close()
+
+    calls: list[object] = []
+    monkeypatch.setattr(
+        module, "_upload_pending", lambda *a, **k: calls.append(a) or 0
+    )
+
+    code = main(["--db", str(database), "--dir", str(export_dir), "--dry-run"])
+
+    assert code == 0
+    assert calls == []
+
+
+def test_dry_run_lists_the_queue_even_when_nothing_is_left_to_export(
+    tmp_path, capsys
+) -> None:
+    """都导过了的时候，队列里可能正积压着没传上去的——那恰好是最需要
+    先看一眼的处境，而原先这一支只说一句"没有待导出的时段"就完事。"""
+    store, ledger, slot, database = _prepared(tmp_path, count=2)
+    export_dir = tmp_path / "exports"
+    export_slot(store, ledger, slot, export_dir, datetime.now(timezone.utc))
+    store.close()
+    ledger.close()
+
+    main(["--db", str(database), "--dir", str(export_dir), "--dry-run"])
+
+    printed = capsys.readouterr().out
+    assert "待传队列" in printed
+    assert slot in printed
+
+
+def test_dry_run_with_snapshot_uploads_nothing_either(tmp_path, monkeypatch) -> None:
+    """快照那一路也不能例外。"""
+    from scripts import cloud_sync as module
+
+    store, ledger, database, _ = _with_current_hour(tmp_path, count=3)
+    store.close()
+    ledger.close()
+    calls: list[object] = []
+    monkeypatch.setattr(
+        module, "_upload_snapshot", lambda *a, **k: calls.append(a) or 0
+    )
+
+    code = main(
+        ["--db", str(database), "--dir", str(tmp_path / "exports"), "--snapshot",
+         "--dry-run"]
+    )
+
+    assert code == 0
+    assert calls == []
+
+
+def test_no_dry_run_path_can_even_construct_an_uploader(
+    tmp_path, monkeypatch
+) -> None:
+    """**把"`--dry-run` 不具备上传能力"钉成结构性事实，而不是逐条堵。**
+
+    前面三条守的是"没走上传函数"。这一条更狠：把 `OssUploader` 换成一个
+    造出来就炸的东西，然后把 `--dry-run` 的各种组合都跑一遍。只要哪条路
+    还能摸到上传器，用例就当场抛异常。
+
+    为什么值得多加这一条：2026-09-21 那个缺陷的形态不是"上传逻辑写错了"，
+    而是**上传块压根没被 dry-run 管住**——它在 dry-run 分支的下面，无条件执行。
+    逐条堵的写法挡不住下一次在 `main()` 末尾再加一段带副作用的代码；
+    这一条能，因为它不关心副作用长什么样，只钉住"这条路上不存在上传器"。
+    """
+    from scripts import cloud_sync as module
+
+    class _Explodes:
+        def __init__(self, *_args, **_kwargs) -> None:
+            raise AssertionError("--dry-run 竟然造出了上传器")
+
+    monkeypatch.setattr(module, "OssUploader", _Explodes)
+
+    # **必须给一份能读通的凭证文件。** conftest 的 autouse fixture 把
+    # `DEFAULT_CONFIG_PATH` 指到一个不存在的文件上（对的，那是防止拿真密钥
+    # 连公网），于是 `load_config()` 返回 None，脚本在造上传器**之前**就说
+    # "未配置 OSS"退回去了——第一版这条用例因此在把修复整段删掉之后**照样通过**，
+    # 等于什么都没守。踩到的经过记在这里，因为"哨兵没被触发"与"代码是对的"
+    # 在输出上一模一样，正是本项目反复栽的那一类。
+    config = tmp_path / "oss_config.json"
+    config.write_text(
+        json.dumps(
+            {
+                "endpoint": "oss-cn-hangzhou.aliyuncs.com",
+                "bucket": "not-a-real-bucket",
+                "access_key_id": "not-a-real-key",
+                "access_key_secret": "not-a-real-secret",
+                "prefix": "env-monitor/",
+            }
+        ),
+        encoding="utf-8",
+    )
+    base = ["--db", "", "--dir", "", "--oss-config", str(config)]
+
+    # 三种处境：有待导出的、都导过但队列非空的、以及快照那一路。
+    store, ledger, slot, database = _prepared(tmp_path, count=2)
+    export_dir = tmp_path / "exports"
+    base[1], base[3] = str(database), str(export_dir)
+    assert main([*base, "--dry-run"]) == 0
+    export_slot(store, ledger, slot, export_dir, datetime.now(timezone.utc))
+    store.close()
+    ledger.close()
+    assert main([*base, "--dry-run"]) == 0
+    assert main([*base, "--dry-run", "--snapshot"]) == 0

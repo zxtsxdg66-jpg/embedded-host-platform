@@ -2,7 +2,7 @@
 
 测试目录结构与 `src/` 一一对应（另加 `integration/` 与 `scripts/` 两个目录），测试策略与各层验证手段见 [`docs/05_Test/Test_Plan.md`](../docs/05_Test/Test_Plan.md)，本文只讲目录结构与怎么跑；pytest 用法遵循 `.claude/skills/testing-python-libraries` 的规范。
 
-当前共 **1278 个用例，全部通过**（2026-09-18 末次实测）。用例随各模块功能实现同步添加，新增功能应同时补充对应测试。
+当前共 **1348 个用例，全部通过**（2026-09-23 末次实测；下表同日按目录重新统计，此前表中各目录数停在更早的时点，合计与总数对不上）。用例随各模块功能实现同步添加，新增功能应同时补充对应测试。
 
 ## 目录与用例分布
 
@@ -10,18 +10,18 @@
 | --- | --- | --- | --- |
 | `tests/core/` | 13 | `src/core/` | — |
 | `tests/protocol/` | 28 | `src/protocol/` | 协议层 |
-| `tests/communication/` | 40 | `src/communication/` | 通信层 |
+| `tests/communication/` | 46 | `src/communication/` | 通信层 |
 | `tests/device/`（含 `sensors/`） | 76 | `src/device/` | 各层验证手段（设备抽象部分） |
-| `tests/service/` | 316 | `src/service/`（含 `assistant/` 子包） | 服务层 |
-| `tests/application/` | 144 | `src/application/` | 应用层 + 跨端契约 |
+| `tests/service/` | 344 | `src/service/`（含 `assistant/` 子包） | 服务层 |
+| `tests/application/` | 150 | `src/application/` | 应用层 + 跨端契约 |
 | `tests/api/` | 36 | `src/api/` | 接口层与呈现层 |
-| `tests/gateway/` | 29 | `src/gateway/` | 接口层与呈现层 |
-| `tests/ui/` | 189 | `src/ui/` | 接口层与呈现层 |
+| `tests/gateway/` | 39 | `src/gateway/` | 接口层与呈现层 |
+| `tests/ui/` | 230 | `src/ui/` | 接口层与呈现层 |
 | `tests/integration/` | 32 | 跨层端到端链路 | 总体策略 |
 | `tests/llm/` | 19 | `src/llm/` | —（Ollama 客户端，用假 socket 回放真实服务字节） |
-| `tests/storage/` | 59 | `src/storage/` | —（SQLite 历史库、导出台账、OSS 上传器，均不碰网络） |
-| `tests/scripts/` | 172 | `scripts/` 组合脚本与工具（含 `start_llm`/`stop_llm`、`question_log`） | 组合脚本 |
-| **合计** | **1153** | | |
+| `tests/storage/` | 67 | `src/storage/` | —（SQLite 历史库、导出台账、OSS 上传器，均不碰网络） |
+| `tests/scripts/` | 268 | `scripts/` 组合脚本与工具（含 `start_llm`/`stop_llm`、`question_log`） | 组合脚本 |
+| **合计** | **1348** | | |
 
 复现该表：`QT_QPA_PLATFORM=offscreen pytest --collect-only -q`（按目录汇总各文件计数）。
 

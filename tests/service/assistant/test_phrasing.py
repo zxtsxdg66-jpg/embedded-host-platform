@@ -5,12 +5,13 @@ central guarantee -- that no figure a user reads was invented. Its tests
 are therefore the most important ones in this package.
 """
 
-from service.assistant.models import AnswerSource, Facts, IntentKind
+from service.assistant.models import AnswerSource, CheckVerdict, Facts, IntentKind
 from service.assistant.phrasing import (
     ANNOUNCE_REFUSAL_TEXT,
     DELETE_REFUSAL_TEXT,
     HELP_TEXT,
     choose,
+    judge,
     numbers_are_grounded,
     render,
 )
@@ -457,10 +458,20 @@ def test_a_pending_count_is_offered_with_the_number_in_the_facts() -> None:
     assert numbers_are_grounded(text, facts)
 
 
-def test_nothing_pending_says_so_rather_than_staying_silent() -> None:
+def test_nothing_pending_still_offers_the_current_hour() -> None:
+    """"没有待传的时段"曾经是一条死路（2026-09-18 到 09-21）。
+
+    那句话准确，但用户问的是"现在的数据能传吗"，而当前这一小时确实还有
+    读数没上去——只是归档按整点切，它还不算"待传"。按钮接上快照之后，
+    这一档有事可做了，话必须跟着改，否则一句"没什么要传的"底下会坐着
+    一个能传东西的按钮。
+
+    仍然不含数字：当前这一小时有多少条要查历史库，而问答不查历史。"""
     text = render(Facts(kind=IntentKind.CLOUD_SYNC_HINT, pending_uploads=0))
 
-    assert "都已经传上去了" in text
+    assert "已经结束的时段都传上去了" in text
+    assert "当前这一小时" in text
+    assert "点下面的按钮" in text
     assert not any(ch.isdigit() for ch in text)
 
 
@@ -483,3 +494,48 @@ def test_the_view_offer_says_plainly_that_it_only_reads() -> None:
     assert "只读" in text
     assert "不会上传" in text and "不会删除" not in text.replace("也不会删除", "")
     assert not any(ch.isdigit() for ch in text)
+
+
+# -- judge(): choose() plus which check decided (2026-09-23) ------------------
+
+_CALM_TEMP = Facts(
+    kind=IntentKind.CURRENT_VALUE,
+    channel="temperature",
+    channel_label="温度",
+    unit="℃",
+    value=24.8,
+    triggered=False,
+)
+
+_NOISE_T = "噪声现在是 76.3dB。"
+_TEMP_T = "温度现在是 24.8℃。"
+_V = CheckVerdict
+
+_JUDGE_CASES = [
+    # (template, model reply, facts, expanded, expected verdict)
+    ("模板答案", None, _READING, False, _V.NO_REPLY),
+    ("模板答案", "   ", _READING, False, _V.TOO_SHORT),
+    ("模板答案", "噪声 99.9dB，快超标了。", _READING, False, _V.UNGROUNDED_NUMBER),
+    (_NOISE_T, "噪声 76.3dB，已经超标。", _READING, False, _V.UNSUPPORTED_ALARM),
+    (_TEMP_T, "温度 24.8℃。数值正常。", _CALM_TEMP, False, _V.UNSUPPORTED_JUDGEMENT),
+    (_TEMP_T, "现在的环境温度是 24.8℃，请注意保暖。", _CALM_TEMP, False, _V.ADVICE),
+    (_TEMP_T, "现在这里测得的温度是 24.8℃，这是刚刚采集到的数值，供参考。",
+     _CALM_TEMP, False, _V.TOO_LONG),
+    (_NOISE_T, "噪声 76.3dB。", _READING, False, _V.ACCEPTED),
+]
+
+
+def test_judge_agrees_with_choose_on_every_path() -> None:
+    """choose() is judge() with the verdict dropped; the two must never
+    disagree on the text or the source, or the web console would explain a
+    decision the assistant did not make."""
+    for template, reply, facts, expanded, _ in _JUDGE_CASES:
+        text, source, _ = judge(template, reply, facts, expanded=expanded)
+        expected = choose(template, reply, facts, expanded=expanded)
+        assert (text, source) == expected, reply
+
+
+def test_judge_names_the_check_that_decided() -> None:
+    for template, reply, facts, expanded, verdict in _JUDGE_CASES:
+        assert judge(template, reply, facts, expanded=expanded)[2] is verdict, reply
+

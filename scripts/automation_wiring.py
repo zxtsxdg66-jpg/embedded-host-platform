@@ -129,6 +129,7 @@ def make_poll_once(
     runtime: ApplicationRuntime,
     runner: object,
     on_assistant_answer: AssistantAnswerSink | None = None,
+    on_assistant_detail: Callable[[Answer], None] | None = None,
 ) -> Callable[[], None]:
     """Build the callable a launcher's timer/thread should drive.
 
@@ -142,6 +143,12 @@ def make_poll_once(
     a CPU-only model takes seconds to answer, and this process has no
     thread to wait on. ``poll_assistant()`` returns None on almost every
     cycle, so the cost is a null check.
+
+    ``on_assistant_detail`` receives the same late answer as a whole
+    :class:`Answer`, trace included -- the web console's view of what the
+    exit checks did (added 2026-09-23). It is separate from
+    ``on_assistant_answer`` so the ``(text, source)`` sink the desktop
+    controller shares keeps its shape.
     """
     run_once = runner.run_once  # type: ignore[attr-defined]
 
@@ -152,11 +159,15 @@ def make_poll_once(
         # 之外的东西时也必须写历史。把它放到 return 之后，就会变成
         # "界面模式记得下来、网关模式记不下来"——正是本模块存在的那类漂移。
         runtime.history_recorder.flush_if_due()
-        if on_assistant_answer is None:
+        if on_assistant_answer is None and on_assistant_detail is None:
             return
         improved = runtime.poll_assistant()
-        if improved is not None:
+        if improved is None:
+            return
+        if on_assistant_answer is not None:
             on_assistant_answer(improved.text, improved.source.value)
+        if on_assistant_detail is not None:
+            on_assistant_detail(improved)
 
     return poll_once
 
@@ -314,12 +325,24 @@ def make_cloud_sync_runner(
     ``ui`` -- the view must not create or name a subprocess (``CLAUDE.md``
     架构原则). What the window receives is a plain callable.
 
-    Runs ``scripts/cloud_sync.py`` **in a subprocess**, the same entry
-    ``cloud_sync_导出并上传.bat`` double-clicks, rather than importing and calling
-    its ``main()``: that script reads credentials, opens network
-    connections and can take a while, none of which belongs on the Qt
-    thread that is also drawing the chart. A crash in it costs an exit
-    code, not the window.
+    Runs ``scripts/cloud_sync.py --snapshot`` **in a subprocess**, the same
+    entry ``cloud_snapshot_上传当前时段快照.bat`` double-clicks, rather than
+    importing and calling its ``main()``: that script reads credentials,
+    opens network connections and can take a while, none of which belongs
+    on the Qt thread that is also drawing the chart. A crash in it costs an
+    exit code, not the window.
+
+    **Why the button carries ``--snapshot`` and the plain script does not**
+    (2026-09-21): archives cover whole clock hours, and the hour in
+    progress is deliberately never archived -- exporting half an hour and
+    recording it in the ledger would lose the rest of it silently. So
+    without the flag, "把现在的数据传上去" is impossible before the hour
+    ends, and that is precisely what a demo asks for. ``--snapshot`` adds
+    a clearly-named, ledger-free copy of the current hour on top of the
+    normal catch-up. The flag stays opt-in on the command line so
+    unattended use keeps the strict whole-hours behaviour; the two
+    human-facing entries (this button and its ``.bat``) pass it, because a
+    person clicking means "now".
 
     Detached on purpose -- this returns as soon as the child starts. The
     button reports that it started and the child's own console shows the
@@ -334,7 +357,9 @@ def make_cloud_sync_runner(
 
     return _make_script_runner(
         "cloud_sync.py",
-        started="已启动上云脚本（导出并上传），进度见新开的控制台窗口",
+        args=("--snapshot",),
+        started="已启动上云脚本（补齐已结束时段，并截一份当前时段快照），"
+        "进度见新开的控制台窗口",
         failed="启动上云脚本失败",
         on_message=on_message,
     )
@@ -343,6 +368,7 @@ def make_cloud_sync_runner(
 def _make_script_runner(
     script_name: str,
     *,
+    args: tuple[str, ...] = (),
     started: str,
     failed: str,
     on_message: Callable[[str], None],
@@ -360,7 +386,7 @@ def _make_script_runner(
         script = _ROOT / "scripts" / script_name
         try:
             subprocess.Popen(  # noqa: S603 -- fixed path, no user input
-                [sys.executable, str(script)],
+                [sys.executable, str(script), *args],
                 cwd=str(_ROOT),
             )
         except OSError as exc:
