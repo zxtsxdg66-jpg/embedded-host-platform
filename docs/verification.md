@@ -98,7 +98,9 @@ python scripts/collect_experiment_data.py --from-csv "experiment-data/长时间�
 计数必须**恰好相等**，多一次少一次都说明拼帧或计数逻辑有问题。这个断言写在回放生成脚本里，
 也写在 `tests/application/test_link_monitor.py` 里。在线演示的"故障注入会话"就是这一次。
 
-故障注入没有覆盖的：长度字段被破坏的情况（见 [`protocol.md`](protocol.md#已知局限)）。
+**故障注入没有覆盖的：长度字段被破坏。** 这是一处已知缺陷——上位机会按错误的长度停顿最多约 11 分钟，
+固件一侧已有对应的检查而上位机没有。触发条件、量化影响、实际发生的可能性与修法见
+[`protocol.md`](protocol.md#已知缺陷长度字段被破坏)。
 
 ## 真实缺陷
 
