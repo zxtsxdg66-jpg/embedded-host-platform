@@ -12,7 +12,7 @@ thing only: **a label**. It never sees a reading, never produces a number,
 and never writes a sentence a user reads -- once a label comes back, the
 existing retrieval and template stages run exactly as they do for a rule
 match. The model widens what can be understood; it does not touch what is
-answered. See docs/02_Architecture/Assistant_Design.md section 12.
+answered. See docs/decisions/02-llm.md.
 
 Why a bare label rather than JSON
 ---------------------------------

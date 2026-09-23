@@ -2,7 +2,7 @@
 this only checks it runs without error and actually sets something,
 not exact colors (testing QSS string contents in detail would be brittle
 and low-value; visual verification is done by hand, see
-docs/05_Test/Project_Status_Context.md).
+docs/verification.md).
 """
 
 from __future__ import annotations

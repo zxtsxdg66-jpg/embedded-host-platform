@@ -4,7 +4,7 @@ Rules first, and rules alone are enough for every question this system is
 expected to answer -- the vocabulary is small and closed (three channels,
 one fan, a device list, a few thresholds). A language model is only ever
 an accuracy aid for unusual phrasings, never a requirement; see
-docs/02_Architecture/Assistant_Design.md section 2.
+docs/decisions/02-llm.md.
 
 Matching is keyword-based rather than regex-heavy on purpose. Chinese has
 no word boundaries, so substring containment is the natural test, and it

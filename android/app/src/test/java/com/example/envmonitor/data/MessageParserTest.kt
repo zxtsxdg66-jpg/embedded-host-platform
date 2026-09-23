@@ -99,7 +99,7 @@ class MessageParserTest {
         assertNull((result as MessageParser.Result.Data).value.timestamp)
     }
 
-    // -- 异常情况（用户要求覆盖的第 5、6 两种） ---------------------------
+    // -- 异常情况（覆盖第 5、6 两种） ---------------------------
 
     @Test
     fun `malformed json is reported not thrown`() {

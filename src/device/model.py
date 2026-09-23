@@ -1,6 +1,6 @@
 """Device model: the concrete, immutable value object implementing DeviceInterface.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 1
+Corresponds to docs/architecture.md
 (Device abstraction) as a whole. Not bound to any specific sensor,
 controlled object, or MCU model -- ``capability`` and ``metadata`` are the
 only places device-specific information may appear, and both are opaque,

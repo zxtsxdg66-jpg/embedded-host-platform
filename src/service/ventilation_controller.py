@@ -21,7 +21,7 @@ The two answer different questions and must be able to move independently:
   nothing -- ventilation is what you want when humidity is too *high*.
   (Measured humidity on the real hardware stayed in 69~95 %RH, so the
   BELOW_MIN alarm rule never fires in practice; see
-  docs/05_Test/Project_Status_Context.md section 5.9.)
+  docs/verification.md.)
 
 Keeping them apart means the alarm thresholds' argument stays untouched while
 ventilation gets thresholds that are both physically sensible and tunable

@@ -24,7 +24,7 @@ no api method is involved, which is why none was added.
 
 Run mode: ``ui/`` is architecturally never supposed to know *how*
 Hardware mode is wired (SerialChannel/HardwareDeviceReceiver never appear
-here, per docs/05_Test/Hardware_Simulation_Mode.md) -- but scripts/
+here, per docs/architecture.md) -- but scripts/
 run_gui.py, which already knows ``--mode simulator|hardware`` from its
 own CLI args, can pass a plain display label ("模拟模式"/"硬件模式")
 into MainWindow's constructor without this widget or ui/main_window.py

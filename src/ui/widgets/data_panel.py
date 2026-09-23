@@ -309,7 +309,7 @@ class DataPanelWidget(QWidget):
         Until 2026-09-17 this docstring said there was "nothing for a
         backend to persist or forget here", which was true while history
         existed only inside this widget. It is no longer: readings are
-        persisted (see docs/02_Architecture/History_And_Cloud_Design.md).
+        persisted (see docs/decisions/06-history.md).
         The button's meaning is therefore deliberately narrowed to "clear
         what I am looking at" -- deleting stored data is a separate,
         destructive action and must not hide behind a button labelled

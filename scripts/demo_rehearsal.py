@@ -22,7 +22,7 @@ rehearsal covers the ones they did not:
   instruction.
 
 Both produced perfectly plausible answers, which is exactly what made them
-easy to miss. See docs/02_Architecture/Assistant_Design.md section 13.6.
+easy to miss. See docs/decisions/02-llm.md.
 
 What it reports
 ---------------

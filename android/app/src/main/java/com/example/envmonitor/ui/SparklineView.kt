@@ -13,7 +13,7 @@ import com.example.envmonitor.R
  * 极简折线图：只画"本次连接以来 App 自己收到的点"。
  *
  * **它画的不是历史数据。** PC 端 `service`/`api` 三层没有历史数据能力
- * （见 docs/05_Test/Project_Status_Context.md 5.3 节第 2 项），本视图的每个点
+ * （见 docs/verification.md第 2 项），本视图的每个点
  * 都是 WebSocket 当场推过来、App 顺手记在内存里的，断开重连即清空，
  * 卡片上固定标注"本次连接以来"。不要把它当成历史曲线，也不要给它加持久化。
  *

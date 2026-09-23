@@ -1,6 +1,6 @@
 """Device capability descriptor: what commands/channels a device supports.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 1.2
+Corresponds to docs/architecture.md
 ("Device Capability Descriptor"). Deliberately generic -- a command type or
 channel id is an opaque string here; their business meaning is defined by
 whoever describes a concrete device (device profile / future capability

@@ -1,6 +1,6 @@
 """Data service base interface: subscription-based data distribution.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4
+Corresponds to docs/architecture.md
 (Service Layer responsibilities -- "data processing and distribution") and
 Section 5 (identical interface used by both PC and Android callers,
 whether the implementation lives locally or behind a future gateway).

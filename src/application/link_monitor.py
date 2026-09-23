@@ -1,7 +1,7 @@
 """LinkMonitor: what the serial link is doing, made visible.
 
 Added 2026-09-23 for the web console's protocol inspector
-(docs/02_Architecture/Web_Console_Design.md section 5).
+(docs/decisions/08-web.md).
 
 Until now the link's health existed only as two integers inside
 :class:`~application.hardware_runtime.HardwareDeviceReceiver`

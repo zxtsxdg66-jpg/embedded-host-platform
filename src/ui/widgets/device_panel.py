@@ -2,7 +2,7 @@
 state, control-occupancy state, and (if available) capability info.
 
 Corresponds to the phase-2 task's "设备管理" requirement. This widget is
-a "Passive View" (per .claude/skills/pyqt6-ui-development-rules' "keep
+a "Passive View" (per the PyQt6 UI guidelines' "keep
 widgets independent of business logic"): it holds no reference to
 MainController or ApiInterface, and is only ever updated through
 :meth:`set_status`, whose signature intentionally matches
@@ -16,7 +16,7 @@ which is out of scope for this widget. This panel therefore shows
 "能力信息：未获取" rather than fabricated data -- honest about the gap
 without exposing internal type/API names (``DeviceStatusView``,
 ``ApiInterface``, ...) that a real end user has no reason to see; see
-docs/05_Test/Project_Status_Context.md's 2026-08-13 note for why this
+docs/verification.md's 2026-08-13 note for why this
 text was changed from an earlier, more debug-flavored wording.
 """
 

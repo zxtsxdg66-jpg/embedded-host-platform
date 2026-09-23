@@ -1,6 +1,6 @@
 """Device simulator (phase 1): produces flowing data without real hardware.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 6
+Corresponds to docs/architecture.md
 (Device Simulator design). Phase 1 scope is deliberately narrow: build a
 ``SimulatorDevice`` that structurally satisfies ``DeviceInterface`` and can
 generate ``DataPoint`` readings and publish them through a ``DataService``,
@@ -94,7 +94,7 @@ class RandomValueGenerator(ValueGenerator):
     Draws from a locally injected ``random.Random`` instance rather than
     the global ``random`` module, so a caller can pass a seeded instance
     for deterministic, reproducible test runs without touching global RNG
-    state (see .claude/skills/improving-python-code-quality guidance on
+    state (see the Python code-quality guidelines guidance on
     injectable RNGs).
     """
 
@@ -121,7 +121,7 @@ class SimulatorDevice:
     Structurally satisfies ``device.interface.DeviceInterface``
     (``device_id`` / ``capability`` / ``status``), so the Service Layer can
     treat it exactly like a device reached through a real communication
-    channel, per Core_Service_Design.md Section 6.2.
+    channel, per docs/architecture.md.
     """
 
     def __init__(

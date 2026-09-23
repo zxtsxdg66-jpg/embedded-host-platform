@@ -1,6 +1,6 @@
 """归档导出脚本：把历史库按整点切成 CSV，并用台账保证不重复、能补。
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 5.1 节。
+设计见 `docs/decisions/06-history.md`。
 第 8 节给 P2 定的两条验收标准，分别由下面两组用例守：
 
 - **导出两次不产生重复文件** → "幂等"一组；

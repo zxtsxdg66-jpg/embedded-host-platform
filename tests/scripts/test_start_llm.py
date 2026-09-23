@@ -143,7 +143,7 @@ _LOG_SAMPLE = (
     'time=2026-09-10T12:39:01.348+08:00 level=INFO source=routes.go:1955 '
     'msg="server config" env="map[CUDA_VISIBLE_DEVICES: OLLAMA_HOST:'
     'http://127.0.0.1:11434 OLLAMA_KEEP_ALIVE:2562047h47m16.854775807s '
-    'OLLAMA_MODELS:C:\\\\Users\\\\wwwzx\\\\.ollama\\\\models '
+    'OLLAMA_MODELS:C:\\\\Users\\\\user\\\\.ollama\\\\models '
     'OLLAMA_NOHISTORY:false]"\n'
     'time=2026-09-10T12:39:01.358+08:00 level=INFO source=images.go:957 '
     'msg="total blobs: 0"\n'
@@ -156,7 +156,7 @@ def test_effective_config_reads_what_the_server_actually_uses(tmp_path) -> None:
 
     config = start_llm.effective_config(log)
 
-    assert config["OLLAMA_MODELS"] == r"C:\Users\wwwzx\.ollama\models"
+    assert config["OLLAMA_MODELS"] == r"C:\Users\user\.ollama\models"
     assert config["OLLAMA_KEEP_ALIVE"] == "2562047h47m16.854775807s"
     assert config["blobs"] == "0"
 
@@ -186,7 +186,7 @@ def test_a_drifted_model_path_is_called_out(monkeypatch, capsys) -> None:
         start_llm,
         "effective_config",
         lambda *a, **k: {
-            "OLLAMA_MODELS": r"C:\Users\wwwzx\.ollama\models",
+            "OLLAMA_MODELS": r"C:\Users\user\.ollama\models",
             "OLLAMA_KEEP_ALIVE": "2562047h47m16.854775807s",
             "blobs": "0",
         },

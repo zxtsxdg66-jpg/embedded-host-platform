@@ -873,7 +873,7 @@ class Assistant:
     def _finish_review(self) -> Answer | None:
         """裁决：一致就执行，不一致就反问，模型没说话就按原样执行。
 
-        三条分支对应 `Intent_Review_Proposal.md` 第 4.1 节裁决表的指令列：
+        三条分支对应 `docs/decisions/03-intent.md`裁决表的指令列：
 
         - **模型给出同一类指令** → 执行。两边独立读出同一个意思，
           这是现有管线里准确率最高的情形（留出题库上 104 句一致、错 1 句）。

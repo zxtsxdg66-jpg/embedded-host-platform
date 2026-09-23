@@ -1,6 +1,6 @@
 """把归档文件送到阿里云对象存储（OSS）。
 
-设计见 docs/02_Architecture/History_And_Cloud_Design.md 第 5.2、5.3 节。
+设计见 docs/decisions/06-history.md 第 5.2、5.3 节。
 选 OSS 而不是个人网盘的关键一条：走 OSS 时上传是**系统自身的能力**，
 而走网盘要么由客户端代劳（系统本身不含上云能力），要么要开发者审核与
 令牌刷新。

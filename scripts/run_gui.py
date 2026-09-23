@@ -24,8 +24,8 @@ Both report the same three channels (temperature/humidity/noise), so the
 window looks identical either way -- Simulator mode is a usable stand-in
 when no board is connected, not just a smoke test.
 
-See docs/05_Test/Runtime_Mode.md for full usage instructions (including
-COM port configuration) and docs/05_Test/Hardware_Simulation_Mode.md for
+See docs/getting-started.md for full usage instructions (including
+COM port configuration) and docs/architecture.md for
 the architectural rationale behind the two modes.
 
 UI boundary: src/ui/* is never told which mode is active and never
@@ -318,10 +318,10 @@ def main(argv: list[str] | None = None) -> int:
     # 不上板载屏、不推手机。
     question_log = QuestionLog()
     # 历史记录：读数攒批写进 data/history.sqlite，退出前 close。
-    # 设计见 docs/02_Architecture/History_And_Cloud_Design.md。
+    # 设计见 docs/decisions/06-history.md。
     history_store = attach_history(runtime)
     # 上云：助手只读台账、答出"还有几个时段没传"；真正上传由界面按钮触发。
-    # 设计见 History_And_Cloud_Design.md 6.1 节——不进指令白名单，
+    # 设计见 docs/decisions/06-history.md——不进指令白名单，
     # 模型出标签、界面出按钮、人点击才执行。
     export_ledger = attach_export_status(runtime)
     api = LoggingApi(runtime, question_log)
@@ -330,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     # Attach the local language model if one is reachable. Optional by
     # design: without it the assistant answers from rules and templates,
     # which is the default and always correct (see
-    # docs/02_Architecture/Assistant_Design.md). Probed once here rather
+    # docs/decisions/02-llm.md). Probed once here rather
     # than retried, so a missing model costs one failed connect at
     # start-up instead of one per question.
     llm_available, llm_detail = attach_language_model(

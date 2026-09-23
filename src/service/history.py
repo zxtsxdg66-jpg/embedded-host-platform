@@ -12,7 +12,7 @@ Why the service layer may not simply open a database itself: it must not
 manage physical resources -- see ``src/service/README.md`` "设计约束".
 A file path and a connection are exactly that.
 
-Design: docs/02_Architecture/History_And_Cloud_Design.md section 4.
+Design: docs/decisions/06-history.md.
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ class HistoryStore(Protocol):
         it is stated here rather than left to be discovered.
 
         Added 2026-09-17 for the hourly archive export (design doc section
-        5.1). Extending this protocol was agreed first, per CLAUDE.md's
+        5.1). Extending this protocol was agreed first, per CONTRIBUTING.md's
         rule about protected interfaces: the alternative was letting
         ``scripts/`` open the database file directly, which would put a
         second thing that touches external resources outside the adapter

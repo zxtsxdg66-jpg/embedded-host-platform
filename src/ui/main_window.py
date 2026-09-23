@@ -1,6 +1,6 @@
 """MainWindow: PC Presentation Layer -- 2026-08-13 dashboard redesign.
 
-Corresponds to .claude/skills/pyqt6-ui-development-rules: MVC separation,
+Corresponds to the PyQt6 UI guidelines: MVC separation,
 signal/slot communication, layout managers instead of absolute pixel
 coordinates (Iron Laws 1 and 4). Composes the dashboard widgets
 (ui.widgets.TopBarWidget / MetricCardWidget / ChartWidget /
@@ -430,7 +430,7 @@ class MainWindow(QMainWindow):
         :meth:`set_assistant_model_status` is, and for a stronger version
         of the same reason: uploading launches ``scripts/cloud_sync.py``
         as a subprocess, and ``ui`` must not create -- or even name -- a
-        thing like that (``CLAUDE.md`` 架构原则). What arrives here is a
+        thing like that (``CONTRIBUTING.md`` 架构原则). What arrives here is a
         plain callable; this window knows only that clicking calls it.
 
         Not installing one is a normal state: the button then never

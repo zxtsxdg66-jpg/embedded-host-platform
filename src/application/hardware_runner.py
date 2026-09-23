@@ -2,7 +2,7 @@
 point wrapping HardwareDeviceReceiver, for the "Hardware Runtime 持续驱动"
 phase.
 
-Corresponds to docs/05_Test/Project_Status_Context.md Section 6's
+Corresponds to docs/verification.md's
 observation that ``HardwareDeviceReceiver.poll_once()``/``poll_until_empty()``
 had no outer driver keeping them running. This module adds exactly that
 driver -- nothing else. It does not touch protocol/*, communication/*,

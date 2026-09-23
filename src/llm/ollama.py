@@ -56,7 +56,7 @@ DEFAULT_PORT = 11434
 DEFAULT_MODEL = "qwen3.5:4b"
 """Measured at 10.4 tok/s on the target machine (i5-13500H, no GPU).
 
-See docs/02_Architecture/Assistant_Design.md section 7.0 -- the tag
+See docs/decisions/02-llm.md -- the tag
 resolves to q4_K_M, which is the floor rather than a compromise.
 """
 

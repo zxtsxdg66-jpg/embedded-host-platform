@@ -1156,7 +1156,7 @@ def test_a_genuine_capability_question_does_not_pay_for_a_model_call() -> None:
 
 
 def test_the_boundary_document_quotes_the_prompts_verbatim() -> None:
-    """`LLM_Boundary.md` 的附录抄了四份系统提示词的原文。
+    """`docs/decisions/02-llm.md` 的附录抄了四份系统提示词的原文。
 
     抄下来的东西会脱节——改了代码里的提示词，文档还停在旧版本，而那份
     附录的全部价值就在于"这是原文，不是转述"。这条用例让脱节变成一次
@@ -1168,8 +1168,8 @@ def test_the_boundary_document_quotes_the_prompts_verbatim() -> None:
 
     from service.assistant.parsing import PARSE_SYSTEM_PROMPT
 
-    doc = Path(__file__).resolve().parents[3] / "docs" / "02_Architecture" / (
-        "LLM_Boundary.md"
+    doc = Path(__file__).resolve().parents[3] / "docs" / "decisions" / (
+        "02-llm.md"
     )
     text = doc.read_text(encoding="utf-8")
 

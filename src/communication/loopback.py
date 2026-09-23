@@ -1,6 +1,6 @@
 """LoopbackChannel: an in-memory CommunicationChannel for software-only verification.
 
-Corresponds to docs/03_Communication/Communication_Design.md's requirement
+Corresponds to docs/protocol.md's requirement
 that every transport implement the same unified interface (principle 1) --
 this is that interface's simplest possible implementation, with no real
 transport medium at all.

@@ -1,6 +1,6 @@
 """Control service base interface: device occupancy and command dispatch.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4
+Corresponds to docs/architecture.md
 (Service Layer responsibilities -- "command dispatch and tracking",
 "multi-client session and access control") and Section 7 (the default
 "shared read, exclusive write" rule: ``acquire``/``release`` gate exclusive

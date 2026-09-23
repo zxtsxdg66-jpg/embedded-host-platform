@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  固定深色（2026-08-16 用户确认，见 docs/10_AndroidClient/第二阶段_UI优化方案.md 第 14 节）：
+  固定深色：
   不使用 DayNight，也不提供 values-night/ —— 与 PC 上位机深色仪表盘视觉同源，
   长时间盯屏低疲劳，且只需要调一套配色、验一套效果。
 

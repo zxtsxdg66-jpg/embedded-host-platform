@@ -5,7 +5,7 @@ a pre-composed sentence. That is deliberate and load-bearing, because
 Facts has more than one consumer -- the phrasing stage renders Chinese for
 a human, and (later) the same object is what a board's LCD push would be
 built from, which needs numbers and codes rather than prose. See
-docs/02_Architecture/Assistant_Design.md section 3.2.
+docs/decisions/02-llm.md.
 
 The other load-bearing property: **every number a user ever sees
 originates in a Facts field**, put there by code that read it from the
@@ -99,7 +99,7 @@ class IntentKind(Enum):
     it is what starts anything. Model proposes, human disposes -- the
     same line as "the model may veto, never initiate".
 
-    Design: docs/02_Architecture/History_And_Cloud_Design.md section 6.1.
+    Design: docs/decisions/06-history.md.
     """
 
     CLOUD_VIEW_HINT = "cloud_view_hint"
@@ -130,7 +130,7 @@ class IntentKind(Enum):
 
     Why it is refused rather than served, even behind a confirmation the
     way 上云 is (a button the user clicks -- see
-    docs/02_Architecture/History_And_Cloud_Design.md §6.1):
+    docs/decisions/06-history.md):
 
     - **A button is already known to be too weak a gate here.** On
       2026-09-17 the desktop's 清空历史记录 button was deliberately
@@ -417,7 +417,7 @@ class CheckVerdict(Enum):
     """What the exit checks made of one model rewording.
 
     Added 2026-09-23 so the web console can show *why* a rewording was
-    used or refused (docs/02_Architecture/Web_Console_Design.md section 6).
+    used or refused (docs/decisions/08-web.md).
     It records a decision :func:`phrasing.judge` already made; nothing
     branches on it except the display.
     """

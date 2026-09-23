@@ -12,7 +12,7 @@ several seconds per answer, and this project's PC side is single-threaded
 (``QTimer -> poll_once()``, no QThread, no asyncio) -- a blocking call
 would freeze the UI for the whole generation. So a caller submits, then
 polls from the same loop that already drives everything else. See
-docs/02_Architecture/Assistant_Design.md section 5.
+docs/decisions/02-llm.md.
 """
 
 from __future__ import annotations

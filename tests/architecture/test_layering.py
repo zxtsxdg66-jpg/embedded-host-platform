@@ -1,7 +1,7 @@
 """The package dependency rules, checked against the source rather than trusted.
 
-Added 2026-09-23. The rules below were stated in ``CLAUDE.md`` and
-``docs/02_Architecture/Software_Structure.md`` from the start and described
+Added 2026-09-23. The rules below were stated in ``CONTRIBUTING.md`` and
+``docs/architecture.md`` from the start and described
 there as enforced by tests -- but no test read the imports. When one finally
 did, it found a violation introduced the same day: ``gateway/events.py``
 imported ``application.link_monitor`` for two value types, which then moved

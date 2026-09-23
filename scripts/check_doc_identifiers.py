@@ -7,9 +7,7 @@
 以及文档明写"未实现"的名字（`get_history()`、`TcpChannel`）都会被列出来，它们是正常的。
 真正要找的是第三类：**文档写了某个名字、代码里其实已经改名或删掉了**。
 
-2026-09-09 首次运行捞出两条真问题：`HEARTBEAT_INTERVAL_TICKS`（固件早已用数据上报
-取代心跳帧，联调手册却还让人去找心跳）、`_extract_buffered_frame`/`_resync_buffer`
-（拼帧逻辑后来抽成了 `FrameStreamBuffer`，旧方法名不复存在）。
+典型的一例：拼帧逻辑抽成 `FrameStreamBuffer` 之后，文档里还写着旧的私有方法名。
 
 用法::
 
@@ -25,15 +23,14 @@ import sys
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP_DOC = ('.venv', 'node_modules', '.claude', 'build', '.pytest_cache',
-            '08_YINGJIAN', '归档', '实验数据')
+SKIP_DOC = ('.venv', 'node_modules', 'build', '.pytest_cache')
 
 # 全部源码文本，作为"存在性"的判据
 corpus = []
 for pattern in ('src/**/*.py', 'scripts/**/*.py', 'tests/**/*.py',
                 'firmware/stm32f407/Drivers/BSP/**/*.[ch]',
                 'firmware/stm32f407/User/*.[ch]',
-                'android/app/src/main/**/*.kt', '*.toml'):
+                'android/app/src/main/**/*.kt', 'web/js/*.js', '*.toml'):
     for f in ROOT.glob(pattern):
         if '__pycache__' in f.as_posix():
             continue

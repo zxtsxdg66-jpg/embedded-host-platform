@@ -4,7 +4,7 @@ Corresponds to the "传感器应用模拟验证阶段" task: validates the data
 processing pipeline (SensorSimulator -> DataService -> SensorDataProcessor)
 using a smoothly-varying, physically-plausible temperature reading, ahead
 of a real STM32 + temperature sensor being available -- see
-docs/05_Test/Hardware_Simulation_Mode.md.
+docs/architecture.md.
 
 Composition only: this does not modify device.simulator.SimulatorDevice --
 it subclasses it purely to pre-configure one channel and a domain-specific

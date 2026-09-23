@@ -1,9 +1,9 @@
 """gateway: the PC-side local network interface layer (REST + WebSocket).
 
-Corresponds to docs/02_Architecture/Multi_Client_System_Architecture.md
-Section 2.3 ("PC 内置网关" -- the gateway-mode specialization where the PC
+Corresponds to docs/decisions/07-gateway.md
+ ("PC 内置网关" -- the gateway-mode specialization where the PC
 upper-computer process itself plays the gateway role) and to
-docs/10_AndroidClient/PC_Android_接口设计.md.
+docs/android.md.
 
 Architectural position: this package is a *peer of* ``ui/`` -- both are
 consumers of ``api.ApiInterface``, differing only in how they re-express

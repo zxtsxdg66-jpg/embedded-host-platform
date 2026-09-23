@@ -35,7 +35,7 @@
 
     <!--
       无效读数不隐藏也不丢弃：它是链路质量的证据（PC 端同样照存不删，
-      见 History_And_Cloud_Design.md 4.1 节）。默认不占位，出现时才显示。
+      见 docs/decisions/06-history.md）。默认不占位，出现时才显示。
     -->
     <TextView
         android:id="@+id/textFlag"

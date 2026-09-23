@@ -22,7 +22,7 @@ dispatches when the desired state differs from the last one it managed to
 apply.
 
 **Occupancy.** Command dispatch goes through ControlService, which enforces
-docs/02_Architecture/Core_Service_Design.md Section 7's "共享读、独占写"
+docs/architecture.md's "共享读、独占写"
 rule: a command is refused unless its origin currently holds the device.
 Automatic ventilation is not a client competing for that lock, so it
 acquires immediately before dispatching and releases immediately after,

@@ -23,8 +23,8 @@ def test_defaults_match_documented_ventilation_thresholds() -> None:
 def test_ventilation_thresholds_are_separate_from_alarm_thresholds() -> None:
     """The ventilation thresholds must not be the alarm thresholds.
 
-    Guards the decision recorded in docs/05_Test/Project_Status_Context.md
-    section 5.9: the GB 37488-2019-argued alarm thresholds stay fixed, and
+    Guards the decision recorded in docs/verification.md
+    : the GB 37488-2019-argued alarm thresholds stay fixed, and
     ventilation gets its own (lower temperature, and an *upper* humidity
     limit where the alarm rule has a lower one).
     """

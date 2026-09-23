@@ -1,6 +1,6 @@
 """Device metadata: descriptive information that does not affect protocol parsing.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 1.2
+Corresponds to docs/architecture.md
 ("Device Metadata"). Deliberately excludes any sensor/controlled-object/MCU
 identification beyond a free-form ``extra`` mapping -- such details, if
 ever needed, belong to a device profile configuration, not to this model.

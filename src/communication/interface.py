@@ -1,6 +1,6 @@
 """Communication channel abstract interface: unified byte-level transport contract.
 
-Corresponds to docs/03_Communication/Communication_Design.md's "接口设计原则"
+Corresponds to docs/protocol.md's "接口设计原则"
 Section, principle 1 ("统一抽象接口"): every transport medium (UART, USB,
 TCP/IP, Bluetooth, and this phase's Loopback) implements the same contract,
 so Protocol Layer and Application Layer never need to know which one they
@@ -11,7 +11,7 @@ Communication Layer scope, by design:
   know about devices or services (that is device/ and service/), and is
   not bound to any specific transport medium.
 - Phase 1 keeps the contract synchronous and queue-based (send() enqueues,
-  receive() dequeues), matching Communication_Design.md's "回调或数据队列"
+  receive() dequeues), matching docs/protocol.md's "回调或数据队列"
   wording for the upstream data path. Design principle 2 ("异步非阻塞") and
   principle 3's callback-based state notifications (``on_data_received`` /
   ``on_state_changed``) are deferred to a later phase once a real transport

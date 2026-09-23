@@ -1,11 +1,11 @@
 """API abstract interface: the unified entry point future clients call through.
 
-Corresponds to docs/02_Architecture/Multi_Client_System_Architecture.md
-Section 5 ("PC 端和 Android 端调用关系"): PC and Android Presentation
+Corresponds to docs/decisions/07-gateway.md
+ ("PC 端和 Android 端调用关系"): PC and Android Presentation
 layers are meant to face "同一套概念接口" regardless of whether the
 implementation behind it is local (direct mode, phase 1) or remote
 (gateway mode, a later phase) -- this ABC is that concept interface.
-Corresponds also to docs/02_Architecture/Core_Service_Design.md Section 8
+Corresponds also to docs/architecture.md
 item 1 ("本地调用接口的正式化定义").
 
 API Layer boundary (see module docstrings in api/local_api.py and
@@ -21,29 +21,28 @@ Capabilities, per the task this module was built for:
 3. subscribe_data / unsubscribe_data -- 数据订阅
 4. acquire_control / release_control / submit_command -- 提交控制命令
    (acquire_control/release_control are the occupancy mechanics that make
-   submit_command usable under Core_Service_Design.md Section 7's default
+   submit_command usable under docs/architecture.md's default
    "共享读、独占写" rule -- they are not a separate capability, they are
    part of what "submitting a control command" requires)
 5. get_command_result   -- 查询命令结果
 6. subscribe_alarm_status -- 阈值报警状态订阅（2026-08-12 新增，见
-   docs/05_Test/Hardware_Simulation_Mode.md"阈值报警"一节；
+   docs/architecture.md"阈值报警"一节；
    service.sensor_data_processor.SensorDataProcessor 已实现的能力此前
    未接入 api/ui，这是那次补充）
 7. subscribe_statistics -- 统计信息订阅（2026-08-12 新增，同一次补充里
    一并接入的 SensorDataProcessor.get_statistics() 能力，供 ui 的
    StatisticsPanelWidget 使用）
 8. get_ventilation_settings / set_ventilation_thresholds / set_fan_mode /
-   subscribe_fan_decision -- 通风控制（2026-09-07 新增，经用户授权扩展）
-9. ask -- 环境问答（2026-09-08 新增，经用户授权扩展）。呈现端只能 import
+   subscribe_fan_decision -- 通风控制（2026-09-07 新增）
+9. ask -- 环境问答（2026-09-08 新增）。呈现端只能 import
    `api`，聊天面板因此必须经由本接口访问助手；助手本身在
-   service.assistant，设计见 docs/02_Architecture/Assistant_Design.md
-10. query_history -- 历史读数查询（2026-09-17 新增，经用户授权扩展）。
+   service.assistant，设计见 docs/decisions/02-llm.md
+10. query_history -- 历史读数查询（2026-09-17 新增）。
     与 8/9 两项一样属于纯增量：既有方法签名一个未动。设计见
-    docs/02_Architecture/History_And_Cloud_Design.md
+    docs/decisions/06-history.md
 11. get_link_statistics / subscribe_link_events -- 串口链路监视（2026-09-23
-    新增，经用户授权扩展）。供 Web 控制台的协议检查器使用；纯增量，
-    既有方法签名一个未动。设计见 docs/02_Architecture/Web_Console_Design.md
-    第 5 节
+    新增）。供 Web 控制台的协议检查器使用；纯增量，
+    既有方法签名一个未动。设计见 docs/decisions/08-web.md
 """
 
 from __future__ import annotations
@@ -181,7 +180,7 @@ class ApiInterface(ABC):
         answer is read from the data layer**; a language model, when one
         is attached, only rephrases the sentence around those numbers and
         its output is discarded if it contains a figure the data did not
-        supply. See docs/02_Architecture/Assistant_Design.md section 1.1.
+        supply. See docs/decisions/02-llm.md.
 
         Never raises for an unrecognised question -- the returned
         :class:`~service.assistant.models.Answer` carries
@@ -213,7 +212,7 @@ class ApiInterface(ABC):
         """Counters for the serial link: frames, resyncs, CRC failures.
 
         Added 2026-09-23 for the web console's protocol inspector (see
-        docs/02_Architecture/Web_Console_Design.md section 5) -- the one
+        docs/decisions/08-web.md) -- the one
         extension of this interface that work required. ``active`` is False
         in Simulator mode, which has no byte stream to count.
         """

@@ -1,9 +1,9 @@
 """RemoteDevice: passive representation of an external, real device pending
 Communication Layer integration (e.g. a future STM32/MSPM0 MCU over UART).
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 1
+Corresponds to docs/architecture.md
 (Device abstraction) and the "Hardware 模式" described in
-docs/05_Test/Hardware_Simulation_Mode.md.
+docs/architecture.md.
 
 Unlike device.simulator.SimulatorDevice, RemoteDevice never generates data
 itself -- a real device produces its own data over its own transport.

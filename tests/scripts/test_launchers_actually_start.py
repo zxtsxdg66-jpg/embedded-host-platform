@@ -22,7 +22,7 @@ pytest 自己又是以包路径（`scripts.automation_wiring`）导入的，项�
   要守的是"import 链通不通"，不是"能不能无人值守跑完"。
 
 这正是本项目反复验证过的那条经验——"能编译/测试通过"不等于"功能真的能用"
-（见 `docs/05_Test/Project_Status_Context.md` 第 8 节）。
+（见 `docs/verification.md`）。
 """
 
 from __future__ import annotations

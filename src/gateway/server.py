@@ -21,7 +21,7 @@ api/, service/, or application/:
               assistant_detail / link_event
 
 Ventilation, added 2026-09-23 for the web console
-(docs/02_Architecture/Web_Console_Design.md section 4). Same kind of thin
+(docs/decisions/08-web.md). Same kind of thin
 translation as history: the four ApiInterface methods existed since the
 ventilation feature landed; only this server had not exposed them.
 
@@ -33,12 +33,12 @@ history capability, and this server would not reach into a widget to fake
 one. What changed is the premise, not the principle -- history is now a
 capability of the platform itself (``ApiInterface.query_history``), so
 this endpoint is the same thin translation every other one here is. See
-docs/02_Architecture/History_And_Cloud_Design.md section 0.
+docs/decisions/06-history.md.
 
 CORS is enabled permissively because the only clients are on the user's
 own LAN (phone + PC on the same Wi-Fi/hotspot) and there is no
 authentication or sensitive data in this phase; see the note in
-docs/10_AndroidClient/第一阶段测试流程.md before exposing this beyond a
+docs/android.md before exposing this beyond a
 trusted network.
 """
 
@@ -300,7 +300,7 @@ def create_app(
         ``unit`` sits at the top level, not on every point: it is a
         property of the channel, not of a reading, and repeating it 500
         times would say nothing extra. Point fields follow the contract
-        drafted in docs/10_AndroidClient/PC_Android_接口设计.md 2.3.
+        drafted in docs/android.md 2.3.
         """
         try:
             start_at = from_iso8601(start) if start else None

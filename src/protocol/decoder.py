@@ -4,7 +4,7 @@ Mirrors the wire format defined in protocol/encoder.py. Validates frame
 sync, declared payload length, and CRC before returning a Frame --
 corrupted or incomplete input raises a protocol.exceptions.ProtocolError
 subclass rather than returning a partially-decoded result (per
-.claude/skills/improving-python-code-quality: fail loud, don't degrade
+the Python code-quality guidelines: fail loud, don't degrade
 silently).
 """
 

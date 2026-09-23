@@ -109,7 +109,7 @@ class _Bubble(QWidget):
         The whole of the assistant's reach into anything irreversible is
         this button: the model proposes, the sentence explains, and a
         person clicking is what starts the work. See
-        docs/02_Architecture/History_And_Cloud_Design.md section 6.1 for
+        docs/decisions/06-history.md for
         why uploading is offered this way rather than being executed on
         the strength of a sentence.
 

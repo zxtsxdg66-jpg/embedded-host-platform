@@ -1,15 +1,15 @@
 """ApplicationRuntime: composition root for both Simulator- and Hardware-mode
 data/control loops.
 
-Corresponds to docs/02_Architecture/System_Architecture.md's layered data
-flow and docs/02_Architecture/Core_Service_Design.md Section 4 (Service
+Corresponds to docs/architecture.md's layered data
+flow and docs/architecture.md (Service
 Layer responsibilities). Supports two device modes side by side, per
-docs/05_Test/Hardware_Simulation_Mode.md:
+docs/architecture.md:
 
     Simulator mode:  SimulatorDevice + LoopbackChannel + Protocol
     Hardware mode:   RemoteDevice    + SerialChannel    + Protocol
 
--- see Core_Service_Design.md Section 6.2 for why the Simulator substitution
+-- see docs/architecture.md for why the Simulator substitution
 is architecturally sound: a simulator is meant to be indistinguishable from
 a real device at the interface level, which is exactly what lets both
 modes share every line of code below register_device().
@@ -147,7 +147,7 @@ class ApplicationRuntime:
         # Always present, so ``ask()`` works from the moment the runtime
         # exists. Without a model attached it answers from rules and
         # templates -- which is the default and always correct; see
-        # docs/02_Architecture/Assistant_Design.md.
+        # docs/decisions/02-llm.md.
         self._llm: LlmClient | None = None
         self._export_status: ExportStatus | None = None
         """两个可选注入项，记在这里而不是只传给 Assistant。
@@ -389,7 +389,7 @@ class ApplicationRuntime:
         Read-only by construction: the port exposes a count and nothing
         else, so attaching it cannot give the assistant a way to upload
         anything. Starting an upload stays with the button in the desktop
-        UI (History_And_Cloud_Design.md §6.1).
+        UI (docs/decisions/06-history.md).
         """
         self._export_status = status
         self._rebuild_assistant()

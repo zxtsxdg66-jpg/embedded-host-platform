@@ -4,7 +4,7 @@
 写，不含任何定时器、后台线程或上传队列——想上云时才跑这个脚本，它把
 "还没导出的时段"一次补齐。这样断网重试、退避、后台失败告警统统不需要，
 下次运行自然补上，而"下次"由人决定。设计见
-docs/02_Architecture/History_And_Cloud_Design.md 第 5.1 节。
+docs/decisions/06-history.md。
 
 与设计文档 3.3 节的一处偏离：那里写的是新增 ``scripts/archive_export.py``，
 分期表里写的是 ``scripts/cloud_sync.py``。这里按后者做成**单一入口**——

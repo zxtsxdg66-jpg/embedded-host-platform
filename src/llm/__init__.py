@@ -3,7 +3,7 @@
 Peer to ``communication`` but a different kind of boundary: that package
 speaks to *devices* and hands bytes up to ``protocol``; this one speaks to
 a local model server and hands text to ``service.assistant``. See
-docs/02_Architecture/Assistant_Design.md section 4.1 for why the two are
+docs/decisions/02-llm.md for why the two are
 kept apart.
 
 Depends only on the standard library. In particular it does **not**

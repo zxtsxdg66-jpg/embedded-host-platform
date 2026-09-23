@@ -14,7 +14,7 @@ structurally, verified by mypy where they are assembled.
 
 Instances may only be created in ``application/`` or ``scripts/`` -- the
 same rule that governs ``SerialChannel`` and ``OllamaClient``. See
-docs/02_Architecture/History_And_Cloud_Design.md section 3.2 for why this
+docs/decisions/06-history.md for why this
 is a new top-level package rather than a module inside ``application`` or
 ``service``.
 """

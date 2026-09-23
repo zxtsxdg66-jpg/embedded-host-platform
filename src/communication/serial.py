@@ -1,6 +1,6 @@
 """SerialChannel: a real UART/USB-serial CommunicationChannel implementation.
 
-Corresponds to docs/03_Communication/Communication_Design.md's UART/USB
+Corresponds to docs/protocol.md's UART/USB
 transport sections and its "统一抽象接口"/"可替换性" design principles:
 this is the first *real* (non-simulated) CommunicationChannel
 implementation, alongside phase 1's communication.loopback.LoopbackChannel.

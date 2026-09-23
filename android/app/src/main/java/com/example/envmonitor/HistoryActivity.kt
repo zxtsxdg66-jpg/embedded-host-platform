@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
  *
  * 查的是 **PC 端本地历史库**，经局域网网关的
  * `GET /devices/{id}/channels/{channel}/history`——手机不直连云端，
- * 也不在本机存任何历史（见 docs/02_Architecture/History_And_Cloud_Design.md 第 0 节）。
+ * 也不在本机存任何历史（见 docs/decisions/06-history.md）。
  * 因此关掉 App 再打开，看到的仍是 PC 上那一份，两端不会各存一份对不上的数据。
  *
  * 与问答页的两点不同，都是照这一页自己的情况定的，不是照抄：

@@ -2,7 +2,7 @@
 null-modem cable with no cable.
 
 Added 2026-09-23 for the ``virtual`` run mode
-(docs/02_Architecture/Web_Console_Design.md section 5.1): an in-process
+(docs/decisions/08-web.md): an in-process
 virtual STM32 writes real protocol frames into one end, and the host's
 ordinary Hardware-mode receiver reads them from the other -- so the whole
 receive chain, frame sync included, runs without a board or a virtual COM
@@ -12,7 +12,7 @@ port driver.
 back each ``send()`` as one ``receive()`` -- it preserves message
 boundaries, which is exactly the property a real serial port does not have
 and which once hid four defects from Simulator mode
-(docs/05_Test/Hardware_Simulation_Mode.md). A pipe end's ``receive()``
+(docs/architecture.md). A pipe end's ``receive()``
 returns *everything* that has arrived, however many writes it came in:
 frames arrive concatenated, and a writer that splits a frame across writes
 produces half-frames. That is what the frame-sync code exists to handle,
@@ -22,7 +22,7 @@ Thread-safe: the virtual device writes from its own thread while the host
 reads from the runtime's driver thread.
 
 Like every concrete channel, create it only in ``application`` or
-``scripts`` (``CLAUDE.md``).
+``scripts`` (``CONTRIBUTING.md``).
 """
 
 from __future__ import annotations

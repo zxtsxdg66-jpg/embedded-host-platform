@@ -1,6 +1,6 @@
 """Concrete DataService: in-memory, synchronous publish/subscribe.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4
+Corresponds to docs/architecture.md
 ("data processing and distribution"). Delivery is synchronous and
 in-process for phase 1 -- a subscriber's callback runs on the calling
 thread inside publish(), matching every other phase-1 module's choice to

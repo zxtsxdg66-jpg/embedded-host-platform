@@ -1,16 +1,16 @@
 """Generic protocol frame: a structured message, independent of wire bytes.
 
-Corresponds to docs/03_Communication/Protocol_Design.md's frame structure
+Corresponds to docs/protocol.md's frame structure
 (帧头 / 设备ID / 命令类型 / 数据长度 / Payload / CRC校验). This module defines
 only the *structured* message -- device id, command type, payload -- that
-Protocol_Design.md's "设备ID" and "命令类型" fields describe; byte-level
+docs/protocol.md's "设备ID" and "命令类型" fields describe; byte-level
 framing (header sync, length prefix, CRC) is handled by encoder.py /
 decoder.py, matching that document's field-by-field breakdown.
 
 Not bound to any specific sensor, MCU model, or transport (UART/TCP/BLE):
 ``device_id`` and ``command_type`` are opaque integers whose business
 meaning is defined elsewhere (a device's capability descriptor, per
-docs/02_Architecture/Core_Service_Design.md Section 1), and ``payload`` is
+docs/architecture.md), and ``payload`` is
 opaque bytes.
 """
 

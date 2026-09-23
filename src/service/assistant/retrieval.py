@@ -6,7 +6,7 @@ reading the same objects the rest of the platform reads --
 ``VentilationController`` for the fan. There is deliberately no second
 copy of anything: the alarm thresholds argued from GB 37488-2019 stay in
 ``service.sensor_data_processor`` alone, exactly as they are kept out of
-the firmware (see docs/03_Communication/Protocol_Design.md, ALERT_STATE).
+the firmware (see docs/protocol.md, ALERT_STATE).
 
 Aggregation across devices matches ``VentilationController._worst_value``:
 when several devices report the same channel, the highest value wins for

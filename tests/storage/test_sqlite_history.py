@@ -1,6 +1,6 @@
 """`SqliteHistoryStore` 的回归测试。
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 4 节。
+设计见 `docs/decisions/06-history.md`。
 这里守的几条决定，每条都对应文档里一句明确的取舍：
 
 - 时间戳存 UTC 文本，且**文本序必须等于时间序**（否则"新的在前"是错的）；

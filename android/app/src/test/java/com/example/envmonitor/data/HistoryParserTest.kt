@@ -14,7 +14,7 @@ import org.junit.Test
  * 经 FastAPI TestClient 实跑）原样抓下来的。因此这些用例验证的是
  * "Android 端能否解析 PC 端真实发出的数据"，而不是"能否解析我以为它会发的数据"。
  *
- * 覆盖面按 `docs/02_Architecture/History_And_Cloud_Design.md` 第 7 节的要求：
+ * 覆盖面按 `docs/decisions/06-history.md`的要求：
  * 正常、空列表、字段缺失、请求失败各一条。
  */
 class HistoryParserTest {

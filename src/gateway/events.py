@@ -9,7 +9,7 @@ invented fields:
 
 The one field that is *not* copied from those types is ``unit``. DataPoint
 has no unit (units are a presentation concern). Per
-docs/10_AndroidClient/PC_Android_接口设计.md Section 3.1 the server
+docs/android.md the server
 attaches it, so an Android client does not have to hardcode its own
 mapping -- see gateway/channel_units.py for why that mapping is a
 deliberate (documented) duplicate of ui/channel_display.py rather than an
@@ -189,7 +189,7 @@ def answer_detail(answer: Answer) -> dict[str, Any]:
     built from, and every model rewording with the exit checks' verdict.
 
     Added 2026-09-23 for the web console's trace view
-    (docs/02_Architecture/Web_Console_Design.md section 6). Additive: the
+    (docs/decisions/08-web.md). Additive: the
     Android client reads ``text``/``source`` and ignores the rest.
     """
     intent = answer.intent

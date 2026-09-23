@@ -1,6 +1,6 @@
 """Control instruction model exchanged between clients and the Service Layer.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 3
+Corresponds to docs/architecture.md
 (Control instruction model design), including the command lifecycle
 (pending -> success / failed / timeout) described there.
 """

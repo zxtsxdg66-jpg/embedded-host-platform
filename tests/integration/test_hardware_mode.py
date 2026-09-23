@@ -4,7 +4,7 @@ Verifies that Simulator mode (SimulatorDevice) and Hardware mode
 (RemoteDevice) can be registered, queried, and controlled through the
 exact same ApplicationRuntime/LocalApi/DeviceManager code -- with no
 if/else branching on device type anywhere above device/ -- per
-docs/05_Test/Hardware_Simulation_Mode.md.
+docs/architecture.md.
 
 RemoteDevice is paired with a LoopbackChannel here (not a real
 SerialChannel/MCU) since this suite tests the *device abstraction*

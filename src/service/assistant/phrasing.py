@@ -73,7 +73,7 @@ CLOUD_SYNC_NONE_TEXT = (
 
 不含数字，因此"当前这一小时有多少条"这个数**刻意不说**——那要查历史库，
 而"不让问答去查历史"是这套设计明确划下的界
-（``docs/02_Architecture/History_And_Cloud_Design.md`` 第 2 节）。
+（``docs/decisions/06-history.md`` 第 2 节）。
 说得出来的只有"还没结束"，那不是数，永远为真。
 """
 
@@ -276,7 +276,7 @@ until 2026-09-17, when readings began persisting to SQLite. After that a
 user could be told the system keeps nothing earlier, then page over to
 历史记录 and see yesterday -- a small contradiction, and those are the
 ones that cost trust. (The change was predicted in
-docs/02_Architecture/History_And_Cloud_Design.md section 6 when history
+docs/decisions/06-history.md when history
 was designed, and then not made.)
 
 The limit itself is real and unchanged: retrieval reads

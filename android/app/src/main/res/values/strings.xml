@@ -8,7 +8,7 @@
 
     <!-- ===== 首页头部 ===== -->
     <string name="home_title">地铁站环境监测</string>
-    <!-- 站点名称写死（2026-08-16 用户确认，见 UI 方案第 14 节决策 3） -->
+    <!-- 站点名称写死 -->
     <string name="site_name">站厅公共区</string>
     <string name="home_subtitle_devices">%1$s · %2$d 台设备</string>
     <string name="home_subtitle_loading">%1$s · 正在获取设备…</string>

@@ -1,7 +1,7 @@
 """SQLite-backed history store.
 
 Schema and the reasoning behind it: see
-docs/02_Architecture/History_And_Cloud_Design.md section 4.1. The short
+docs/decisions/06-history.md. The short
 version of the two decisions that are easy to get wrong later:
 
 * **Timestamps are stored as ISO-8601 UTC text.** ``DataPoint.timestamp``

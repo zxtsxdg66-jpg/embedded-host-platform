@@ -1,7 +1,7 @@
 """LocalApi: in-process ApiInterface implementation, a thin facade over
 ApplicationRuntime.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 5.1
+Corresponds to docs/architecture.md
 (direct-mode local calling): this is that local calling path, realized for
 phase 1 as the concrete ApiInterface implementation. A later gateway-mode
 implementation (Section 5.2/6.3) would implement the same ApiInterface

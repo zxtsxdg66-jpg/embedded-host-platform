@@ -1,6 +1,6 @@
 """OSS 上传器：配置读取与失败处理。**全部用打桩，不碰网络。**
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 5.2、5.3 节。
+设计见 `docs/decisions/06-history.md` 第 5.2、5.3 节。
 这里守三件事：
 
 - **密钥不外泄**：`OssConfig` 的 repr 里不能出现 secret；

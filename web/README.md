@@ -2,7 +2,7 @@
 
 网关（`src/gateway`）的又一个客户端，与 `android/` 同性质：只经 REST 与 WebSocket 通信，
 不 import 任何 Python 符号，不进 `pytest`/`mypy src` 的范围，没有 npm 构建链。
-设计与取舍见 [`docs/decisions/08-web-console.md`](../docs/decisions/08-web-console.md)。
+设计与取舍见 [`docs/decisions/08-web.md`](../docs/decisions/08-web.md)。
 
 ## 四个页签
 
@@ -50,7 +50,7 @@ python scripts/build_web_replay.py
 - `hour`：真实开发板上的一小时稳定性实验（3489 帧）。原始采集只存了读数没存字节，帧是按协议重新编码的。
 - `faults`：虚拟 STM32 带故障注入的一段会话（固定随机种子），脚本会断言主机侧判出的重同步数
   等于注入的杂散字节数、CRC 失败数等于翻转数。
-- `assistant`：`docs/05_Test/baseline/约束展示实录_*.json` 里的真实模型问答，含追溯。
+- `assistant`：`experiment-data/assistant/约束展示实录_*.json` 里的真实模型问答，含追溯。
 
 ## 文件
 

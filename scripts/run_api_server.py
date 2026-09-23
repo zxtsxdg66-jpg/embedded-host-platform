@@ -35,11 +35,11 @@ Virtual mode -- no board, but a real byte stream (2026-09-23)::
     host's frame sync, CRC check and the web console's protocol inspector
     all see what they would see on a UART. ``--inject-faults`` makes the
     virtual device split, merge, pad and corrupt frames on purpose. See
-    docs/02_Architecture/Web_Console_Design.md section 5.1.
+    docs/decisions/08-web.md.
 
 Web console (2026-09-23): unless ``--no-web`` is given, the ``web/``
 directory is served at ``/web/`` by this launcher -- the gateway package
-itself does not know it exists (CLAUDE.md).
+itself does not know it exists (CONTRIBUTING.md).
 
 Note the two different "port" options: ``--port`` is the TCP port this HTTP
 server listens on; ``--port-serial`` is the STM32's serial port. They are
@@ -288,7 +288,7 @@ def mount_web_console(app: object) -> bool:
     """Serve ``web/`` at ``/web/`` on the gateway app, if the directory exists.
 
     Done here, in the composition root, so the gateway package never learns
-    that a web front end exists (CLAUDE.md). Returns False when there is no
+    that a web front end exists (CONTRIBUTING.md). Returns False when there is no
     ``web/`` directory -- the gateway works the same without it.
     """
     if not (WEB_DIR / "index.html").is_file():

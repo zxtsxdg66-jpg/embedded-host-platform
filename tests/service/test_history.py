@@ -1,6 +1,6 @@
 """`service.history` 的端口与两个不落盘实现。
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 4 节。
+设计见 `docs/decisions/06-history.md`。
 `NullHistoryStore` 的存在理由与 `NullLlmClient`、`LoopbackChannel` 相同：
 让它上面的一切都能在不挂任何外部资源的情况下被验证。
 """

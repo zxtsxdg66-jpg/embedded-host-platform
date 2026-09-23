@@ -1,6 +1,6 @@
 """SensorDataProcessor: per-channel running statistics and threshold alarms.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4's
+Corresponds to docs/architecture.md's
 "数据处理与分发" (data processing and distribution) responsibility, and
 realizes the "传感器应用模拟验证阶段" task's data flow:
 
@@ -14,9 +14,9 @@ convenience below) -- no change to DataService/ApiInterface/ui is needed
 for data to reach it.
 
 The "-> API/UI" leg of that data flow was intentionally left unwired for
-several tasks (see git history / docs/05_Test/Project_Status_Context.md):
+several tasks (see git history / docs/verification.md):
 doing so meant extending ApiInterface, a deliberate step this codebase
-requires justifying before taking (see CLAUDE.md's "修改规则"). It has
+requires justifying before taking (see CONTRIBUTING.md's "修改规则"). It has
 since been wired up twice, both additively (no existing ApiInterface
 method's signature changed): alarms (on_alarm/on_status ->
 api.subscribe_alarm_status -> ui's activity log + row highlighting) and

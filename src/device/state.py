@@ -1,6 +1,6 @@
 """Device state model: connection state and occupancy state.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 1.2
+Corresponds to docs/architecture.md
 ("Connection State", "Occupancy State") and Section 7 (multi-client access
 rules: "shared read, exclusive write"). `DeviceStatus` is an immutable value
 object -- transitions return a new instance rather than mutating in place,

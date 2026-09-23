@@ -1,6 +1,6 @@
 """Virtual STM32: simulates a real UART device end to end.
 
-Corresponds to docs/05_Test/Virtual_STM32_Test.md. Purpose: exercise
+Corresponds to docs/decisions/01-simulation.md. Purpose: exercise
 Hardware Mode's *entire* real receive chain --
 
     SerialChannel.receive() -> protocol.decode() -> HardwareDeviceReceiver
@@ -27,7 +27,7 @@ side of the wire, and a real STM32 firmware would hardcode these same
 values in C, not import PC-side Python -- duplicating the constants here
 is a more faithful stand-in for what real firmware does than sharing code
 with the host application would be. Both sides only ever agree through
-the protocol *specification* (docs/03_Communication/Protocol_Design.md),
+the protocol *specification* (docs/protocol.md),
 never through shared code. For the same reason, the small byte-stream
 frame-boundary recovery this script needs to read incoming commands is
 reimplemented locally (see ``_extract_frame`` below) rather than
@@ -54,7 +54,7 @@ Usage
     python scripts/virtual_stm32.py --port COM4
     python scripts/virtual_stm32.py --port COM4 --device-id 1 --interval 2.0
 
-See docs/05_Test/Virtual_STM32_Test.md for how to pair this with
+See docs/decisions/01-simulation.md for how to pair this with
 ``scripts/run_gui.py --mode hardware`` using a virtual COM port pair.
 
 In-process use (2026-09-23)
@@ -64,7 +64,7 @@ The loop now lives in :class:`VirtualStm32`, which talks to any
 of ``communication.pipe.make_pipe_pair()``. ``scripts/run_api_server.py
 --mode virtual`` uses the latter, so the host's real receive chain runs
 without a board *or* a virtual COM driver
-(docs/02_Architecture/Web_Console_Design.md section 5.1).
+(docs/decisions/08-web.md).
 
 It can also misbehave on purpose (:class:`FaultPlan`): split a frame
 across writes, glue a cycle's frames into one write, put stray bytes
@@ -115,8 +115,8 @@ from protocol.exceptions import ProtocolError  # noqa: E402
 from protocol.frame import Frame  # noqa: E402
 
 DATA_REPORT_CODE = 0x01
-"""Must match the frame.command_type value docs/03_Communication/
-Protocol_Design.md/application/manager.py reserve for device -> host data
+"""Must match the frame.command_type value docs/protocol.md and
+application/manager.py reserve for device -> host data
 reports. See module docstring for why this is a literal, not an import."""
 
 COMMAND_ACK_CODE = 0x02

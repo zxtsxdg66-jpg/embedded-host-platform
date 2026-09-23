@@ -32,7 +32,7 @@ class CommandNotFoundError(ApiError):
 class CommandAuthorityError(ApiError):
     """Raised when a client submits a command for a device it does not
     currently hold exclusive command authority over (see
-    docs/02_Architecture/Core_Service_Design.md Section 7)."""
+    docs/architecture.md)."""
 
 
 class CommandDeliveryError(ApiError):

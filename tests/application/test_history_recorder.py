@@ -1,6 +1,6 @@
 """`HistoryRecorder` 的回归测试。
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 4.2 节。
+设计见 `docs/decisions/06-history.md`。
 这里守的核心只有一条，其余都是它的推论：**数据回调里绝不落盘**。
 `InMemoryDataService.publish()` 是同步的，回调跑在采集线程上，
 而那个线程的下一步就是取模型结果——把磁盘写放进去，等于把它塞进

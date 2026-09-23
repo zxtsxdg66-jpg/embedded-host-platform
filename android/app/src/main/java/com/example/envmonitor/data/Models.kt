@@ -10,7 +10,7 @@ package com.example.envmonitor.data
  *  - [Statistics]    <- PC service.sensor_data_processor.ChannelStatistics
  *
  * 其中 unit 是 PC 网关在推送时附加的展示字段（DataPoint 本身没有 unit），
- * 详见 docs/10_AndroidClient/PC_Android_接口设计.md 3.1 节。
+ * 详见 docs/android.md。
  */
 
 data class DeviceStatus(
@@ -53,7 +53,7 @@ data class Statistics(
 
 /**
  * 环境问答的一条回答。字段与 PC 端 service.assistant.models.Answer 的
- * text / source 两项对应（网关只暴露这两项，见 PC_Android_接口设计.md 2.8 节）。
+ * text / source 两项对应（网关只暴露这两项，见 docs/android.md）。
  *
  * [source] 说明这句话由谁组织，四种取值与 PC 端 AnswerSource 一一对应：
  * "template"（规则 + 模板）、"model_intent"（模型判断了问题类别，句子仍是程序生成的）、
@@ -75,7 +75,7 @@ data class AssistantAnswer(
 /**
  * 一条历史读数。对应 PC 端 service.history.HistoryPoint，字段取自
  * `GET /devices/{id}/channels/{channel}/history` 的 points 数组
- * （见 PC_Android_接口设计.md 2.3 节）。
+ * （见 docs/android.md）。
  *
  * [timestamp] 保留服务端给的 ISO-8601 原文而不在本地解析成时间对象，
  * 与 [RealtimeData.timestamp] 的处理一致：手机只负责显示，时刻的权威解释

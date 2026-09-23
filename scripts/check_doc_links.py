@@ -1,7 +1,7 @@
 """检查文档里的链接与路径引用是否指向真实存在的东西。
 
-写它的直接原因：2026-09-09 拆分状态快照与问答设计文档时，分卷比原文件深了一层，
-11 条 `../` 相对链接全部失效——而 markdown 坏链不会有任何提示，只有点的人才发现。
+markdown 坏链不会有任何提示，只有点的人才发现。
+文档一移动目录，所有 `../` 相对链接就可能一起失效。
 
 两类检查：
 
@@ -28,8 +28,7 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-SKIP = ('.venv', 'node_modules', '.claude', 'build', '.pytest_cache',
-        '08_YINGJIAN', '.git')
+SKIP = ('.venv', 'node_modules', 'build', '.pytest_cache', '.git')
 
 docs = [p for p in ROOT.rglob('*.md')
         if not any(s in p.as_posix() for s in SKIP)]

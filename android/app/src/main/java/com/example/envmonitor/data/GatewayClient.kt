@@ -76,7 +76,7 @@ class GatewayClient(private val baseUrl: String) {
      * GET /devices/{id}/channels/{channel}/history -> 该通道已存的读数。
      *
      * 读的是 **PC 本地历史库**，不是云端——手机不持有任何云端凭证，
-     * 也不直连对象存储（见 History_And_Cloud_Design.md 第 0 节）。
+     * 也不直连对象存储（见 docs/decisions/06-history.md）。
      *
      * [limit] 默认 200 而不是服务端的 500：这一页把结果一条条加进
      * LinearLayout（与问答页同样不引入 RecyclerView，理由见 app/build.gradle.kts

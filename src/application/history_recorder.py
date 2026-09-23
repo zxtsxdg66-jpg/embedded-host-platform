@@ -14,7 +14,7 @@ So: the callback appends to a list in memory and returns. Flushing to the
 store happens when ``flush_if_due()`` is called from the poll loop, which
 writes once a batch is big enough or old enough.
 
-Design: docs/02_Architecture/History_And_Cloud_Design.md section 4.2.
+Design: docs/decisions/06-history.md.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """HardwareDeviceReceiver: Hardware-mode data receive loop, bridging
 CommunicationChannel (SerialChannel in production) -> Protocol -> DataService.
 
-Corresponds to docs/05_Test/Hardware_Simulation_Mode.md's Hardware-mode
+Corresponds to docs/architecture.md's Hardware-mode
 link (RemoteDevice + SerialChannel + Protocol) and completes the one piece
 that document flagged as still missing: the data *receive* loop --
 "从 SerialChannel 持续读取字节、解码为 Frame、映射回具体 RemoteDevice 的数据

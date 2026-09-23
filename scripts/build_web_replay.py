@@ -1,7 +1,7 @@
 """Build the web console's replay data from real recordings.
 
 2026-09-23, for the web console's replay mode
-(docs/02_Architecture/Web_Console_Design.md section 7). Output:
+(docs/decisions/08-web.md). Output:
 ``web/replay/replay-data.js``, which the console loads when no gateway is
 reachable -- including on GitHub Pages, where there never is one.
 
@@ -26,10 +26,11 @@ Two sessions are built:
   inspector has resyncs and CRC failures to show that the real code caught.
 
 Plus ``assistant``: the constrained Q&A recordings from
-docs/05_Test/baseline/约束展示实录_*.json, trace included.
+the recorded model Q&A session (``约束展示实录_*.json`` under
+``recordings.ASSISTANT_RECORDINGS_DIR``), trace included.
 
 This script imports ``src/`` and therefore lives in ``scripts/``: ``web/``
-never imports Python (CLAUDE.md).
+never imports Python (CONTRIBUTING.md).
 
 Usage::
 
@@ -50,7 +51,7 @@ for _path in (_ROOT / "src", _ROOT / "scripts", _ROOT):
     if str(_path) not in sys.path:
         sys.path.insert(0, str(_path))
 
-from recordings import RECORDINGS_DIR  # noqa: E402
+from recordings import ASSISTANT_RECORDINGS_DIR, RECORDINGS_DIR  # noqa: E402
 from virtual_stm32 import FaultPlan, VirtualStm32, build_frame  # noqa: E402
 
 from application.hardware_runtime import HardwareDeviceReceiver  # noqa: E402
@@ -74,7 +75,7 @@ from gateway.events import (  # noqa: E402
 )
 
 DATA_DIR = RECORDINGS_DIR
-BASELINE_DIR = _ROOT / "docs" / "05_Test" / "baseline"
+BASELINE_DIR = ASSISTANT_RECORDINGS_DIR
 OUT = _ROOT / "web" / "replay" / "replay-data.js"
 
 HOUR_RUN = "长时间稳定性_20260819_001038.csv"
@@ -245,7 +246,7 @@ def build_assistant() -> dict[str, Any]:
                 ],
             })
     return {
-        "source": f"docs/05_Test/baseline/{path.name}",
+        "source": path.relative_to(_ROOT).as_posix(),
         "note": "2026-09-23 走正式装配录制，本地模型 qwen3.5:4b，数据源为仿真模式。",
         "items": items,
     }

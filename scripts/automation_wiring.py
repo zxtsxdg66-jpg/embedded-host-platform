@@ -322,7 +322,7 @@ def make_cloud_sync_runner(
     """Build the callable behind the desktop's 「导出并上传」 button.
 
     Launching the upload lives here, in the composition layer, and not in
-    ``ui`` -- the view must not create or name a subprocess (``CLAUDE.md``
+    ``ui`` -- the view must not create or name a subprocess (``CONTRIBUTING.md``
     架构原则). What the window receives is a plain callable.
 
     Runs ``scripts/cloud_sync.py --snapshot`` **in a subprocess**, the same

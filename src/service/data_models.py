@@ -1,6 +1,6 @@
 """Business-level data model produced by the Service Layer.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 2
+Corresponds to docs/architecture.md
 (Data model design). A `DataPoint` is deliberately generic -- it carries no
 physical-quantity semantics (no "temperature", "voltage", ...); channel
 meaning is defined by a device's capability descriptor, not by this module.

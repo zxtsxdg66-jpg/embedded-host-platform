@@ -14,7 +14,7 @@ annotation alone. The assistant needs one number -- how many finished
 hours have not been uploaded -- and asking for exactly that keeps the
 dependency direction intact.
 
-Design: docs/02_Architecture/History_And_Cloud_Design.md section 6.1.
+Design: docs/decisions/06-history.md.
 """
 
 from __future__ import annotations

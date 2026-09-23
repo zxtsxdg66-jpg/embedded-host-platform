@@ -1,6 +1,6 @@
 """Application-wide dark theme: a single QSS stylesheet + matching QPalette.
 
-Corresponds to .claude/skills/pyqt6-ui-development-rules' Iron Law 3
+Corresponds to the PyQt6 UI guidelines' Iron Law 3
 ("ALWAYS apply QSS stylesheets at the QApplication level rather than
 per-widget") -- this module is that one stylesheet, applied once by
 whoever constructs the QApplication (scripts/run_gui.py), never scattered

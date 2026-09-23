@@ -1,6 +1,6 @@
 """Concrete ControlService: occupancy bookkeeping + command dispatch via a transport.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4
+Corresponds to docs/architecture.md
 ("command dispatch and tracking", "multi-client session and access
 control") and Section 7's default rule ("共享读、独占写"): submit_command()
 refuses to dispatch unless the caller currently holds the device via

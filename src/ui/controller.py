@@ -1,6 +1,6 @@
 """MainController: mediates between MainWindow (View) and api.ApiInterface.
 
-Corresponds to .claude/skills/pyqt6-ui-development-rules: "ALWAYS use
+Corresponds to the PyQt6 UI guidelines: "ALWAYS use
 Qt's signal/slot mechanism for UI-to-logic communication" and strict MVC
 separation -- MainWindow never touches ApiInterface directly; it calls
 MainController's plain methods, and MainController emits Qt signals that
@@ -19,7 +19,7 @@ ApiError), `core` (id type aliases), `service.command_models`/
 `service.data_models`/`service.sensor_data_processor` (the plain
 dataclasses -- Command, DataPoint, ThresholdStatus, ChannelStatistics --
 that flow across the api boundary as the shared concept model per
-docs/02_Architecture/Core_Service_Design.md Section 8), and `PyQt6`. It
+docs/architecture.md), and `PyQt6`. It
 never imports `application`, `device`, `communication`, or `protocol`, and
 never constructs or calls a Device/Communication/Protocol object directly.
 
@@ -89,7 +89,7 @@ def _offer_tag(answer: Answer) -> str:
     What is deliberately *not* a precondition: whether the current hour
     actually holds any readings. Knowing that means querying the history
     store, and the assistant does not query history by design
-    (``docs/02_Architecture/History_And_Cloud_Design.md`` 第 2 节). The
+    (``docs/decisions/06-history.md`` 第 2 节). The
     script prints "当前时段还没有读数" and exits 0 in that case, which is
     the honest outcome and costs one console line.
     """
@@ -152,7 +152,7 @@ class MainController(QObject):
     intent kind's *value*, a plain string: the view reads a tag and never
     imports the service layer's enum, and nothing about it lets the view
     start anything on its own (see
-    docs/02_Architecture/History_And_Cloud_Design.md section 6.1)."""
+    docs/decisions/06-history.md)."""
     """text, source ("template"/"model"/"fallback").
 
     ``source`` says who composed the *wording*, never who supplied the

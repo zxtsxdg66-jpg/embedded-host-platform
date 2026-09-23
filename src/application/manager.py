@@ -1,6 +1,6 @@
 """DeviceManager: device registry and wire-level bridging.
 
-Corresponds to docs/02_Architecture/Core_Service_Design.md Section 4's
+Corresponds to docs/architecture.md's
 "设备生命周期管理" (device lifecycle management) responsibility, and
 realizes the bridging work flagged as deferred in protocol/README.md:
 "Service Layer 字符串 DeviceId 与 Frame 数值型 device_id 之间的映射".
@@ -9,7 +9,7 @@ Registers and bridges any device.interface.DeviceInterface-conforming
 object -- both Simulator mode (device.simulator.SimulatorDevice) and
 Hardware mode (device.remote.RemoteDevice) devices register and dispatch
 commands through the exact same code path here; see
-docs/05_Test/Hardware_Simulation_Mode.md for what distinguishes the two
+docs/architecture.md for what distinguishes the two
 modes. The one capability that is *not* uniform is uplink data
 generation (:meth:`report_data`): only devices that implement
 ``generate()`` (currently just SimulatorDevice) support it -- a
@@ -28,7 +28,7 @@ DeviceManager owns:
   via its ``deliver`` method, so an InMemoryControlService can dispatch
   commands through it without importing protocol/communication itself
 
-Phase-1 wire conventions (chosen here, not in Protocol_Design.md, and not
+Phase-1 wire conventions (chosen here, not in docs/protocol.md, and not
 part of the Protocol Layer's own contract -- protocol/ remains fully
 payload-agnostic):
 
@@ -229,7 +229,7 @@ class DeviceManager:
             raise ValidationError(
                 f"device {device_id!r} does not support software data "
                 "generation (only Simulator-mode devices do; see "
-                "docs/05_Test/Hardware_Simulation_Mode.md)"
+                "docs/architecture.md)"
             )
         point = registration.device.generate(channel_id)
 
@@ -336,8 +336,8 @@ class DeviceManager:
         with the ack) are not this method's to deliver anywhere: only
         HardwareDeviceReceiver's own poll loop publishes DataPoints, and
         it isn't reachable from here, so such a frame is simply skipped.
-        This is a deliberate phase-1 tradeoff (see docs/05_Test/
-        Project_Status_Context.md's Hardware-mode command notes): at most
+        This is a deliberate phase-1 tradeoff (see
+        docs/protocol.md, known limitations): at most
         one sensor reading can be missed while a command round trip is in
         flight, in exchange for keeping this synchronous and not needing
         a shared receive loop between DeviceManager and

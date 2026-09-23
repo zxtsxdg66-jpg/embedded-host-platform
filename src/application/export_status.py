@@ -2,15 +2,15 @@
 
 Lives in ``application`` rather than in ``storage`` or ``service`` because
 it is the only place allowed to touch both sides -- ``service`` may not
-import ``storage`` (see ``CLAUDE.md`` and
-docs/02_Architecture/History_And_Cloud_Design.md section 3.2), and
+import ``storage`` (see ``CONTRIBUTING.md`` and
+docs/decisions/06-history.md), and
 ``storage`` should not know what a conversational assistant is.
 
 Same shape as :class:`application.history_recorder.HistoryRecorder`: a
 thin object that turns a storage capability into the narrow thing a
 service-layer port asks for. Here that is one integer.
 
-Design: docs/02_Architecture/History_And_Cloud_Design.md section 6.1.
+Design: docs/decisions/06-history.md.
 """
 
 from __future__ import annotations

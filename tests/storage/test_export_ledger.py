@@ -1,6 +1,6 @@
 """`SqliteExportLedger` 的回归测试。
 
-设计见 `docs/02_Architecture/History_And_Cloud_Design.md` 第 5.1 节。
+设计见 `docs/decisions/06-history.md`。
 这张表同时是**幂等依据**与**待发队列**，下面的用例分别守这两件事，
 外加一条：台账坏掉不抛异常（与历史库、问答日志同一条原则）。
 """

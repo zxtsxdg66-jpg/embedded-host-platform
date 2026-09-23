@@ -3,7 +3,7 @@
 A virtual STM32 on a thread writes real frames into a pipe; the ordinary
 Hardware-mode receiver reads them; the gateway exposes what the link did.
 Nothing below the channel is simulated away -- which is why this mode
-exists (docs/02_Architecture/Web_Console_Design.md section 5.1).
+exists (docs/decisions/08-web.md).
 """
 
 from __future__ import annotations

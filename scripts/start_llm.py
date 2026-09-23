@@ -42,7 +42,7 @@ HOST = "127.0.0.1"
 PORT = 11434
 MODEL = "qwen3.5:4b"
 
-# 安装位置来自 docs/02_Architecture/Assistant_Design.md §7.1：刻意装在 D 盘，
+# 安装位置来自 docs/decisions/02-llm.md：刻意装在 D 盘，
 # 因为目标机 C 盘只剩 49.6 GB 而模型是会持续增长的部分。
 OLLAMA_EXE_CANDIDATES = (
     Path(r"D:\Ollama\ollama.exe"),

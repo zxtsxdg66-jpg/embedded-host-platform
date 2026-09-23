@@ -19,7 +19,7 @@ runtime (one SerialChannel, one HardwareDeviceReceiver) and attaches
 That is not a workaround -- it is the arrangement the architecture was
 designed for. ``ui/`` and ``gateway/`` are peers, both consuming
 ``api.ApiInterface`` and neither aware of the other
-(docs/02_Architecture/Multi_Client_System_Architecture.md). Serial bytes are
+(docs/decisions/07-gateway.md). Serial bytes are
 decoded once, published once to ``DataService``, and fanned out to both.
 
 Threading
@@ -66,7 +66,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 # run_api_server is imported for its composition helpers rather than copying
 # their wiring: build_hardware_runtime() in particular contains the explicit
 # watch_alarms_for() call whose absence was a real bug once already (see
-# docs/05_Test/Project_Status_Context.md, Application Layer, 2026-08-12).
+# docs/verification.md, Application Layer, 2026-08-12).
 import run_api_server  # noqa: E402  (same scripts/ directory)
 import uvicorn  # noqa: E402
 from automation_wiring import (  # noqa: E402

@@ -8,7 +8,7 @@ Wire format (all multi-byte integers big-endian / network byte order)::
     +--------+-----------+--------------+--------+-----------+-----+
 
 Field choices made for this phase-1 implementation -- all left open by
-docs/03_Communication/Protocol_Design.md's "后续工作" section, decided here
+docs/protocol.md's "后续工作" section, decided here
 rather than in that document:
 
 - **Header**: fixed 2-byte sync marker, used by the decoder to locate the
