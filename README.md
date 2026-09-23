@@ -1,72 +1,92 @@
 # 嵌入式设备上位机平台
 
-面向嵌入式设备的通用上位机开发平台，以「地铁站公共空间环境监测」为验证场景：
-STM32F407 采集温湿度与噪声三通道，经自定义协议上报，PC 桌面端、Android 客户端与
-板载 LCD 三端一致呈现，并支持本地语言模型驱动的自然语言问答。
+> A host-side platform for embedded devices: an STM32F407 streams temperature, humidity and
+> noise over a custom framed serial protocol, and a layered Python host fans the data out to a
+> PyQt6 desktop app, an Android client, a browser console and the board's own LCD. A local
+> language model answers questions in natural language, but never produces a number: every
+> figure comes from the data layer, and each rewrite is checked before it is shown.
+> Runs fully without hardware. Docs are in Chinese.
 
-**无需任何硬件即可运行**——双击 `run_gui_模拟数据界面.bat`，内置模拟器会产生
-三通道数据，界面、报警、统计、问答全部可用。
+面向嵌入式设备的通用上位机平台，以「地铁站公共空间环境监测」为验证场景：
+STM32F407 采集温度、湿度、噪声三个通道，经自定义帧协议上报；PC 桌面端、Android、
+浏览器控制台与板载 LCD 同时呈现；本地语言模型负责自然语言问答，但**不产生任何数字**。
 
----
-
-## 设计主题：把不可靠的部件放在不承担正确性责任的位置
-
-整个项目围绕这一条展开，它有三个实例：
-
-| 不可靠的部件 | 怎么处理 |
-| --- | --- |
-| **串口链路**（会丢字节、会粘包半包） | 长度 + 命令码 + CRC-32 的帧格式，字节流拼帧与重同步；链路不保证正确，帧格式保证 |
-| **语言模型**（会编数字、会误判意图） | **数字一律由检索层产出，模型只组织语言**；出口逐个核对答案里的每个数字能否追溯到事实对象，不通过即丢弃、回退模板 |
-| **开发过程本身**（人和工具都会忘记约束） | 架构边界写成显式规则，以 `pytest` / `ruff` / `mypy` 与一组一致性检查脚本作为每次改动的收尾条件 |
-
-第三条是前两条的自然延伸：**不依赖不可靠的部件自觉守规，而是让机器验证结果。**
+**在线演示**：<https://zxtsxdg66-jpg.github.io/embedded-host-platform/web/>
+（浏览器控制台，回放真实开发板上录下的数据，无需后端）
 
 ---
 
-## 三分钟自行验证
+## 三个值得看的地方
+
+**1. 串口链路：不相信字节流，只相信帧格式。**
+帧头 + 长度 + CRC-32，接收端从无消息边界的字节流里拼帧、重同步。
+真实开发板连续运行一小时：**3489 帧，三通道各 1163 次，丢帧 0，帧同步错误 0**。
+故障注入会话里，虚拟设备故意插入 15 次杂散字节、翻转 15 次 CRC，主机侧判出重同步 15 次、CRC 失败 15 次，逐一对上。
+
+**2. 语言模型：只负责措辞，不负责事实。**
+数字全部由检索层取出，模型只改写措辞；出口逐条核对改写里的每个数字能否追溯到事实，
+不通过就丢弃、回退模板。意图识别在未参与调参的 148 句留出题上：规则 82.8%，
+模型直接分类 91.0%，**错误执行成指令 0 次**。
+
+**3. 分层：换数据源不动上层代码。**
+数据源从软件仿真 → 虚拟串口 → 真实 STM32 逐级切换，上位机 `src/` **零改动**接通真板子。
+包之间的依赖规则由测试逐文件读 import 核对，不靠自觉。
+
+---
+
+## 快速开始
 
 ```bash
 pip install -e ".[dev]"
-
-pytest                        # 1348 项，全部通过
-ruff check src tests scripts  # 无告警
-mypy src                      # 99 个源文件，无问题
+pytest                        # 1365 项，全部通过
+ruff check src tests scripts
+mypy src                      # 100 个源文件
 ```
 
-然后双击 `run_gui_模拟数据界面.bat`（或 `python scripts/run_gui.py`）——
-**不需要开发板**。界面会展示三通道实时读数、曲线、统计、阈值报警与问答面板。
+不需要任何硬件，任选一种看它跑起来：
 
-想看更多入口，根目录十个 `.bat` 的名字本身写明了用途。
+```bash
+python scripts/run_gui.py                                          # 桌面界面，内置模拟设备
+python scripts/run_api_server.py --mode virtual --inject-faults    # 网关 + 虚拟 STM32（带故障注入）
+# 然后浏览器打开 http://127.0.0.1:8000/web/
+```
+
+Windows 下根目录的 `.bat` 可以直接双击，文件名写明了用途。全部运行方式见
+[`docs/getting-started.md`](docs/getting-started.md)。
 
 ---
 
-## 浏览器控制台
+## 架构
 
-**在线演示**：<https://zxtsxdg66-jpg.github.io/embedded-host-platform/>（回放真实实测数据，无需后端）
-
-`web/` 是网关的又一个客户端（与 Android 同性质），原生 JS、无构建链，四个页签：
-
-- **监测**：三通道读数、越限状态、滚动曲线；实时模式下可切换风扇模式、改温湿度阈值
-- **串口链路**：逐帧看主机接收链路的判定：正常帧、重同步、CRC 失败……点开一帧，
-  并列显示帧里声明的 CRC 与浏览器重算的 CRC-32
-- **环境问答**：每个回答的全过程：识别出的意图、检索层给出的事实、模板原句、
-  模型每一次改写以及出口校验的判定（采纳，或被哪条规则拦下）
-- **历史**：整段曲线
-
-没有开发板也能看到真实的接收链路在工作：
-
-```bash
-python scripts/run_api_server.py --mode virtual --inject-faults
-# 浏览器打开 http://127.0.0.1:8000/web/
+```
+   STM32F407 ── UART ──┐
+   （或虚拟设备）        │ 字节流
+                        ▼
+  communication ─► protocol ─► application ─► service ─► api ─┬─► ui（PyQt6 桌面）
+   通道抽象          帧/CRC      组合根与       数据、报警、      统一    └─► gateway（REST + WebSocket）
+                               拼帧接收       通风、问答        门面            ├─► Android
+                                  │                                           └─► web/ 浏览器控制台
+                                  ├─► llm（本地模型适配）
+                                  └─► storage（历史库）
 ```
 
-进程内的虚拟 STM32 经一条**没有消息边界**的字节管道接到与硬件模式完全相同的接收代码，
-并故意拆帧、并帧、插杂散字节、翻转 CRC 比特，控制台里能看到每一处被判出。
-直接双击 `web/index.html`、或在 GitHub Pages 上打开时，自动进入回放：一小时稳定性实验
-（3489 帧）、一段固定种子的故障注入会话（注入 15 次杂散字节、15 次 CRC 翻转，
-主机判出重同步 15、CRC 失败 15）以及模型问答实录。回放数据由
-`scripts/build_web_replay.py` 把原始记录送过真实接收链路与网关序列化代码生成，
-不是另写的一份演示逻辑。详见 [`web/README.md`](web/README.md)。
+- `ui` 与 `gateway` 是两个平级的呈现端，都只经 `api` 访问系统，互不 import
+- 具体的通道、模型客户端、存储只在组合根（`application` 与 `scripts/`）里创建
+- `service` 需要的外部能力以协议的形式定义在自己一侧（`LlmClient`、`HistoryStore`），不 import 适配层
+
+详见 [`docs/architecture.md`](docs/architecture.md)。
+
+---
+
+## 文档
+
+| 文档 | 内容 |
+| --- | --- |
+| [`docs/getting-started.md`](docs/getting-started.md) | 安装、运行模式、启动器、可选组件 |
+| [`docs/architecture.md`](docs/architecture.md) | 包的划分与依赖规则、三种运行模式为什么共用一套代码、数据怎么流动 |
+| [`docs/protocol.md`](docs/protocol.md) | 帧格式、CRC、命令码分配、字节流拼帧 |
+| [`docs/verification.md`](docs/verification.md) | 测试策略、实测数据、故障注入、真实缺陷复盘、问答评测 |
+| [`web/README.md`](web/README.md) | 浏览器控制台 |
 
 ---
 
@@ -74,120 +94,38 @@ python scripts/run_api_server.py --mode virtual --inject-faults
 
 | 项 | 值 |
 | --- | --- |
-| 长时间稳定性（1 小时） | 3489 帧，三通道各 1163 次，**丢帧 0，帧同步错误 0** |
-| Modbus 应答成功率 | **100%**（1163 / 1163） |
-| 采集周期 | 3.097 s（σ = 0.023 s） |
-| 自动化测试 | Python **1348** 项 + Android **41** 项，全绿 |
-| 静态检查 | `ruff` 无告警，`mypy` 99 个源文件无问题 |
-| 问答·拟合题库 | 84 / 87 = 96.6% |
-| 问答·留出题库（148 句，独立构造） | 规则 82.8%，模型直接分类 91.0%，**错误执行指令 0 次** |
+| 一小时稳定性（真实开发板） | 3489 帧，三通道各 1163 次，丢帧 0，帧同步错误 0 |
+| Modbus 应答成功率（噪声传感器） | 100%（1163 / 1163） |
+| 采集周期 | 3.094 s（σ = 0.023 s；设计值 3.0 s） |
+| 故障注入 | 杂散字节 15 → 重同步 15；CRC 翻转 15 → CRC 失败 15 |
+| 自动化测试 | Python 1365 项 + Android 41 项 |
+| 意图识别（留出题 148 句） | 规则 82.8%，模型 91.0%，错误执行指令 0 次 |
 
-两个题库分开报是刻意的：拟合题库是照着词表调出来的，它的 96.6% 只说明规则没退化；
-**留出题库的 82.8% 才是泛化能力的量级参考。**
-
----
-
-## 架构
-
-概念上五层，实际落地为 11 个 Python 包，依赖方向单向：
-
-```
-        ui/          gateway/          ← 两个平级呈现端，都只消费 api
-                        |
-               android/ · web/         ← 网关的客户端，只走 REST + WebSocket
-          \             /
-           +-----------+
-                api/                   ← 统一门面
-                 |
-            application/               ← 组装根（唯一能创建适配层的地方）
-                 |
-             service/                  ← 业务逻辑，不碰物理资源
-            /    |     \
-    protocol/ communication/ device/
-                 |
-               core/                   ← 被所有层依赖，不依赖任何人
-
-        llm/        storage/           ← 旁挂的适配层，接的不是设备
-```
-
-几条被测试钉住的约束：
-
-- `ui/` 只能 import `api`，不得 import `service` / `device` / `communication` / `protocol`
-- `ui` 与 `gateway` 是平级模块，**互相不得 import**；`gateway` 不得依赖 PyQt6
-- `llm` 与 `storage` **只能由 `application` 或 `scripts` 创建**，且不得被 `service` import
-  ——所需协议（`LlmClient`、`HistoryStore`）定义在消费方
-
-这套分层不是摆设：数据源从软件仿真 → 虚拟串口 → 真实 STM32 逐级切换的过程中，
-**上位机各层代码零改动**。
-
----
-
-## 想看设计决策，从这里读起
-
-这个仓库真正的内容不只是代码，还有**为什么这么做的记录**：
-
-| 文档 | 讲什么 |
-| --- | --- |
-| [`docs/02_Architecture/LLM_Boundary.md`](docs/02_Architecture/LLM_Boundary.md) | 对模型的四层约束，各自拦住什么、实测触发率、代价多少 |
-| [`docs/02_Architecture/Assistant_Design.md`](docs/02_Architecture/Assistant_Design.md) | 问答的三层管线、指令白名单的三条准入性质、落地与设计不一致的地方 |
-| [`docs/02_Architecture/History_And_Cloud_Design.md`](docs/02_Architecture/History_And_Cloud_Design.md) | 本地历史与归档上云的取舍；为什么上云给按钮、删除连按钮都不给 |
-| [`docs/03_Communication/Protocol_Design.md`](docs/03_Communication/Protocol_Design.md) | 帧格式与命令码分配规则 |
-| [`docs/01_Project/项目推进日志.md`](docs/01_Project/项目推进日志.md) | 逐日记录：哪天做了什么、发现了什么、验证到什么程度 |
-| [`CLAUDE.md`](CLAUDE.md) | 项目级约束文件：禁止什么、什么需要显式授权、为什么 |
-
-推进日志里有几个专题值得一看：**八个真实 bug 的发现与修复**、**硬件验证的四级推进**、
-**被明确记录为「有意未做」的事项**——最后一类是刻意留下的，
-免得后人把"评估过并决定不做"误读成"漏做"。
-
----
-
-## 为什么有些东西"认出来了却不做"
-
-助手能识别但**明确拒绝**两类请求：手动播报、删除数据。这不是没实现，是判断的结果。
-
-每个动作用三条准入性质衡量——**可逆吗、只写本机设置吗、参数能从用户原话里取吗**：
-
-- **通风控制**：三条全中 → 放行（白名单四项，数值由代码从原话正则提取）
-- **归档上云**：一条不满足（不可逆、要拉子进程、参数说不清）→ 不进白名单，
-  改为「模型出标签、界面出按钮、人点击才执行」
-- **删除数据**：比上云更重（没有撤销）→ 连按钮都不给，识别出来只为诚实拒绝
-
-同一把尺子量出三个不同结论。拒绝本身也解决了实际问题：
-没有这些分支时，「试一下语音播报能不能响」会被噪声通道抢走，
-答回一个真实的声压级——一条办不到的请求，配上一个看起来合理的数字。
+原始数据在 [`experiment-data/`](experiment-data/)，统计可用
+`python scripts/collect_experiment_data.py --from-csv <文件>` 复算。口径与局限见
+[`docs/verification.md`](docs/verification.md)。
 
 ---
 
 ## 目录
 
 ```
-src/                11 个包，99 个源文件
-tests/              1348 项测试，目录结构与 src/ 一一对应
-scripts/            启动器、实验数据采集、一致性检查、评测脚本
-firmware/           STM32F407 自研固件（见下方说明）
-android/            Kotlin 客户端源码
-web/                浏览器控制台（原生 JS，无构建链；GitHub Pages 发布的就是它）
-docs/               架构、通信、开发规范、测试、用户手册
-training/           本地模型训练的落点与产物约定（目前只有说明）
-*.bat               十个可双击入口，名字写明用途
+src/              11 个 Python 包（分层见 docs/architecture.md）
+tests/            测试，目录与 src/ 对应；另有 integration/、architecture/、scripts/
+scripts/          启动器、虚拟设备、实验采集、评测与一致性检查脚本
+web/              浏览器控制台（原生 JS，无构建链）
+android/          Android 客户端（Kotlin）
+firmware/         STM32F407 固件的自研部分
+experiment-data/  实测原始数据
+*.bat             Windows 双击入口
 ```
 
-### 关于固件
-
-`firmware/` 下只收录**自研部分**（协议、AHT20 软件 I2C、Modbus、噪声串口、
-屏幕绘制、风扇与语音告警等）。STM32 HAL 库、CMSIS 与正点原子探索者 V3 模板中
-未经实质修改的文件**未包含在本仓库中**，它们属于各自的版权方；
-要完整编译需自备对应的官方工程模板。
-
----
+`firmware/` 只收录自研部分（协议、传感器驱动、Modbus、屏幕、风扇与语音告警）。
+STM32 HAL、CMSIS 与开发板模板中未经修改的文件属于各自的版权方，未包含在本仓库中，
+完整编译需自备对应的官方工程模板。
 
 ## 运行环境
 
-- Python 3.12+（开发机为 3.14）
-- 硬件模式需 STM32F407 开发板 + AHT20 + HH_07.06 噪声模块
-- 问答的模型改写为可选项：未接本地模型时全部答案由模板产出，功能完整
-- 归档上云需自备对象存储凭证，参照 `oss_config.example.json`
-
----
-
-
+- Python 3.10+（开发机为 3.14）
+- 硬件模式：STM32F407 开发板 + AHT20 温湿度传感器 + HH_07.06 噪声传感器（Modbus RTU）
+- 可选：本地 Ollama 模型（没有也能用，答案全部来自模板）；阿里云 OSS（归档上云，凭证参照 `oss_config.example.json`）

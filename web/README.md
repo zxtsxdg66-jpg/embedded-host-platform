@@ -47,7 +47,7 @@ python scripts/build_web_replay.py
 → `SensorDataProcessor` / `VentilationController` → `gateway.events` 的序列化函数），所以回放里的每条消息
 与在线时 WebSocket 收到的格式完全相同。包含三段：
 
-- `hour`：论文的一小时稳定性实验（3489 帧）。原始采集只存了读数没存字节，帧是按协议重新编码的。
+- `hour`：真实开发板上的一小时稳定性实验（3489 帧）。原始采集只存了读数没存字节，帧是按协议重新编码的。
 - `faults`：虚拟 STM32 带故障注入的一段会话（固定随机种子），脚本会断言主机侧判出的重同步数
   等于注入的杂散字节数、CRC 失败数等于翻转数。
 - `assistant`：`docs/05_Test/baseline/约束展示实录_*.json` 里的真实模型问答，含追溯。
