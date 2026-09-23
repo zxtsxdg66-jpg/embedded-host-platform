@@ -6,7 +6,7 @@
 reachable -- including on GitHub Pages, where there never is one.
 
 **Every message in the replay is produced by the running system's own code,
-offline.** The recordings (docs/07_Thesis/实验数据/) hold readings, not
+offline.** The recordings (``scripts/recordings.py``) hold readings, not
 bytes, so each reading is encoded into a protocol frame and pushed through
 a pipe into the real HardwareDeviceReceiver with a real LinkMonitor; the
 real SensorDataProcessor and VentilationController react to what it
@@ -18,7 +18,7 @@ second implementation of the console's logic in JavaScript.
 
 Two sessions are built:
 
-- ``hour``: the one-hour stability run the thesis reports (3489 frames).
+- ``hour``: the one-hour stability run on the real board (3489 frames).
   Its frames are **re-encoded** from the recorded readings -- the capture
   kept values, not raw bytes -- which the console states plainly.
 - ``faults``: a short session of the in-process virtual STM32 with fault
@@ -50,6 +50,7 @@ for _path in (_ROOT / "src", _ROOT / "scripts", _ROOT):
     if str(_path) not in sys.path:
         sys.path.insert(0, str(_path))
 
+from recordings import RECORDINGS_DIR  # noqa: E402
 from virtual_stm32 import FaultPlan, VirtualStm32, build_frame  # noqa: E402
 
 from application.hardware_runtime import HardwareDeviceReceiver  # noqa: E402
@@ -72,7 +73,7 @@ from gateway.events import (  # noqa: E402
     ventilation_payload,
 )
 
-DATA_DIR = _ROOT / "docs" / "07_Thesis" / "实验数据"
+DATA_DIR = RECORDINGS_DIR
 BASELINE_DIR = _ROOT / "docs" / "05_Test" / "baseline"
 OUT = _ROOT / "web" / "replay" / "replay-data.js"
 
@@ -155,7 +156,7 @@ def build_hour() -> dict[str, Any]:
     assert stats.checksum_errors == stats.resyncs == 0
     return {
         "title": "一小时稳定性实验（2026-08-19）",
-        "source": f"docs/07_Thesis/实验数据/{HOUR_RUN}",
+        "source": f"{DATA_DIR.relative_to(_ROOT).as_posix()}/{HOUR_RUN}",
         "note": "录制时只保存了读数；帧字节是按协议重新编码后送入真实接收器的，"
                 "其余消息均由系统自身的统计、报警与通风判定代码产生。",
         "start": HOUR_START.isoformat(),

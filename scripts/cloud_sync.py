@@ -97,7 +97,7 @@ CSV_COLUMNS = ["时间", "温度(°C)", "湿度(%RH)", "噪声(dB)", "设备", "
 
 2026-09-18 由长表（``ts_local,ts_utc,device_id,channel,value,valid``，
 一行一个读数）改成这样，因为那份 CSV 是给人看的——它要被 Excel 打开、
-被翻阅、被贴进论文。原来的样子有四处硌人：表头是英文标识符；两列
+被翻阅、被贴进报告。原来的样子有四处硌人：表头是英文标识符；两列
 ISO-8601 带时区的时间戳（``2026-09-17T21:00:00+08:00``）**Excel 根本不认，
 会当文本左对齐**，排不了序也画不了图；同一时刻的三个读数分散在三行；
 ``valid`` 写作 0/1，看的人不知道那是什么。
@@ -126,7 +126,7 @@ def slot_bounds(slot: str) -> tuple[datetime, datetime]:
 
 
 def file_name_for(slot: str) -> str:
-    """归档文件名，与 ``scripts/collect_thesis_data.py`` 同一套命名习惯。"""
+    """归档文件名，与 ``scripts/collect_experiment_data.py`` 同一套命名习惯。"""
     return f"env_{slot}.csv"
 
 

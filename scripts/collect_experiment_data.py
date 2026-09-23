@@ -1,11 +1,11 @@
-"""Record real STM32 data from the serial link and produce thesis-ready tables.
+"""Record real STM32 data from the serial link and produce report-ready tables.
 
-Why a separate tool rather than reading numbers off the GUI: a thesis needs
+Why a separate tool rather than reading numbers off the GUI: an experiment needs
 *quantified* results (frame counts, period jitter, error rates), and reading
 them off a screen is neither accurate nor repeatable. This script logs every
 received frame with a timestamp, then computes the statistics and emits both
-a CSV (raw data, for plotting) and a Markdown table (paste straight into the
-thesis).
+a CSV (raw data, for plotting) and a Markdown table (paste straight into a
+report).
 
 It deliberately reuses the project's own receive path --
 ``SerialChannel`` -> ``HardwareDeviceReceiver`` -- rather than re-implementing
@@ -22,11 +22,11 @@ PermissionError(13).
 Usage::
 
     # 10-minute stability run
-    python scripts/collect_thesis_data.py --port COM10 --duration 600 \
+    python scripts/collect_experiment_data.py --port COM10 --duration 600 \
         --label 长时间稳定性
 
     # 3-minute step-response run (breathe on the sensor midway)
-    python scripts/collect_thesis_data.py --port COM10 --duration 180 \
+    python scripts/collect_experiment_data.py --port COM10 --duration 180 \
         --label 温度阶跃响应 --sample-every 10
 """
 
@@ -43,8 +43,12 @@ from pathlib import Path
 from typing import Any
 
 _SRC_DIR = Path(__file__).resolve().parent.parent / "src"
-if str(_SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(_SRC_DIR))
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+for _path in (_SRC_DIR, _SCRIPTS_DIR):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
+from recordings import RECORDINGS_DIR  # noqa: E402
 
 from application.hardware_runtime import HardwareDeviceReceiver  # noqa: E402
 from communication.exceptions import SerialConnectionError  # noqa: E402
@@ -187,7 +191,7 @@ def summarize(
     ignored_count: int,
     expected_interval: float = DEFAULT_INTERVAL_SECONDS,
 ) -> dict[str, Any]:
-    """Compute every statistic the thesis needs. Pure function -- unit tested.
+    """Compute every statistic the report needs. Pure function -- unit tested.
 
     Frame loss is estimated per channel rather than globally: the firmware
     skips a channel whose sensor read failed (see User/main.c), so a missing
@@ -269,7 +273,7 @@ def _fmt(value: float | None, digits: int = 2) -> str:
 
 
 def to_markdown(summary: dict[str, Any], label: str, samples: str = "") -> str:
-    """Render the summary as thesis-ready Markdown tables."""
+    """Render the summary as report-ready Markdown tables."""
     lines = [
         f"# 实验记录：{label}",
         "",
@@ -366,7 +370,7 @@ def to_markdown(summary: dict[str, Any], label: str, samples: str = "") -> str:
             "未上报噪声帧，这些位置的间隔约为正常值的两倍，会把该行的平均值与"
             "标准差显著抬高。**这反映的是传感器应答失败，不是固件采集周期不稳**——"
             "末列的偏差取自间隔**中位数**，不受这些离群值影响，可直接引用；"
-            "若论文需要引用噪声通道的周期稳定性，应改用中位数或剔除失败周期后再统计。",
+            "若需要引用噪声通道的周期稳定性，应改用中位数或剔除失败周期后再统计。",
         ]
 
     segments = summary.get("threshold_segments") or []
@@ -440,10 +444,10 @@ def parse_cues(raw: list[str] | None) -> list[tuple[float, str]]:
     """Parse ``--cue 60:开始播放白噪声`` arguments into (seconds, message).
 
     Timed cues exist because a step-response run is only as repeatable as the
-    operator's timing: the thesis needs "the stimulus began at t=60 s" to be
+    operator's timing: the report needs "the stimulus began at t=60 s" to be
     true, not approximately true. Watching a stopwatch while also handling the
-    sensor is how the earlier humidity run ended up with two stimuli and no
-    baseline (see 第9章 9.4.5).
+    sensor is how an earlier humidity run ended up with two stimuli and no
+    baseline.
     """
     cues: list[tuple[float, str]] = []
     for item in raw or []:
@@ -596,7 +600,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--device-id", default=DEFAULT_DEVICE_ID)
     parser.add_argument(
         "--out-dir",
-        default=str(Path(__file__).resolve().parent.parent / "docs/07_Thesis/实验数据"),
+        default=str(RECORDINGS_DIR),
     )
     return parser.parse_args(argv)
 

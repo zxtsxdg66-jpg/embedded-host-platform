@@ -28,12 +28,12 @@ dev = [
     # fastapi.testclient 依赖 httpx（tests/gateway/ 用它跑真实 ASGI 请求与 WebSocket）
     "httpx>=0.27",
 ]
-# docs/07_Thesis/ 下的论文工具链所需，src/ 与 tests/ 都用不到，故单列一组。
+# 文档工具链（插图渲染、docx 生成）所需，src/ 与 tests/ 都用不到，故单列一组。
 # 2026-09-12 补：这两个包此前一直是隐式依赖——本机装着就能跑，换台机器
-# 或重建虚拟环境后 generate_figures.py 与 build_thesis_docx.py 会直接 ImportError。
+# 或重建虚拟环境后文档工具会直接 ImportError。
 docs = [
-    "Pillow>=10.0",      # 插图/generate_figures.py 渲染 PNG
-    "python-docx>=1.1",  # build_thesis_docx.py 生成论文 docx
+    "Pillow>=10.0",      # 渲染插图 PNG
+    "python-docx>=1.1",  # 生成 docx
 ]
 # 归档上云（scripts/cloud_sync.py）所需，单列一组的理由与 docs 相同：
 # src/ 与 tests/ 都能在没有它的情况下跑通——上传器惰性连接，缺了它只是

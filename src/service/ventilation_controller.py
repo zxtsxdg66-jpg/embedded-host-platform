@@ -12,7 +12,7 @@ The two answer different questions and must be able to move independently:
 
 - ``SensorDataProcessor`` answers *"should a human be warned?"*. Its
   thresholds (temperature > 35 °C, humidity < 30 %RH, noise > 80 dB(A))
-  are the ones argued from GB 37488-2019 in the thesis, and they are
+  are the ones argued from GB 37488-2019, and they are
   deliberately **fixed** -- changing them would invalidate that argument.
 - This module answers *"should the fan run?"*. Its thresholds are a
   separate, **runtime-adjustable** set with different semantics, and one
@@ -23,7 +23,7 @@ The two answer different questions and must be able to move independently:
   BELOW_MIN alarm rule never fires in practice; see
   docs/05_Test/Project_Status_Context.md section 5.9.)
 
-Keeping them apart means the thesis's alarm argument stays untouched while
+Keeping them apart means the alarm thresholds' argument stays untouched while
 ventilation gets thresholds that are both physically sensible and tunable
 for a live demonstration.
 

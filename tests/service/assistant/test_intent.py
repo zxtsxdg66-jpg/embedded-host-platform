@@ -170,7 +170,7 @@ def test_a_unit_stands_in_for_a_missing_channel_word() -> None:
 
 
 def test_asking_about_an_alarm_threshold_is_still_a_question() -> None:
-    """The alarm thresholds are fixed (the thesis argues them from a
+    """The alarm thresholds are fixed (argued from a
     standard); only the ventilation ones move, and only when the sentence
     names ventilation."""
     assert recognise("噪声阈值是多少").kind is IntentKind.THRESHOLD_INFO

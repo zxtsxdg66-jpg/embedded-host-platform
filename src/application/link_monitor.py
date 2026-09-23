@@ -5,8 +5,8 @@ Added 2026-09-23 for the web console's protocol inspector
 
 Until now the link's health existed only as two integers inside
 :class:`~application.hardware_runtime.HardwareDeviceReceiver`
-(``error_count`` / ``ignored_frame_count``). The thesis could state
-"frame sync errors: 0" only because a dedicated capture script read them;
+(``error_count`` / ``ignored_frame_count``). The stability report could
+state "frame sync errors: 0" only because a dedicated capture script read them;
 the running system itself never showed the fact. This module is where the
 receiver reports each frame and each anomaly, so a presentation end can.
 

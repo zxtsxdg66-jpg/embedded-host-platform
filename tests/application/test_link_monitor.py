@@ -4,8 +4,8 @@ The end-to-end test at the bottom is the one worth reading: a virtual
 STM32 is told to split, merge, pad and corrupt frames with a fixed seed,
 and the host's counters must match what was actually injected -- stray
 bytes cost exactly one resync each, a flipped CRC bit exactly one checksum
-error, and splitting or merging costs nothing at all. That is thesis
-chapter 4 section 4.2 as an executable claim.
+error, and splitting or merging costs nothing at all. That is the
+protocol's reliability argument as an executable claim.
 """
 
 from __future__ import annotations

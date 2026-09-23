@@ -9,8 +9,8 @@ other panels so they do not compete with the data for attention.
 Two things live here:
 
 - **Ventilation thresholds**, adjustable at runtime. These are *not* the
-  threshold-alarm limits -- those are argued from GB 37488-2019 in the
-  thesis and stay fixed. See service/ventilation_controller.py for why
+  threshold-alarm limits -- those are argued from GB 37488-2019 and
+  stay fixed. See service/ventilation_controller.py for why
   the two sets are deliberately separate. Being adjustable is what makes
   the feature demonstrable: dropping the temperature limit below the
   current reading starts the fan immediately, instead of waiting for the

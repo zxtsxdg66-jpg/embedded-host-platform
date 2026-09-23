@@ -531,7 +531,7 @@ class MainWindow(QMainWindow):
             # `item(i).text()` 都依赖它；但它同时会被列表自己的 delegate 画出来，
             # 与叠加在上面的 DeviceListItemWidget 里的同一个 device_id 重叠。
             # 卡片背景不透明时被盖住看不出来，2026-08-13 面板半透明化之后就透了出来
-            # （在为论文截图时发现）。这里让 delegate 用透明色绘制：文字仍在，
+            # （截图时发现）。这里让 delegate 用透明色绘制：文字仍在，
             # 只是不可见，选择行为与公开契约都不受影响。
             item.setForeground(QBrush(Qt.GlobalColor.transparent))
             self._device_list.addItem(item)

@@ -10,7 +10,7 @@ find out afterwards, from a step-response run whose stimulus never got cued.
 from __future__ import annotations
 
 from scripts.collect_data_launcher import _CUES, _PRESETS
-from scripts.collect_thesis_data import parse_cues
+from scripts.collect_experiment_data import parse_cues
 
 
 def _labels() -> set[str]:

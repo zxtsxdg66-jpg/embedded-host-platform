@@ -432,7 +432,7 @@ def test_the_login_url_is_not_in_the_repr(tmp_path: Path) -> None:
 
 
 def test_a_network_failure_reads_as_one_sentence() -> None:
-    """上传失败会在答辩现场当众发生（上云的验收形态就是现场演示，且备了断网退路）。
+    """上传失败会在演示现场当众发生（上云的验收形态就是现场演示，且备了断网退路）。
     那一刻屏幕上该出现的是"连不上网"，不是一个 oss2 异常字典。"""
     error = RuntimeError(
         "RequestError: {'status': -2, 'details': \"('Connection aborted.', "

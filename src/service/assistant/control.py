@@ -89,8 +89,8 @@ VALUE_RANGES: dict[ChannelId, tuple[float, float]] = {
     TEMPERATURE_CHANNEL: (0.0, 50.0),
     HUMIDITY_CHANNEL: (0.0, 100.0),
 }
-"""Accepted ventilation thresholds per channel, matching the measurement
-ranges the thesis argues for (P2~P4). A threshold outside the range the
+"""Accepted ventilation thresholds per channel, matching the sensors'
+measurement ranges. A threshold outside the range the
 sensor can report is not a demanding setting, it is an unreachable one:
 "通风阈值调到 300 度" would silently mean "never ventilate"."""
 

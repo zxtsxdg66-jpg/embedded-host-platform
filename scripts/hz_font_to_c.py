@@ -2,7 +2,7 @@
 
 The STM32 板载 LCD needs Chinese glyphs, but a full GBK font is 250 KB+ and
 would have to live in an external SPI flash whose bus collides with the JTAG
-pins -- disabling JTAG right before a thesis defence trades a debugging
+pins -- disabling JTAG right before a live demonstration trades a debugging
 lifeline for glyphs we do not need.  The screen only ever shows a few dozen
 fixed words, so this script renders exactly those into a subset table that
 fits in internal flash (roughly 3 KB at 24x24).
@@ -194,7 +194,7 @@ def build_source(characters: list[str], bitmaps: list[bytes], font_name: str) ->
         " * 不需要、也不应该手工往本文件里添加点阵——手工添加的内容会在下次生成时丢失。",
         " *",
         " * 为什么用子集而不是完整 GBK 字库：完整字库需外挂 SPI Flash，其总线会",
-        " * 占用 JTAG 引脚，答辩前关掉调试口得不偿失。详细理由见本文件的生成脚本",
+        " * 占用 JTAG 引脚，演示前关掉调试口得不偿失。详细理由见本文件的生成脚本",
         " * scripts/hz_font_to_c.py 的模块注释。",
         _BANNER,
         " */",

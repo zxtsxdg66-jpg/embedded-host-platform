@@ -1,11 +1,11 @@
 @echo off
 setlocal
 
-rem Double-clickable launcher for thesis experiment data collection.
+rem Double-clickable launcher for experiment data collection.
 rem
 rem Asks which experiment to run, picks the serial port, then records every
 rem frame the STM32 sends and writes a CSV plus a ready-to-paste Markdown
-rem table into docs\07_Thesis\实验数据\.
+rem table into the recordings folder (see scripts\recordings.py).
 rem
 rem The serial port is exclusive: close run_all_界面加网关.bat / run_gui_hardware_真实硬件界面.bat /
 rem run_api_server_手机网关.bat and any serial terminal before starting.

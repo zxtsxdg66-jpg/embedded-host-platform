@@ -1,16 +1,16 @@
-"""Tests for scripts/collect_thesis_data.py's statistics.
+"""Tests for scripts/collect_experiment_data.py's statistics.
 
 The recording half needs real hardware, but the part that matters for the
-thesis -- the arithmetic that turns raw frames into the numbers that will be
+results -- the arithmetic that turns raw frames into the numbers that will be
 printed in tables -- is a pure function and is tested here. A wrong loss rate
-or a wrong period average would end up in the thesis unnoticed otherwise.
+or a wrong period average would end up in a report unnoticed otherwise.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from scripts.collect_thesis_data import (
+from scripts.collect_experiment_data import (
     NOISE_ALARM_MAX,
     Record,
     group_cycles,
@@ -246,7 +246,7 @@ def test_markdown_reports_modbus_success_rate_and_warns_about_loss_column():
 
 def test_period_table_warns_when_modbus_failures_inflate_the_noise_row() -> None:
     """A failed Modbus read leaves a double-length gap, which inflates the
-    noise row's mean and stdev. Without a warning the thesis could quote those
+    noise row's mean and stdev. Without a warning a report could quote those
     as "the noise channel's period is unstable" -- it is not; some reads
     failed. The median-based deviation column stays trustworthy."""
     records = (

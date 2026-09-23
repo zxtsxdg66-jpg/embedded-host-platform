@@ -82,7 +82,7 @@ extern const unsigned char asc2_2412[95][36];
 #define UI_BTN_TEXT_Y           205u
 
 /* ---------------------------------------------------------------------------
- * 配色。浅色底、深色字——论文里要插屏幕照片，浅色底翻拍和印刷都更清楚。
+ * 配色。浅色底、深色字——文档里要插屏幕照片，浅色底翻拍和印刷都更清楚。
  * ------------------------------------------------------------------------- */
 #define UI_COLOR_BG             WHITE
 #define UI_COLOR_TITLE_BG       DARKBLUE
@@ -209,7 +209,7 @@ static void draw_hz(uint16_t x, uint16_t y, const uint8_t *dots, uint16_t fg, ui
  * @brief       画一个 ASCII 字符，可整数倍放大
  * @param       scale   放大倍数（1 = 12x24，2 = 24x48）
  * @note        整数倍放大是纯粹的像素复制，不需要额外的大号字库，也就不占 Flash。
- *              数值用 2 倍显示，是为了在一两米外的答辩距离上能看清。
+ *              数值用 2 倍显示，是为了在一两米外的演示距离上能看清。
  */
 static void draw_ascii(uint16_t x, uint16_t y, char chr, uint8_t scale, uint16_t fg, uint16_t bg)
 {

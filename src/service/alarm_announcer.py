@@ -11,9 +11,9 @@ Two guards, both required, for different reasons
 **Consecutive confirmation.** A single over-threshold sample is not
 enough; ``confirm_cycles`` readings in a row are. A lone spike -- a door
 slamming near the noise sensor, a hand brushing the temperature probe --
-should not trigger an announcement. This also implements the improvement
-already listed in the thesis's chapter 10 ("为报警判定引入回差与持续时间
-确认"), for the announcement path.
+should not trigger an announcement. This also implements, for the
+announcement path, an improvement the threshold alarm itself still lacks
+("为报警判定引入回差与持续时间确认").
 
 **Cooldown.** After announcing, stay quiet for ``cooldown_seconds``. This
 is the guard that actually breaks the acoustic feedback loop: the speaker

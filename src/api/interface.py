@@ -38,8 +38,7 @@ Capabilities, per the task this module was built for:
    `api`，聊天面板因此必须经由本接口访问助手；助手本身在
    service.assistant，设计见 docs/02_Architecture/Assistant_Design.md
 10. query_history -- 历史读数查询（2026-09-17 新增，经用户授权扩展）。
-    与 8/9 两项一样属于纯增量：既有方法签名一个未动。历史记录本身是
-    毕设的交付功能，设计见
+    与 8/9 两项一样属于纯增量：既有方法签名一个未动。设计见
     docs/02_Architecture/History_And_Cloud_Design.md
 11. get_link_statistics / subscribe_link_events -- 串口链路监视（2026-09-23
     新增，经用户授权扩展）。供 Web 控制台的协议检查器使用；纯增量，

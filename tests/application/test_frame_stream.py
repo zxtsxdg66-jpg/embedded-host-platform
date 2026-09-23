@@ -7,7 +7,7 @@ holding nothing but half a frame header was counted as a sync error, and
 counted again on every poll while the other half was in flight. The
 2026-08-18 noise step-response run reported 13 "frame sync errors" while
 losing exactly zero frames (all 58 cycles delivered all 3 channels), which
-would have put fabricated communication errors into the thesis.
+would have reported communication errors that never happened.
 """
 
 from __future__ import annotations

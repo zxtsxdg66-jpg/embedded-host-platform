@@ -92,7 +92,7 @@ class FrameStreamBuffer:
             # 无条件计数，且因为等待期间每次轮询都会重新走到这里，一次边界切分
             # 会被反复累加。2026-08-18 的噪声阶跃实验因此报出 13 次"帧同步错误"
             # 而实际 0 丢帧（58 个采集周期全部收齐 3 帧），若不修会把并不存在的
-            # 通信错误写进论文。
+            # 通信错误当成实验结论。
             discarded = len(self._buffer) - partial_tail_len
             if partial_tail_len:
                 del self._buffer[:discarded]

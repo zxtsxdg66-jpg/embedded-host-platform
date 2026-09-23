@@ -47,8 +47,8 @@ from service.data_service import DataService
 TEMPERATURE_ALARM_MAX = 35.0
 HUMIDITY_ALARM_MIN = 30.0
 HUMIDITY_ALARM_MAX = 75.0
-"""Upper humidity limit, added 2026-09-08 after the measurements in the
-thesis' chapter 9 showed the station sitting at 62~78%RH for most of a
+"""Upper humidity limit, added 2026-09-08 after the long-run
+measurements showed the station sitting at 62~78%RH for most of a
 run -- above the 40%~65% band GB 37488-2019 gives for air-conditioned
 public spaces -- while the system, having only a lower bound, stayed
 silent the whole time.

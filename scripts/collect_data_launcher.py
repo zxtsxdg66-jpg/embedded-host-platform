@@ -1,9 +1,8 @@
-"""Interactive launcher for scripts/collect_thesis_data.py.
+"""Interactive launcher for scripts/collect_experiment_data.py.
 
 Peer of the other launchers in this directory: it exists so the data runs can
 be started by double-clicking, without remembering COM ports or argument
-names. The experiment presets match the plan in
-docs/07_Thesis/范文分析与写作计划.md so that the runs are reproducible and
+names. The experiment presets are fixed so that the runs are reproducible and
 consistently labelled.
 
 Usage::
@@ -26,7 +25,8 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import collect_thesis_data  # noqa: E402  (same scripts/ directory)
+import collect_experiment_data  # noqa: E402  (same scripts/ directory)
+from recordings import RECORDINGS_DIR  # noqa: E402
 from run_gui_hardware import choose_port  # noqa: E402
 
 # (菜单文字, 时长秒, 时序表采样间隔秒, 标签, 操作提示)
@@ -84,14 +84,14 @@ _PRESETS: list[tuple[str, float, float, str, str]] = [
         "让白噪声在 78~83 dB 之间缓慢飘动（手动小幅调音量即可），持续 60 秒。\n"
         "  目的不是演示报警正常，而是**实证一条设计局限**：当前按单点阈值判定、\n"
         "  无迟滞也无持续时间确认，读数贴近阈值时报警状态会反复翻转。\n"
-        "  这个结果用于论文的局限/展望，不是失败的实验。",
+        "  这个结果用于说明设计局限，不是失败的实验。",
     ),
     (
         "环境本底噪声（15 分钟）——为报警阈值取值提供实测依据",
         900, 60, "环境本底噪声",
         "全程保持你日常的环境状态即可（正常呼吸、不刻意制造声音也不刻意静音）。\n"
         "  结束后可另外单独记录几个可复现的场景值（正常交谈 / 播放音乐 / 拍手），\n"
-        "  写进 docs/07_Thesis/实验数据/人工实验记录.md。",
+        f"  写进 {RECORDINGS_DIR / '人工实验记录.md'}。",
     ),
     ("自定义时长", 0, 0, "", ""),
 ]
@@ -151,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
 
     print("=" * 56)
-    print("  论文实验数据采集")
+    print("  实验数据采集")
     print("=" * 56)
     print()
     print("注意：串口同一时间只能被一个程序打开。开始前请先关闭")
@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     input("按回车开始采集……")
     print()
 
-    return collect_thesis_data.main(
+    return collect_experiment_data.main(
         args
         + [
             "--port",

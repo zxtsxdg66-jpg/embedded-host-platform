@@ -126,7 +126,7 @@ class ControlPanelWidget(QWidget):
         controls.setObjectName("controlGroup")
         layout = QVBoxLayout()
 
-        # 2026-09-07：这些是调试用操作（订阅通道、控制权、发送裸命令），在毕设
+        # 2026-09-07：这些是调试用操作（订阅通道、控制权、发送裸命令），在日常
         # 演示中处于边缘地位，却一直占着底部一整格。改为默认折叠——功能一个不删，
         # 只是收起来。演示相关的控制另有 VentilationPanelWidget 承担，两类控制按
         # 角色分开，而不是一起缩小。

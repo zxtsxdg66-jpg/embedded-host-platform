@@ -59,7 +59,7 @@ def test_device_id_is_painted_only_once_per_row(qtbot) -> None:
     own delegate from ``QListWidgetItem`` text, and once by the overlaid
     ``DeviceListItemWidget``. Opaque cards used to hide it; once the panels
     went semi-transparent (2026-08-13) the two overlapped visibly, which only
-    surfaced when screenshots were taken for the thesis.
+    surfaced when screenshots were taken.
 
     The item text must stay (``currentTextChanged`` and ``item(i).text()``
     depend on it), so the delegate is made to paint it transparently instead.

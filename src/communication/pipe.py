@@ -11,12 +11,12 @@ port driver.
 **The difference from LoopbackChannel is the whole point.** Loopback hands
 back each ``send()`` as one ``receive()`` -- it preserves message
 boundaries, which is exactly the property a real serial port does not have
-and which once hid four defects from Simulator mode (thesis chapter 5,
-section 5.3). A pipe end's ``receive()`` returns *everything* that has
-arrived, however many writes it came in: frames arrive concatenated, and a
-writer that splits a frame across writes produces half-frames. That is what
-the frame-sync code exists to handle, and what the web console's protocol
-inspector exists to show.
+and which once hid four defects from Simulator mode
+(docs/05_Test/Hardware_Simulation_Mode.md). A pipe end's ``receive()``
+returns *everything* that has arrived, however many writes it came in:
+frames arrive concatenated, and a writer that splits a frame across writes
+produces half-frames. That is what the frame-sync code exists to handle,
+and what the web console's protocol inspector exists to show.
 
 Thread-safe: the virtual device writes from its own thread while the host
 reads from the runtime's driver thread.
