@@ -51,8 +51,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from application.link_monitor import LinkEventCallback, LinkStatistics
 from application.runtime import DeviceStatusView
+from core.link_events import LinkEventCallback, LinkStatistics
 from core.models import ChannelId, ClientId, DeviceId
 from service.assistant.models import Answer
 from service.command_models import Command, CommandResult

@@ -28,9 +28,9 @@ from api.exceptions import (
     DeviceNotFoundError,
 )
 from api.interface import ApiInterface
-from application.link_monitor import LinkEventCallback, LinkStatistics
 from application.runtime import ApplicationRuntime, DeviceStatusView
 from core.exceptions import NotFoundError, OperationTimeoutError, StateTransitionError
+from core.link_events import LinkEventCallback, LinkStatistics
 from core.models import ChannelId, ClientId, DeviceId
 from service.assistant.models import Answer
 from service.command_models import Command, CommandResult

@@ -23,7 +23,7 @@ import dataclasses
 from enum import Enum
 from typing import Any
 
-from application.link_monitor import LinkEvent, LinkStatistics
+from core.link_events import LinkEvent, LinkStatistics
 from gateway.channel_units import channel_unit
 from service.assistant.models import Answer, Facts
 from service.data_models import DataPoint
