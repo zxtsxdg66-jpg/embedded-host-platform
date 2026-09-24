@@ -77,6 +77,16 @@ python scripts/run_all.py --mode hardware --port-serial COM7 --inject-faults --f
 `--fault-length` 另外翻转长度字段，实测那个已知缺陷；`--fault-seed` 固定随机种子。
 原理见 [`verification.md`](verification.md#在真实硬件上注入)。
 
+**现场演示报警**：室内很少真的越限，屏幕上的"报警"平时看不到。
+
+```bash
+python scripts/demo_alarm.py --temperature-max 20 --mode hardware --port-serial COM7
+```
+
+临时把温度报警上限调到当前读数以下（数值取比室温低一点），再原样启动桌面界面加网关；
+开发板屏幕在一两个采集周期内变"报警"并播报一次语音，60 秒后（`--for` 可改）自动恢复为"正常"。
+不改任何源文件，只改内存里的阈值表，退出时同样恢复。
+
 ### 4. 手机
 
 用 `run_api_server_手机网关.bat` 或 `run_all_界面加网关.bat` 启动，它们会打印本机局域网地址，
