@@ -38,9 +38,9 @@ STM32F407 采集温度、湿度、噪声三个通道，经自定义帧协议上�
 
 ```bash
 pip install -e ".[dev]"
-pytest                        # 1365 项，全部通过
+pytest                        # 1389 项，全部通过
 ruff check src tests scripts
-mypy src                      # 100 个源文件
+mypy src                      # 101 个源文件
 ```
 
 不需要任何硬件，任选一种看它跑起来：
@@ -99,7 +99,7 @@ Windows 下根目录的 `.bat` 可以直接双击，文件名写明了用途。�
 | Modbus 应答成功率（噪声传感器） | 100%（1163 / 1163） |
 | 采集周期 | 3.094 s（σ = 0.023 s；设计值 3.0 s） |
 | 故障注入 | 杂散字节 15 → 重同步 15；CRC 翻转 15 → CRC 失败 15 |
-| 自动化测试 | Python 1365 项 + Android 41 项 |
+| 自动化测试 | Python 1389 项 + Android 41 项 |
 | 意图识别（留出题 148 句） | 规则 82.8%，模型 91.0%，错误执行指令 0 次 |
 
 原始数据在 [`experiment-data/`](experiment-data/)，统计可用

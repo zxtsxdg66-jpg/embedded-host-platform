@@ -10,6 +10,7 @@
 | `hardware_runtime.py` | `HardwareDeviceReceiver`：读通道 → 拼帧 → 解码 → 过滤 → 发布读数 |
 | `hardware_runner.py` / `simulator_runner.py` | 两种模式的驱动器：只提供 `run_once()`，不自己起线程，由外部循环调用 |
 | `link_monitor.py` | `LinkMonitor`：接收器的可选观测点，报告每一帧与每一次异常。只听不判 |
+| `fault_injection.py` | `FaultInjectingChannel`：套在真实串口外面，按已知数量制造故障并与链路计数逐项对账；只在 `--inject-faults` 下由启动脚本创建 |
 | `fan_dispatcher.py` / `alert_dispatcher.py` / `alarm_state_dispatcher.py` / `answer_dispatcher.py` | 把决策变成设备命令：回调里只记录，轮询循环里才发送 |
 | `history_recorder.py` | 读数攒批写入历史库 |
 | `export_status.py` | 把上云台账的"待传数"提供给问答 |

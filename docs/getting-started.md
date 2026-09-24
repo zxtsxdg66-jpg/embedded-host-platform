@@ -65,6 +65,18 @@ python scripts/run_all.py --mode hardware --port-serial COM7     # 桌面界面�
 - **串口是独占资源**：桌面界面和网关要同时看数据，只能用 `run_all.py` 在一个进程里同时承载两者，
   不能分别启动两个程序去抢同一个 COM 口。数据只解码一次，再扇出给两边
 
+**在真实硬件上验证链路可靠性**：
+
+```bash
+python scripts/run_api_server.py --mode hardware --port-serial COM7 --inject-faults
+python scripts/run_all.py --mode hardware --port-serial COM7 --inject-faults --fault-length --fault-seed 1
+```
+
+真实串口几乎不出错，所以在上位机收到的字节流里按已知数量制造故障（拆帧、并帧、杂散字节、翻转 CRC），
+每分钟打印一行对账，退出时打印完整结果：判出的次数应与注入的次数逐项相等，且没有任何被破坏的帧被当作读数接受。
+`--fault-length` 另外翻转长度字段，实测那个已知缺陷；`--fault-seed` 固定随机种子。
+原理见 [`verification.md`](verification.md#在真实硬件上注入)。
+
 ### 4. 手机
 
 用 `run_api_server_手机网关.bat` 或 `run_all_界面加网关.bat` 启动，它们会打印本机局域网地址，
