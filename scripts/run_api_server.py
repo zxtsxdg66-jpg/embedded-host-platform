@@ -84,10 +84,12 @@ from automation_wiring import (  # noqa: E402
 from question_log import QuestionLog  # noqa: E402  (same scripts/ directory)
 from virtual_stm32 import DEFAULT_FAULTS, VirtualStm32  # noqa: E402
 
+from application import fault_injection  # noqa: E402
 from application.hardware_runner import HardwareRuntimeRunner  # noqa: E402
 from application.hardware_runtime import HardwareDeviceReceiver  # noqa: E402
 from application.runtime import ApplicationRuntime  # noqa: E402
 from application.simulator_runner import SimulatorRuntimeRunner  # noqa: E402
+from communication.interface import CommunicationChannel  # noqa: E402
 from communication.loopback import LoopbackChannel  # noqa: E402
 from communication.pipe import make_pipe_pair  # noqa: E402
 from communication.serial import SerialChannel  # noqa: E402
@@ -175,8 +177,108 @@ def build_hardware_runtime(
     ``runtime.devices.register(...)`` is used directly (to read back the
     assigned wire id) instead of the ``register_device()`` facade.
     """
-    runtime = ApplicationRuntime()
     channel = SerialChannel(port=serial_port, baudrate=baudrate)
+    return _compose_hardware(channel, channel, device_id)
+
+
+def build_hardware_runtime_with_faults(
+    serial_port: str,
+    faults: fault_injection.FaultPlan,
+    fault_seed: int | None = None,
+    baudrate: int = DEFAULT_SERIAL_BAUDRATE,
+    device_id: str = DEFAULT_HARDWARE_DEVICE_ID,
+) -> tuple[
+    ApplicationRuntime,
+    list[tuple[str, str]],
+    HardwareRuntimeRunner,
+    fault_injection.FaultInjectingChannel,
+]:
+    """Hardware mode with known faults injected into the real serial stream.
+
+    The receiver reads through the injector; the device manager, which reads
+    the same port while waiting for command acknowledgements, reads through
+    the injector's untouched view of the same buffer. Everything else is
+    :func:`build_hardware_runtime`. The injector audits every frame the
+    receiver accepts. See application/fault_injection.py.
+    """
+    serial = SerialChannel(port=serial_port, baudrate=baudrate)
+    injector = fault_injection.FaultInjectingChannel(serial, faults, seed=fault_seed)
+    runtime, targets, runner = _compose_hardware(
+        injector.passthrough(), injector, device_id
+    )
+    runtime.subscribe_link_events(injector.audit)
+    return runtime, targets, runner, injector
+
+
+def hardware_fault_plan(with_length: bool) -> fault_injection.FaultPlan:
+    """The plan ``--inject-faults`` uses; ``--fault-length`` adds length flips."""
+    plan = fault_injection.DEFAULT_FAULTS
+    if not with_length:
+        return plan
+    return fault_injection.FaultPlan(
+        split=plan.split,
+        merge=plan.merge,
+        garbage=plan.garbage,
+        bitflip=plan.bitflip,
+        length=fault_injection.LENGTH_FAULT_RATE,
+    )
+
+
+FAULT_REPORT_INTERVAL_SECONDS = 60.0
+FAULTS_BANNER = (
+    "[faults] 正在向真实串口数据流注入故障；每分钟一行对账，退出时打印完整结果"
+)
+
+
+def start_fault_reporter(
+    injector: fault_injection.FaultInjectingChannel,
+    runtime: ApplicationRuntime,
+    interval_seconds: float = FAULT_REPORT_INTERVAL_SECONDS,
+) -> threading.Event:
+    """Print a one-line reconciliation every interval; set the event to stop.
+
+    A running tally can be off by a frame still in flight between the
+    injector and the receiver; the report printed on exit is the one to read.
+    """
+    stop = threading.Event()
+
+    def _loop() -> None:
+        while not stop.wait(interval_seconds):
+            report = injector.report(runtime.get_link_statistics())
+            print(f"[faults] {_verdict(report)} | {report.lines[0]}")
+
+    threading.Thread(target=_loop, name="fault-reporter", daemon=True).start()
+    return stop
+
+
+def print_fault_report(
+    injector: fault_injection.FaultInjectingChannel, runtime: ApplicationRuntime
+) -> None:
+    """The final reconciliation, printed when the launcher exits."""
+    report = injector.report(runtime.get_link_statistics())
+    print(f"[faults] 对账结果：{_verdict(report)}")
+    for line in report.lines:
+        print(f"[faults]   {line}")
+
+
+def _verdict(report: fault_injection.FaultReport) -> str:
+    if report.consistent is True:
+        return "逐项一致"
+    if report.consistent is None:
+        return "有长度翻转，只核对了没有错帧被接受"
+    return "不一致"
+
+
+def _compose_hardware(
+    manager_channel: CommunicationChannel,
+    receiver_channel: CommunicationChannel,
+    device_id: str,
+) -> tuple[ApplicationRuntime, list[tuple[str, str]], HardwareRuntimeRunner]:
+    """Hardware-mode wiring shared by the plain and the fault-injecting builds.
+
+    The two channels are the same object unless faults are injected.
+    """
+    runtime = ApplicationRuntime()
     device = RemoteDevice(
         device_id=device_id,
         capability=DeviceCapability(
@@ -195,7 +297,7 @@ def build_hardware_runtime(
         status=DeviceStatus(connection_state=ConnectionState.CONNECTED),
     )
     registration = runtime.devices.register(
-        device, channel, accepted_commands=ACCEPTED_COMMANDS
+        device, manager_channel, accepted_commands=ACCEPTED_COMMANDS
     )
     runtime.watch_alarms_for(device)
     enable_automations(runtime, device.device_id)
@@ -203,7 +305,7 @@ def build_hardware_runtime(
     receiver = HardwareDeviceReceiver(
         device_id=device.device_id,
         wire_id=registration.wire_id,
-        channel=channel,
+        channel=receiver_channel,
         data_service=runtime.data_service,
         monitor=runtime.link_monitor,
     )
@@ -347,9 +449,20 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--inject-faults",
         action="store_true",
         help=(
-            "with --mode virtual: the virtual device splits, merges, "
-            "pads and corrupts frames"
+            "virtual/hardware mode: split, merge, pad and corrupt frames on "
+            "purpose, then check the receiver caught every one"
         ),
+    )
+    parser.add_argument(
+        "--fault-length",
+        action="store_true",
+        help="with --inject-faults in hardware mode: also flip length bits",
+    )
+    parser.add_argument(
+        "--fault-seed",
+        type=int,
+        default=None,
+        help="with --inject-faults in hardware mode: fix the random seed",
     )
     parser.add_argument(
         "--no-web",
@@ -396,7 +509,27 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.mode == "hardware" and not args.port_serial:
         parser.error("--mode hardware requires --port-serial, e.g. --port-serial COM3")
+    check_fault_args(parser, args, modes=("virtual", "hardware"))
     return args
+
+
+def check_fault_args(
+    parser: argparse.ArgumentParser,
+    args: argparse.Namespace,
+    modes: tuple[str, ...],
+) -> None:
+    """Shared by this launcher and run_all.py: which fault options fit which mode."""
+    if (args.fault_length or args.fault_seed is not None) and not args.inject_faults:
+        parser.error(
+            "--fault-length / --fault-seed only make sense with --inject-faults"
+        )
+    if args.inject_faults and args.mode not in modes:
+        parser.error(
+            "--inject-faults needs a byte stream to damage: --mode "
+            + " or ".join(modes)
+        )
+    if (args.fault_length or args.fault_seed is not None) and args.mode != "hardware":
+        parser.error("--fault-length / --fault-seed are hardware-mode options")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -408,7 +541,18 @@ def main(argv: list[str] | None = None) -> int:
     # without this the variable would be inferred from whichever branch
     # comes first and the other assignment would be a type error.
     runner: HardwareRuntimeRunner | SimulatorRuntimeRunner
-    if args.mode == "hardware":
+    injector: fault_injection.FaultInjectingChannel | None = None
+    if args.mode == "hardware" and args.inject_faults:
+        assert args.port_serial is not None  # enforced by _parse_args
+        runtime, targets, runner, injector = build_hardware_runtime_with_faults(
+            serial_port=args.port_serial,
+            faults=hardware_fault_plan(args.fault_length),
+            fault_seed=args.fault_seed,
+            baudrate=args.baudrate,
+            device_id=args.device_id,
+        )
+        mode_label = "hardware+faults"
+    elif args.mode == "hardware":
         assert args.port_serial is not None  # enforced by _parse_args
         runtime, targets, runner = build_hardware_runtime(
             serial_port=args.port_serial,
@@ -460,7 +604,10 @@ def main(argv: list[str] | None = None) -> int:
     web_mounted = not args.no_web and mount_web_console(app)
 
     print(f"[gateway] mode={mode_label}")
-    if mode_label != "hardware":
+    if injector is not None:
+        start_fault_reporter(injector, runtime)
+        print(FAULTS_BANNER)
+    if not mode_label.startswith("hardware"):
         print("[gateway] NOTE: data is software-simulated, NOT from a real STM32.")
     if web_mounted:
         print(f"[gateway] web console at http://{args.host}:{args.port}/web/")
@@ -468,6 +615,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[gateway] websocket at   ws://{args.host}:{args.port}/ws")
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+    if injector is not None:
+        print_fault_report(injector, runtime)
     # uvicorn.run 返回即服务已停，落盘最后一问。
     question_log.flush()
     runtime.history_recorder.flush()

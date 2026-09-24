@@ -141,16 +141,48 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="skip the language model entirely; answers stay templated",
     )
+    parser.add_argument(
+        "--inject-faults",
+        action="store_true",
+        help="hardware mode: corrupt the real serial stream on purpose and "
+        "check the receiver caught every fault",
+    )
+    parser.add_argument(
+        "--fault-length",
+        action="store_true",
+        help="with --inject-faults: also flip length bits",
+    )
+    parser.add_argument(
+        "--fault-seed",
+        type=int,
+        default=None,
+        help="with --inject-faults: fix the random seed",
+    )
     args = parser.parse_args(argv)
     if args.mode == "hardware" and not args.port_serial:
         parser.error("--mode hardware requires --port-serial, e.g. --port-serial COM10")
+    run_api_server.check_fault_args(parser, args, modes=("hardware",))
     return args
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
-    if args.mode == "hardware":
+    injector = None
+    if args.mode == "hardware" and args.inject_faults:
+        assert args.port_serial is not None  # enforced by _parse_args
+        runtime, targets, runner, injector = (
+            run_api_server.build_hardware_runtime_with_faults(
+                serial_port=args.port_serial,
+                faults=run_api_server.hardware_fault_plan(args.fault_length),
+                fault_seed=args.fault_seed,
+                baudrate=args.baudrate,
+                device_id=args.device_id,
+            )
+        )
+        mode_label = "硬件模式（故障注入）"
+        gateway_mode = "hardware+faults"
+    elif args.mode == "hardware":
         assert args.port_serial is not None  # enforced by _parse_args
         runtime, targets, runner = run_api_server.build_hardware_runtime(
             serial_port=args.port_serial,
@@ -257,6 +289,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     runner.start()
     timer.start()
+    if injector is not None:
+        run_api_server.start_fault_reporter(injector, runtime)
+        print(run_api_server.FAULTS_BANNER)
 
     exit_code = qt_app.exec()
 
@@ -264,6 +299,8 @@ def main(argv: list[str] | None = None) -> int:
     # process actually exits instead of lingering on the daemon thread.
     runner.stop()
     server.should_exit = True
+    if injector is not None:
+        run_api_server.print_fault_report(injector, runtime)
     # 最后一问可能还挂着等模型改写，退出前落盘。
     question_log.flush()
     runtime.history_recorder.flush()
