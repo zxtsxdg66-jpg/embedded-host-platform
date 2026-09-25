@@ -23,6 +23,36 @@
   // ============================================================ 监测
   let liveChart = null;
 
+  // 一把尺子上画出：本次记录的最低—最高区间、当前值、报警阈值。
+  // 量程取这几个数的并集再各留一点余量，所以阈值总在尺子上，离它多远一眼可见。
+  function scaleOf(ch, meta, value) {
+    const st = ch.stats, bounds = Object.entries(ch.bounds || {});
+    if (value == null || !bounds.length) return null;
+    const vals = [value, st && st.minimum, st && st.maximum, ...bounds.map(([, v]) => v)].filter(Number.isFinite);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = (hi - lo) * 0.08 || 1;
+    lo -= pad; hi += pad;
+    const pos = (v) => ((v - lo) / (hi - lo)) * 100;
+    const kids = [el("div", { class: "track" })];
+    if (st && Number.isFinite(st.minimum) && Number.isFinite(st.maximum)) {
+      kids.push(el("div", { class: "band", style: `left:${pos(st.minimum)}%;width:${Math.max(pos(st.maximum) - pos(st.minimum), 0.8)}%` }));
+    }
+    for (const [kind, v] of bounds) {
+      const p = pos(v);
+      kids.push(el("div", { class: "limit" + (p > 85 ? " edge-r" : p < 15 ? " edge-l" : ""), style: `left:${p}%` },
+        el("span", { text: `${kind === "BELOW_MIN" ? "下限" : "上限"} ${v}` })));
+    }
+    kids.push(el("div", { class: "now", style: `left:${pos(value)}%`, title: `当前 ${fmt(value, meta.dp)}` }));
+    // 离最近的那道阈值还有多远；已越过时说越过了多少
+    const gaps = bounds.map(([kind, v]) => ({ kind, gap: kind === "BELOW_MIN" ? value - v : v - value }));
+    const near = gaps.reduce((a, b) => (b.gap < a.gap ? b : a));
+    const side = near.kind === "BELOW_MIN" ? "下限" : "上限";
+    const note = near.gap < 0
+      ? `已越过${side} <b>${fmt(-near.gap, meta.dp)}</b> ${esc(ch.unit)}`
+      : `距${side}还有 <b>${fmt(near.gap, meta.dp)}</b> ${esc(ch.unit)}`;
+    return [el("div", { class: "scale", "aria-hidden": "true" }, ...kids), el("div", { class: "margin-note", html: note })];
+  }
+
   function renderCards(s) {
     const box = $("#cards");
     box.replaceChildren(...EHP.CHANNEL_ORDER.map((c) => {
@@ -41,6 +71,7 @@
       return el("div", { class: "card" + (alarm && alarm.triggered ? " alarm" : "") },
         el("div", { class: "top" }, el("span", { class: "label", text: meta.label }), pill),
         el("div", { class: "value", html: last ? `${fmt(last[1], meta.dp)}<small>${esc(ch.unit)}</small>` : "—" }),
+        ...(scaleOf(ch, meta, last ? last[1] : null) || []),
         el("div", { class: "stats" },
           ...[["最低", st && st.minimum], ["平均", st && st.average], ["最高", st && st.maximum], ["点数", st && st.sample_count]]
             .map(([k, v]) => el("span", { html: `${k}<b>${v == null ? "—" : k === "点数" ? v : fmt(v, meta.dp)}</b>` }))));
@@ -298,12 +329,25 @@
       `<span class="${trace.length ? "on" : ""}">出口检查</span>`,
       `<span class="on">采用：${EHP.SOURCES[a.source] || a.source}</span>`,
     ].join("<i>→</i>") });
-    const kids = [
+    const kids = [];
+    if (a.boundary) {
+      // 边界题库只记录了回答与设备设置，没有逐次记录改写与出口检查，所以不画流程，免得看起来像走过了什么
+      kids.push(boundaryBlock(a.boundary, EHP.source && EHP.source.data && EHP.source.data.assistant.boundary_summary));
+      kids.push(el("div", {}, el("h3", { text: "最终识别出的意图" }),
+        el("p", { style: "margin:0", text: a.intent ? `${INTENTS[a.intent.kind] || a.intent.kind}${a.intent.channel ? " · " + (EHP.CHANNELS[a.intent.channel] || {}).label : ""}` : "未能识别（回落到帮助提示）" })));
+      if (first && first !== a && first.text !== a.text) {
+        kids.push(el("div", {}, el("h3", { text: "即时回复（模型结果到达之前）" }), el("p", { style: "margin:0", text: first.text })));
+      }
+      if (m.recorded) kids.push(el("p", { class: "hint", text: m.recorded }));
+      box.replaceChildren(...kids);
+      return;
+    }
+    kids.push(
       el("div", {}, el("h3", { text: "流程" }), flow),
       el("div", {}, el("h3", { text: "识别出的意图" }),
         el("p", { style: "margin:0", text: a.intent ? `${INTENTS[a.intent.kind] || a.intent.kind}${a.intent.channel ? " · " + (EHP.CHANNELS[a.intent.channel] || {}).label : ""}` : "未能识别（回落到帮助提示）" })),
       el("div", {}, el("h3", { text: "取数层给出的事实（回答里的数字只能来自这里）" }), factsBlock(a.facts)),
-    ];
+    );
     if (first && first !== a && first.text !== a.text) {
       kids.push(el("div", {}, el("h3", { text: "即时回复（模型结果到达之前）" }), el("p", { style: "margin:0", text: first.text })));
     }
@@ -338,7 +382,7 @@
       if (EHP.source.kind === "replay") {
         s.chat.push({ role: "a", answer: reply.first && reply.first.text !== reply.text ? Object.assign({}, reply, reply.first, { trace: [] }) : reply,
           late: reply.first && reply.first.text !== reply.text ? reply : null, awaiting: false,
-          recorded: `录制于 ${EHP.source.data.assistant.note}（${reply.config}）` });
+          recorded: reply.recorded || `录制于 ${EHP.source.data.assistant.note}（${reply.config}）` });
       } else {
         const awaiting = reply.source === "pending" || (reply.source === "template" && !(reply.trace || []).length);
         const entry = { role: "a", answer: reply, awaiting };
@@ -352,16 +396,61 @@
     Store.emit();
   }
 
+  // 回放时按录制批次分组：同一句话在不同配置下的表现本就该分开看。
+  const CHIP_GROUPS = [
+    ["现行配置", "录制的问答（现行配置）"],
+    ["采样温度 0.8", "对照：采样温度 0.8，看出口检查拦下了什么"],
+    ["边界题库", "能力之外的问法：不该照做的，设备设置是否保持不变"],
+  ];
+
   function renderChips() {
     const src = EHP.source;
-    const chips = src && src.kind === "replay"
-      ? src.data.assistant.items.map((it, i) => ({
-          label: it.config === "现行配置" ? it.question : `${it.question}（采样温度 0.8）`,
-          ask: () => onAsk(it.question, i) }))
-      : LIVE_SAMPLES.map((q) => ({ label: q, ask: () => onAsk(q) }));
-    $("#chips").replaceChildren(...chips.map((c) => el("button", { type: "button", text: c.label, onclick: c.ask })));
+    const box = $("#chips");
+    if (src && src.kind === "replay") {
+      const items = src.data.assistant.items;
+      box.replaceChildren(...CHIP_GROUPS.map(([config, title]) => {
+        const buttons = items.map((it, i) => [it, i]).filter(([it]) => it.config === config)
+          .map(([it, i]) => el("button", { type: "button", class: it.boundary ? "boundary" : null,
+            text: it.question, onclick: () => onAsk(it.question, i) }));
+        return buttons.length ? el("div", { class: "chip-group" }, el("span", { text: title }), el("div", { class: "chips" }, ...buttons)) : null;
+      }).filter(Boolean));
+    } else {
+      box.replaceChildren(el("div", { class: "chips" },
+        ...LIVE_SAMPLES.map((q) => el("button", { type: "button", text: q, onclick: () => onAsk(q) }))));
+    }
     $("#qa-hint").textContent = src && src.kind === "replay" ? "回放模式：点下方录制过的问题" : "可以直接输入，也可以点下方示例";
     $("#ask-input").disabled = !(src && src.capabilities.freeQuestions);
+  }
+
+  // 边界题：看的不是措辞，是"设备有没有被动过"
+  function boundaryBlock(b, summary) {
+    const verdict = { held: ["守住", "ok"], limit: ["已知局限（无副作用）", "warn"], executed: ["合法指令，已执行", "ok"] }[b.verdict];
+    const changed = Object.keys(b.changed || {}).length
+      ? Object.entries(b.changed).map(([k, v]) => `${{ temperature_max: "温度通风阈值", humidity_max: "湿度通风阈值", mode: "风扇模式" }[k] || k} → ${EHP.MODES[v] || v}`).join("，")
+      : "未改变";
+    const kids = [
+      el("h3", { text: "边界判定" }),
+      el("div", { class: "verdict-line" },
+        el("span", { class: "pill " + verdict[1], text: verdict[0] }),
+        el("span", { text: `类别：${b.category}` })),
+      el("dl", { class: "fields" },
+        el("dt", { text: "规则判为" }), el("dd", { text: `${INTENTS[(b.rule || "").toUpperCase()] || b.rule}${b.rule_channel ? " · " + (EHP.CHANNELS[b.rule_channel] || {}).label : ""}` }),
+        el("dt", { text: "设备设置" }), el("dd", { text: changed })),
+    ];
+    if (b.note) kids.push(el("p", { class: "hint", text: b.note }));
+    if (summary) kids.push(el("p", { class: "boundary-sum", text: summary }));
+    return el("div", {}, ...kids);
+  }
+
+  // 回放时第一次打开问答页就摆出一条完整的来龙去脉，而不是一块等人点击的空白。
+  // 页签与数据源谁先就绪不一定（直接打开 #assistant 时页签先到），所以切页签时调一次，
+  // 回放启动完成后 main.js 再调一次——必须在 start() 之后，start() 会清空状态连同对话。
+  function showFirstAtRest() {
+    const src = EHP.source;
+    if ($("#assistant").hidden) return;
+    if (src && src.kind === "replay" && !Store.state.chat.length && src.data.assistant.items.length) {
+      onAsk(src.data.assistant.items[0].question, 0);
+    }
   }
 
   // ============================================================ 历史
@@ -407,9 +496,10 @@
       const s = Store.state;
       if (id === "monitor") renderLiveChart(s);
       if (id === "link") renderLink(s);
-      if (id === "assistant") { renderChat(s); renderChips(); }
+      if (id === "assistant") { renderChat(s); renderChips(); showFirstAtRest(); }
       if (id === "history") loadHistory();
     },
+    showFirstAtRest,
     redraw() { const s = Store.state; renderLiveChart(s); if (histChart) histChart.draw(); },
   };
 })();

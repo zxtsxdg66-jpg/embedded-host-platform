@@ -76,6 +76,7 @@
     replay.onprogress = () => renderReplayBar(replay);
     useSource(replay);
     replay.start();
+    EHP.views.showFirstAtRest();
     setBadge("replay", "回放 · 真实实测数据");
     $("#foot-note").textContent = (reason ? reason + " " : "") + `回放数据生成于 ${data.generated}，由 scripts/build_web_replay.py 从原始记录生成。`;
   }

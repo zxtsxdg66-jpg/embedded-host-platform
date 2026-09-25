@@ -93,7 +93,8 @@ h1 { font-size: 20px; line-height: 1.25; margin: 0; font-weight: 800; letter-spa
 /* 回放条 */
 .replay-bar {
   display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 12px;
-  background: var(--warn-soft); border-radius: 6px; margin-bottom: 10px; font-size: 13px;
+  background: var(--panel); border: 1px solid var(--rule); border-left: 3px solid var(--warn);
+  border-radius: 6px; margin-bottom: 10px; font-size: 13px;
 }
 .replay-bar .grow { flex: 1 1 220px; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .replay-bar input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--warn); }
@@ -134,6 +135,28 @@ section.view { padding-top: 16px; display: grid; gap: 16px; }
 .card .value small { font-size: 15px; font-weight: 400; color: var(--muted); margin-left: 4px; }
 .card .stats { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 4px; font-size: 12px; color: var(--muted); }
 .card .stats b { display: block; font: 600 13px var(--mono); color: var(--ink); }
+/* 仪表刻度：本次记录的最低—最高区间、当前值、报警阈值，画在同一把尺子上。
+ * 离阈值还有多远不必心算——这是整个页面上唯一刻意加重的元素。 */
+.scale { position: relative; height: 34px; margin: 4px 0 2px; }
+.scale .track { position: absolute; left: 0; right: 0; top: 11px; height: 6px; border-radius: 3px; background: var(--faint); }
+.scale .band { position: absolute; top: 11px; height: 6px; border-radius: 3px; background: var(--accent); opacity: .32; }
+.scale .limit { position: absolute; top: 4px; width: 2px; height: 20px; margin-left: -1px; background: var(--alert); }
+.scale .limit span {
+  position: absolute; top: 20px; transform: translateX(-50%); font: 10.5px/1.4 var(--mono);
+  color: var(--alert); white-space: nowrap;
+}
+.scale .limit.edge-r span { transform: translateX(-100%); }
+.scale .limit.edge-l span { transform: none; }
+.scale .now {
+  position: absolute; top: 6px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+  background: var(--panel); border: 3px solid var(--accent); transition: left .4s ease;
+}
+.card.alarm .scale .now { border-color: var(--alert); }
+.margin-note { font-size: 12px; color: var(--muted); }
+.margin-note b { font: 600 12px var(--mono); color: var(--ink); }
+.card.alarm .margin-note b { color: var(--alert); }
+@media (prefers-reduced-motion: reduce) { .scale .now { transition: none; } }
+
 .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
 .pill.ok { background: var(--accent-soft); color: var(--accent); }
 .pill.bad { background: var(--alert-soft); color: var(--alert); }
@@ -211,7 +234,12 @@ td.hex { font-family: var(--mono); max-width: 360px; overflow: hidden; text-over
 .msg.pending { opacity: .6; font-style: italic; }
 .ask { display: flex; gap: 8px; margin-top: 12px; }
 .ask input { flex: 1; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chip-groups { display: grid; gap: 10px; margin-top: 12px; }
+.chip-group > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button.boundary { border-style: dashed; }
+.verdict-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 13px; }
+.boundary-sum { font: 12px/1.6 var(--mono); color: var(--muted); }
 .chips button { border: 1px solid var(--rule); background: var(--panel); border-radius: 999px; padding: 3px 11px; font-size: 12.5px; cursor: pointer; }
 .chips button:hover { border-color: var(--accent); }
 .trace { display: grid; gap: 12px; }
