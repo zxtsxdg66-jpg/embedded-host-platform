@@ -57,7 +57,10 @@ from service.data_service_impl import InMemoryDataService  # noqa: E402
 
 # 阈值从 service 层取，不在本脚本里另写一份字面量——报告里说的"越限"必须与
 # 界面上真正触发报警的判据是同一个数，否则两边会各说各话
-from service.sensor_data_processor import NOISE_ALARM_MAX  # noqa: E402
+from service.sensor_data_processor import (  # noqa: E402
+    DEFAULT_CONFIRM_CYCLES,
+    NOISE_ALARM_MAX,
+)
 
 DEFAULT_BAUDRATE = 115200
 DEFAULT_WIRE_ID = 1  # 与固件 User/main.c 的 STM32_DEVICE_ID 一致
@@ -155,13 +158,14 @@ def threshold_segments(
 ) -> list[dict[str, Any]]:
     """Split the channel's series into runs of "over threshold" / "under".
 
-    The alarm rule is evaluated per data point with no hysteresis
-    (``service/sensor_data_processor.py::_evaluate_threshold``: a bare
-    ``value > threshold``), so what the UI shows is exactly this sequence of
-    runs. Reporting how long each run lasted, rather than only how many
-    points exceeded, is what distinguishes "the alarm held steady while the
-    source was on" from "the alarm flickered" -- the two look identical in a
-    min/max table.
+    These are the raw per-point runs (a bare ``value > threshold``), not the
+    alarm the UI shows: ``service/sensor_data_processor.py`` only raises an
+    alarm after ``DEFAULT_CONFIRM_CYCLES`` consecutive readings over the limit
+    and clears it with a deadband. Reporting how long each raw run lasted,
+    rather than only how many points exceeded, is what distinguishes "the
+    reading held steady while the source was on" from "the reading jittered
+    around the limit" -- the two look identical in a min/max table, and only
+    the first survives confirmation.
     """
     series = [r for r in records if r.channel == channel and r.valid]
     if not series:
@@ -396,10 +400,11 @@ def to_markdown(summary: dict[str, Any], label: str, samples: str = "") -> str:
             f"- 报警触发次数：**{len(triggered_runs)}**",
             f"- 最长连续越限：**{longest:.1f} s**（{most_samples} 个采样点）",
             "",
-            "> 阈值判定**无回差**（`service/sensor_data_processor.py` 中为逐点比较 "
-            f"`value > {NOISE_ALARM_MAX:.0f}`）。因此若某次越限只持续 1~2 个采样点、"
-            "且与正常区间交替出现，应判读为读数在阈值附近抖动，而非声源真的反复"
-            "启停；反之，连续多个采样点稳定越限才能证明报警在持续生效。",
+            f"> 上表是原始读数的逐点越限段（`value > {NOISE_ALARM_MAX:.0f}`），"
+            "不是界面上的报警状态：`service/sensor_data_processor.py` 要连续 "
+            f"{DEFAULT_CONFIRM_CYCLES} 个周期越限才建立报警，解除时另有回差。"
+            "因此只持续 1 个采样点、且与正常区间交替出现的越限段，应判读为读数在阈值"
+            "附近抖动，界面不会为它报警；连续多个采样点稳定越限才能证明报警在持续生效。",
         ]
 
     if samples:

@@ -15,24 +15,22 @@
  * 此前置信度最低的推断项——PB10/PB11 不装 P2 跳线能否作原始 TTL——亦已实测闭环。
  * 编译保持 0 Error / 0 Warning。PC 侧 src/ 在整个实机联调过程中零改动。
  *
- * *** 尚未实机验证的部分（同样如实告知）***
- * 上述验证覆盖的是三传感器采集上报这条主链路。其后扩展的三个模块——通风风扇
- * （PE5/PE6）、ES8388 语音告警播报、板载 2.8 寸 TFT LCD 仪表盘与电阻触摸——
- * 截至 2026-09-07 **只完成了编译（0 Error / 0 Warning）与静态核查，一次都还没有
- * 烧录到板子上运行过**（烧录器不在手边）。引脚占用、Keil 工程文件清单、HAL 依赖
- * 闭包均已逐项核对，但这些都不能替代实机。首次烧录后应按
- * docs/verification.md 的验证清单逐项确认。
- * 另：语音数据当前仍是静音占位（alert_pcm.c 的 sample_count = 0），需先用
- * scripts/wav_to_c.py 生成真实音频再重新编译，否则播报流程会跑通但不出声。
+ * 其后扩展的三个模块——通风风扇（PE5，TIM9 PWM 调速）、ES8388 语音告警播报
+ * （alert_pcm.c 为三段真实录音，由 scripts/wav_to_c.py 生成）、板载 2.8 寸 TFT LCD
+ * 仪表盘与电阻触摸——于 2026-09-08 烧录并实机验证通过，调试记录见
+ * docs/hardware.md「实机调试记录」一节。
+ * 2026-09-24 又在真实数据流上做了 PC 侧故障注入（杂散字节、CRC 翻转、拆帧并帧），
+ * 本固件的发送端与命令应答在此期间工作正常。
  *
- * 已知缺陷（非致命，已列入改进方向）：Modbus 链路建立后的首次读数格式合法但测量
- * 尚未就绪，现有三层校验（长度/字段/CRC16）无法识别，需由上层丢弃首帧规避。
+ * 已知的传感器启动特性：Modbus 链路建立后的首个成功读数格式合法、测量却尚未就绪
+ * （两次实验中为 84.7 与 96.2 dB(A)，相邻样本约 40），长度/字段/CRC16 三层校验都
+ * 认不出它。本固件把它当作预热读数丢弃，见 main() 里的 noise_warmed_up；链路掉线
+ * （连续 NOISE_LINK_LOST_FAILURES 个周期读取失败）后恢复时同样再丢一次。
  *
- * 历史记录：本声明的上一版写于 2026-08-14 硬件到货之前，内容为"当前硬件尚未到货……
- * 并未、也不可能在没有真实传感器、真实总线电气环境的情况下完成实机验证"，当时
- * 仅完成了软件逻辑层面的实现与交叉核对（CRC32/CRC16/协议帧编码已用 Python 等价实现
- * 与 PC 端真实代码逐字节比对，帧结构/Modbus 请求响应格式已用厂商文档的真实报文示例
- * 核对）。该声明已于 2026-09-07 按实测结果更新。
+ * 历史记录：本声明的第一版写于 2026-08-14 硬件到货之前，当时仅完成了软件逻辑层面的
+ * 实现与交叉核对（CRC32/CRC16/协议帧编码已用 Python 等价实现与 PC 端真实代码逐字节
+ * 比对，帧结构/Modbus 请求响应格式已用厂商文档的真实报文示例核对）；第二版写于
+ * 2026-09-07，扩展模块尚未烧录。本版于 2026-09-24 按实测结果更新。
  *
  * 采集周期状态机说明：
  *   噪声传感器通过 Modbus RTU 异步请求-应答（非阻塞，noise_sensor_poll() 每次
@@ -75,6 +73,15 @@
  * 足够跟手，又不至于让显示与触摸占掉主循环太多时间。数值行不走这个节奏——
  * 它本来就只在每个采集周期结束时更新一次。 */
 #define UI_REFRESH_INTERVAL_TICKS    10u
+
+/* 噪声读取连续失败多少个周期，就认为 Modbus 链路已经断开（传感器掉线、插头松脱）。
+ * 链路恢复后的首个成功读数与上电后的一样测量尚未就绪，须重新预热、丢弃。
+ * 取 3（约 9 秒）而不是 1：偶发的单次超时不该让下一个正常读数被白白丢掉；
+ * 实机一小时 1163/1163 从未出现过连续失败，3 次连续失败只会是真掉线。
+ * 【未经实机测试】2026-09-25 加入，只编译通过（0 Error / 0 Warning），掉线重连的
+ * 情形没有在板子上跑过。上电预热那一次同样没有直接验证：烧录后只确认了新固件
+ * 运行正常、PC 侧统计口径不受影响。 */
+#define NOISE_LINK_LOST_FAILURES     3u
 
 typedef enum
 {
@@ -277,6 +284,11 @@ int main(void)
     /* 「语音自检」按一次播一句，三句轮换，一个按钮就能覆盖全部告警语音 */
     audio_alert_id_t self_test_clip = AUDIO_ALERT_TEMPERATURE;
     sensor_cycle_state_t cycle_state = CYCLE_IDLE;
+    /* 噪声传感器是否已完成预热读数。在此之前取到的第一个成功读数不上报，
+     * 见 CYCLE_NOISE_WAIT 分支。 */
+    uint8_t noise_warmed_up = 0u;
+    /* 已预热后连续读取失败的周期数，满 NOISE_LINK_LOST_FAILURES 即重新预热 */
+    uint8_t noise_fail_streak = 0u;
     aht20_status_t aht20_init_status;
 
     HAL_Init();                                       /* 初始化 HAL 库 */
@@ -313,10 +325,10 @@ int main(void)
     aht20_init_status = aht20_init();                  /* 软件 I2C：AHT20 温湿度传感器 */
     if (aht20_init_status != AHT20_OK)
     {
-        /* 初始化失败最常见的原因是尚未接线（当前硬件未到货，预期会失败），
-         * 不在此处阻塞死循环——继续运行，噪声传感器与 PC 链路不应因为温湿度
-         * 传感器暂时不可用而停摆；后续每个采集周期仍会尝试读取，接线后自然恢复 */
-        debug_log_printf("[aht20] init failed, status=%d (expected until sensor is wired)\r\n",
+        /* 初始化失败最常见的原因是传感器没接好，不在此处阻塞死循环——继续运行，
+         * 噪声传感器与 PC 链路不应因为温湿度传感器暂时不可用而停摆；后续每个
+         * 采集周期仍会尝试读取，接好后自然恢复 */
+        debug_log_printf("[aht20] init failed, status=%d (check sensor wiring)\r\n",
                           (int)aht20_init_status);
     }
 
@@ -377,7 +389,9 @@ int main(void)
                 {
                     next_cycle_tick = loop_ticks + SENSOR_CYCLE_INTERVAL_TICKS;
 
-                    if (loop_ticks < noise_blank_until_tick)
+                    /* 预热读数不参与消隐：它的结果无论如何都会被丢弃，读到的是不是
+                     * 喇叭的声音无关紧要，跳过它只会把预热往后拖。 */
+                    if (noise_warmed_up && loop_ticks < noise_blank_until_tick)
                     {
                         /* 噪声消隐中：喇叭正在放告警音（或刚放完、混响未散），
                          * 此刻读到的分贝值是喇叭自己的声音，不是环境噪声。
@@ -413,8 +427,43 @@ int main(void)
                     break;   /* 继续等待，本次循环不做其它事 */
                 }
 
+                if (!noise_warmed_up && status == NOISE_SENSOR_OK)
+                {
+                    /* 预热读数：链路建立后的首个成功读数测量尚未就绪，丢弃。
+                     *
+                     * 这一周期**整轮不上报**，温湿度也不报，而不是只把噪声标成无效。
+                     * PC 侧的实验统计（scripts/collect_experiment_data.py 的
+                     * modbus_stats）把"收到温湿度而没有噪声"的周期记为一次 Modbus
+                     * 失败；整轮静默则发生在 PC 收到第一帧之前，不进任何统计——与噪声
+                     * 消隐"跳过请求而不是请求了再丢掉"是同一个口径原则。
+                     * 掉线恢复时的那一轮静默发生在运行中间，PC 会把它记成一次整周期
+                     * 缺帧——这是真实发生过的掉线留下的痕迹，不是链路丢帧，判读时注意。
+                     *
+                     * 读失败（超时/CRC/格式）的周期不算预热，照常上报温湿度：否则
+                     * 噪声传感器没接时，温湿度也会永远等不到第一次上报。 */
+                    noise_warmed_up = 1u;
+                    noise_fail_streak = 0u;
+                    debug_log_printf("[noise] warm-up reading %.1f dB discarded\r\n",
+                                     (double)noise_db);
+                }
+                else
                 {
                     sensor_reading_t noise_reading;
+
+                    if (status == NOISE_SENSOR_OK)
+                    {
+                        noise_fail_streak = 0u;
+                    }
+                    else if (noise_warmed_up
+                             && ++noise_fail_streak >= NOISE_LINK_LOST_FAILURES)
+                    {
+                        /* 链路判定为断开：重新进入预热，恢复后的首个成功读数照样丢弃。
+                         * 本周期的温湿度仍照常上报（下面的 finish_cycle_and_report）。 */
+                        noise_warmed_up = 0u;
+                        noise_fail_streak = 0u;
+                        debug_log_printf("[noise] link lost, warm-up re-armed\r\n");
+                    }
+
                     noise_reading.valid = (status == NOISE_SENSOR_OK) ? 1u : 0u;
                     noise_reading.value = noise_db;
                     finish_cycle_and_report(noise_reading);
