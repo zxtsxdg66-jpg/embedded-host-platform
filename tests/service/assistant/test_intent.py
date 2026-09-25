@@ -430,6 +430,35 @@ def test_the_guard_does_not_swallow_real_commands() -> None:
     assert recognise("把通风阈值调到28度").kind is IntentKind.SET_VENT_THRESHOLD
 
 
+def test_a_negated_off_is_not_an_order_to_switch_off() -> None:
+    """2026-09-25 边界题库："不要关风扇"里含"关"，被读成关风扇并真的执行——意思
+    正好反了，而且模型单独判也是关风扇，复核拦不住。"别关"要的是维持现状，不是
+    一条新指令，落点与征询语气相同：答风扇状态，不动执行器。
+
+    "别开风扇"读成关闭则不变（见 ``test_a_negated_instruction_reads_as_off_not_on``）：
+    自动模式下风扇随时可能自己转起来，"别开"切到手动常关才算兑现了这句话。"""
+    for question in ("不要关风扇", "别关风扇", "不用关风扇", "风扇别停", "风扇不要停"):
+        assert recognise(question).kind is IntentKind.FAN_STATE, question
+
+
+def test_a_retracted_instruction_is_not_carried_out() -> None:
+    """2026-09-25 边界题库："把风扇打开，开玩笑的"被照常执行。句中出现撤回的说法时
+    整句当作提问，与征询语气同一个落点。
+
+    代价是"算了，还是把风扇开了吧"这种先撤回再下令的句子也不执行——误判方向
+    偏向"当作提问"：没执行，用户再说一句就是了；执行错了，风扇已经转了。"""
+    for question in (
+        "把风扇打开，开玩笑的",
+        "开风扇，算了还是不开了",
+        "关风扇，逗你的",
+        "把通风阈值调到20度，说着玩的",
+    ):
+        assert recognise(question).kind in (
+            IntentKind.FAN_STATE,
+            IntentKind.THRESHOLD_INFO,
+        ), question
+
+
 # -- typo normalisation, 2026-09-09 -------------------------------------------
 
 
@@ -497,6 +526,16 @@ def test_a_question_about_yesterday_is_marked_as_out_of_range() -> None:
     所以没有下游能拦——接地校验尤其拦不住，错的不是数字而是它所属的区间。"""
     for question in ("昨天温度最高多少", "这周平均温度", "今天噪声最高多少"):
         assert recognise(question).past_scoped is True, question
+
+
+def test_a_question_about_last_year_is_marked_as_out_of_range() -> None:
+    """2026-09-25 边界题库："去年夏天最高温度多少"被答成"监测到的最高温度是 40.0℃"，
+    与上一条是同一种错——数是真的，区间是错的——只是词表里没有按年说的过去。
+    "今年"与"今天"同类：统计量要加说明（今年的最高值可能在启动之前），当前读数不加。"""
+    for question in ("去年夏天最高温度多少", "前年平均湿度多少", "去年温度多少",
+                     "今年噪声最高多少"):
+        assert recognise(question).past_scoped is True, question
+    assert recognise("今年温度多少").past_scoped is False
 
 
 def test_within_run_time_words_are_not_flagged() -> None:

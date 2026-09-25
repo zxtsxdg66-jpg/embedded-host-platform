@@ -168,6 +168,31 @@ def test_the_whitelist_holds_exactly_the_four_reversible_actions() -> None:
     }
 
 
+def test_extract_value_keeps_the_sign_of_a_negative_number() -> None:
+    """2026-09-25 边界题库："调到零下10度""调到-5度"被读成 10 与 5 并真的执行了。
+    负号一丢，本该被量程拒绝的设置就成了一个合法、却不是用户说的值。"""
+    assert extract_value("调到-5度") == -5.0
+    assert extract_value("调到 -5 度") == -5.0
+    assert extract_value("调到零下10度") == -10.0
+    assert extract_value("调到负3.5度") == -3.5
+    assert extract_value("调到28度") == 28.0
+
+
+def test_a_negative_threshold_is_refused_as_out_of_range() -> None:
+    executor, ventilation = _executor()
+    before = ventilation.settings.temperature_max
+
+    facts = executor.execute(
+        Intent(kind=IntentKind.SET_VENT_THRESHOLD, channel=TEMPERATURE_CHANNEL),
+        "把通风温度阈值调到零下10度",
+    )
+
+    assert facts.applied is False
+    assert facts.rejection == REJECT_OUT_OF_RANGE
+    assert facts.value == -10.0
+    assert ventilation.settings.temperature_max == before
+
+
 def test_extract_value_reads_digits_only_from_the_text_given() -> None:
     assert extract_value("调到 28 度") == 28.0
     assert extract_value("设成 75.5") == 75.5

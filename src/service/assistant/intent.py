@@ -143,6 +143,27 @@ _CONSULTATIVE_WORDS = (
 记着真实用户说过"能开风扇不"。同理不收单字"该"与"要"，它们在"该关了""要开风扇"里
 就是命令。"""
 
+_KEEP_WORDS = (
+    "不要关", "别关", "不用关", "不许关", "不能关",
+    "不要停", "别停", "不用停", "不许停", "不能停",
+)
+"""否定的关闭：要的是维持现状，不是一条新指令。
+
+2026-09-25 边界题库查出"不要关风扇"被读成关风扇并真的执行——句中的"关"命中了
+`_FAN_OFF_WORDS`，意思正好反了；模型单独判也是关风扇，复核拦不住。落点与征询语气相同。
+
+"别开""不用开"不在这里：它们仍读成关闭（见 `_FAN_OFF_WORDS`），自动模式下风扇随时
+可能自己转起来，切到手动常关才算兑现了"别开"。"""
+
+_RETRACT_WORDS = (
+    "开玩笑", "逗你", "说着玩", "当我没说", "算了",
+)
+"""撤回：前半句的指令被后半句收回了。
+
+2026-09-25 边界题库："把风扇打开，开玩笑的"照常执行了。含撤回说法的句子整句当作提问。
+"算了"会连带让"算了，还是把风扇开了吧"也不执行——误判方向与征询语气一致：
+没执行，用户再说一句就是了；执行错了，风扇已经转了。"""
+
 _SET_WORDS = (
     "调到", "调成", "调整到", "设为", "设成", "设置为", "改成", "调低", "调高",
 )
@@ -259,8 +280,11 @@ _STRICTLY_PAST_WORDS = (
     "昨天", "昨日", "昨晚", "前天", "前几天",
     "上周", "上个星期", "上个月",
     "今早", "上次", "历史", "小时前", "分钟前",
+    "去年", "前年",
 )
-_INCLUDES_NOW_WORDS = ("这周", "本周", "这个月", "今天", "今日")
+"""去年／前年 2026-09-25 补：边界题库里"去年夏天最高温度多少"被答成本次运行的
+最高值且没有范围说明——词表只收了按天、按周、按月说的过去。"""
+_INCLUDES_NOW_WORDS = ("这周", "本周", "这个月", "今天", "今日", "今年")
 """Periods that contain the present moment.
 
 Split out 2026-09-14 after a user asked "今天天气不挺好的 咋地铁站这么热啊
@@ -594,6 +618,11 @@ def _is_consultative(text: str) -> bool:
     return _contains(text, _CONSULTATIVE_WORDS)
 
 
+def _is_withheld(text: str) -> bool:
+    """句子里的指令被否定（"不要关"）或被收回（"开玩笑的"），不该执行。"""
+    return _contains(text, _KEEP_WORDS) or _contains(text, _RETRACT_WORDS)
+
+
 def _fan_intent(text: str) -> Intent:
     """Distinguish an instruction about the fan from a question about it.
 
@@ -623,7 +652,9 @@ def _fan_intent(text: str) -> Intent:
     """
     about_threshold = _contains(text, _THRESHOLD_WORDS)
     instructed = _contains(text, _SET_WORDS)
-    if _is_consultative(text):
+    if _is_consultative(text) or _is_withheld(text):
+        # 否定与撤回（2026-09-25）与征询语气同一个落点，
+        # 理由见 _KEEP_WORDS／_RETRACT_WORDS。
         # 征询语气先于每一条指令分支被判定，和 ``_FAN_STATE_WORDS`` 同一个思路：
         # 词表宽到能认出各种说法之后，唯一还能把提问与命令分开的就是语气。
         # 落点选 FAN_STATE 而不是 HELP，是因为它取到的事实里本就带着通风阈值与

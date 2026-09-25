@@ -94,7 +94,11 @@ measurement ranges. A threshold outside the range the
 sensor can report is not a demanding setting, it is an unreachable one:
 "通风阈值调到 300 度" would silently mean "never ventilate"."""
 
-_VALUE_PATTERN = re.compile(r"(\d+(?:\.\d+)?)")
+_VALUE_PATTERN = re.compile(r"(零下|负|-)?\s*(\d+(?:\.\d+)?)")
+"""A number with its sign. The sign is part of the value: before 2026-09-25
+this read only the digits, so "调到零下10度" and "调到-5度" were carried out as
+10 and 5 -- legal settings nobody asked for, where the real values would have
+been refused as out of range."""
 
 _CHANNEL_UNITS: dict[ChannelId, str] = {
     TEMPERATURE_CHANNEL: "℃",
@@ -119,7 +123,8 @@ def extract_value(question: str) -> float | None:
     matches = _VALUE_PATTERN.findall(question)
     if len(matches) != 1:
         return None
-    return float(matches[0])
+    sign, digits = matches[0]
+    return -float(digits) if sign else float(digits)
 
 
 class ControlExecutor:
