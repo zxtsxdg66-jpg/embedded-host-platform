@@ -315,6 +315,104 @@
     return el("pre", { class: "facts", text: lines.join("\n") });
   }
 
+  // ------------------------------------------------ 实时流程（6.1 节，2026-09-26）
+  // 一句回答的来路，按发生顺序逐步点亮。每一步都是网关推来的 assistant_step，
+  // 这里只负责把它说成人话，不做任何判断。
+  const JOBS = { rephrase: "改写", explain: "解释", parse: "分类", review: "复核" };
+  const CHECK_NAMES = { grounding: "接地校验", alarm: "越限断言", judgement: "凭空判断", advice: "建议措辞", length: "长度上限" };
+  const CONTEXT_NOTES = {
+    inherited_kind: "沿用上一轮的问法", clarification: "补全了上一轮的反问", fan_topic: "话题还在风扇上，读成风扇指令",
+  };
+  const CONFIRM_NOTES = {
+    affirm: "同意 → 执行挂起的那条指令", deny: "拒绝 → 不执行",
+    other: "答非所问 → 挂起的指令作废，这句当新问题处理", expired: "确认已过期 → 挂起的指令作废",
+  };
+  const REVIEW_NOTES = {
+    agree: ["与规则一致 → 执行", "ok"], disagree: ["与规则不一致 → 不执行，改为反问", "warn"],
+    silent: ["模型没有回应 → 按规则执行（与未接模型时相同）", "idle"],
+  };
+
+  const intentText = (i) => (i ? `${INTENTS[i.kind] || i.kind}${i.channel ? " · " + (EHP.CHANNELS[i.channel] || {}).label : ""}` : "（无）");
+  const atText = (ms) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
+
+  function stepView(st) {
+    const job = JOBS[st.job] || st.job;
+    let title = st.kind, cls = "", body = [];
+    switch (st.kind) {
+      case "received": title = "收到问题"; body = [el("p", { text: st.text })]; break;
+      case "confirmation": title = "对确认问句的回答"; body = [el("p", { text: `${CONFIRM_NOTES[st.note] || st.note}（挂起的指令：${intentText(st.intent)}）` })]; break;
+      case "compound": {
+        const [q, c] = (st.note || "0+0").split("+");
+        title = "一句话里有几件事"; body = [el("p", { text: `拆成 ${q} 个提问${c === "1" ? " + 1 条指令" : ""}；提问只用模板作答，指令单独复核` })]; break;
+      }
+      case "rules": title = "规则识别";
+        body = [el("p", { text: st.intent && st.intent.kind === "HELP" ? "规则没认出这句话（先回帮助提示）"
+          : intentText(st.intent) + (st.text ? `　（指令段：${st.text}）` : "") })];
+        break;
+      case "context": title = "对话记忆"; body = [el("p", { text: `${CONTEXT_NOTES[st.note] || st.note} → ${intentText(st.intent)}` })]; break;
+      case "facts": title = "取数层给出事实（回答里的数字只能来自这里）"; body = [factsBlock(st.facts)]; break;
+      case "template": title = "模板成句"; body = [el("p", { class: "quote", text: st.text })]; break;
+      case "model_submit":
+        title = `交给模型${job}`; cls = "model";
+        body = [el("p", { class: "hint", text: st.job === "explain" ? "模型收到的只有这张事实清单：" : st.job === "rephrase" ? "模型收到的只有这句模板，看不到读数：" : "模型收到的只有用户原话，只许回一个标签：" }),
+          el("pre", { class: "facts", text: st.text })];
+        break;
+      case "model_unavailable":
+        title = `未接模型，跳过${job}`; cls = "idle";
+        body = [el("p", { class: "hint", text: st.job === "review" ? "按规则直接执行，与改动前完全一样。" : st.job === "parse" ? "保留即时回复。" : "模板就是最终答案。" })];
+        break;
+      case "model_reply": title = `模型返回（${job}）`; cls = "model"; body = [el("p", { class: "quote", text: st.text || "（空）" })]; break;
+      case "label":
+        if (st.job === "review") {
+          const [t, c] = REVIEW_NOTES[st.note] || [st.note, ""];
+          title = "复核裁决（代码作出）"; cls = c;
+          body = [el("p", { text: `模型读成：${intentText(st.intent)}　${t}` })];
+        } else {
+          title = "模型给出的分类"; cls = st.intent ? "ok" : "warn";
+          body = [el("p", { text: st.intent ? `${intentText(st.intent)} → 由代码按这个意图取数、套模板` : "标签无法使用 → 忽略" })];
+        }
+        break;
+      case "checks": {
+        const ok = st.verdict === "accepted";
+        title = "出口五道检查（代码逐道核对）"; cls = ok ? "ok" : "bad";
+        body = st.checks.length
+          ? [el("ul", { class: "checks" }, ...st.checks.map((c) => el("li", { class: c.passed ? "pass" : "fail" },
+              el("span", { class: "mark", text: c.passed ? "✓" : "✗" }), el("span", { text: CHECK_NAMES[c.name] || c.name }),
+              el("span", { class: "detail", text: c.detail })))),
+            el("p", { class: "verdict " + (ok ? "ok" : "bad"), text: EHP.VERDICTS[st.verdict] || st.verdict })]
+          : [el("p", { class: "verdict bad", text: EHP.VERDICTS[st.verdict] || st.verdict })];
+        break;
+      }
+      case "retry": title = "被拦下 → 按更严格的提示重试一次"; cls = "warn"; break;
+      case "executed": {
+        const refused = st.facts && st.facts.applied === false;
+        title = refused ? "交给执行层 → 被代码拒绝，设置未改" : "执行指令"; cls = refused ? "warn" : "ok";
+        body = [el("p", { text: `${intentText(st.intent)}　${st.intent && st.intent.kind === "SET_VENT_THRESHOLD" ? "数值取自用户原话" : "依据用户原话"}：「${st.text}」` })];
+        break;
+      }
+      case "answered":
+        if (st.note === "immediate_stands") { title = "模型没有给出可用结果 → 即时回复就是最终答案"; cls = "final"; break; }
+        title = st.final ? "最终答案" : "即时回复（先发出，模型结果到了可能替换它）"; cls = st.final ? "final" : "";
+        body = [el("p", { class: "quote", text: st.text }), el("p", { class: "hint", text: "来源：" + (EHP.SOURCES[st.source] || st.source) })];
+        break;
+      case "abandoned": title = "用户已经问了下一句 → 这一问的模型工作被放弃"; cls = "idle"; break;
+    }
+    return el("li", { class: cls }, el("span", { class: "at", text: atText(st.at_ms) }),
+      el("div", {}, el("strong", { text: title }), ...body));
+  }
+
+  function timelineView(m, steps) {
+    const items = steps.map(stepView);
+    if (m.awaiting) {
+      const t0 = m.askedAt || performance.now();
+      items.push(el("li", { class: "waiting" }, el("span", { class: "at", text: atText(Math.round(performance.now() - t0)) }),
+        el("div", {}, el("strong", { text: "等模型…" }), el("p", { class: "hint", text: "纯 CPU 跑 4B 模型，改写约 3 秒、解释约 10 秒" }))));
+    }
+    const kids = [el("ol", { class: "timeline" }, ...items)];
+    if (m.recorded) kids.push(el("p", { class: "hint", text: m.recorded }));
+    return kids;
+  }
+
   function renderTrace(m) {
     const box = $("#trace");
     const a = answerOf(m);
@@ -340,6 +438,11 @@
       }
       if (m.recorded) kids.push(el("p", { class: "hint", text: m.recorded }));
       box.replaceChildren(...kids);
+      return;
+    }
+    const steps = m.qid != null ? Store.state.steps[m.qid] : null;
+    if (steps && steps.length) {
+      box.replaceChildren(...timelineView(m, steps));
       return;
     }
     kids.push(
@@ -371,21 +474,50 @@
     box.replaceChildren(...kids);
   }
 
+  // 回放录制好的实时流程：按录制时的原始节奏逐步推进，走与在线时同一条 Store.handle。
+  // 每次播放给一个新编号，同一题点两次不会把两遍的步骤混在一起；切换数据源会清空状态，
+  // 还没播完的定时器发现状态换了就不再推。
+  let replayPlays = 0;
+  function playRecordedSteps(item) {
+    const s = Store.state;
+    const qid = `replay-${++replayPlays}`;
+    const entry = { role: "a", answer: item.first, awaiting: true, qid, askedAt: performance.now(),
+      recorded: item.recorded || `录制于 ${item.config}` };
+    s.chat.push(entry);
+    for (const step of item.steps) {
+      setTimeout(() => {
+        if (Store.state !== s) return;
+        Store.handle(Object.assign({}, step, { type: "assistant_step", question_id: qid }));
+        if (step.kind === "answered" && step.final) {
+          if (item.text !== item.first.text) entry.late = item;
+          entry.awaiting = false;
+          Store.emit();
+        }
+      }, step.at_ms);
+    }
+  }
+
   async function onAsk(question, index) {
     question = question.trim();
     if (!question) return;
     const s = Store.state;
     s.chat.push({ role: "q", text: question });
     Store.emit();
+    const sentAt = performance.now();
     try {
       const reply = await EHP.source.ask(question, index);
-      if (EHP.source.kind === "replay") {
+      if (EHP.source.kind === "replay" && reply.steps) {
+        playRecordedSteps(reply);
+      } else if (EHP.source.kind === "replay") {
         s.chat.push({ role: "a", answer: reply.first && reply.first.text !== reply.text ? Object.assign({}, reply, reply.first, { trace: [] }) : reply,
           late: reply.first && reply.first.text !== reply.text ? reply : null, awaiting: false,
           recorded: reply.recorded || `录制于 ${EHP.source.data.assistant.note}（${reply.config}）` });
       } else {
-        const awaiting = reply.source === "pending" || (reply.source === "template" && !(reply.trace || []).length);
-        const entry = { role: "a", answer: reply, awaiting };
+        const qid = reply.question_id || null;
+        const done = qid && (s.steps[qid] || []).some((x) => x.kind === "answered" && x.final);
+        // 有编号时以"最终答案"那一步为准；旧版网关没有编号，沿用原先的猜法。
+        const awaiting = qid ? !done : reply.source === "pending" || (reply.source === "template" && !(reply.trace || []).length);
+        const entry = { role: "a", answer: reply, awaiting, qid, askedAt: sentAt };
         s.chat.push(entry);
         if (awaiting) setTimeout(() => { entry.awaiting = false; Store.emit(); }, 25000);
       }
@@ -398,6 +530,8 @@
 
   // 回放时按录制批次分组：同一句话在不同配置下的表现本就该分开看。
   const CHIP_GROUPS = [
+    ["实时流程", "一句回答是怎么来的：按录制时的节奏逐步重演（每条路径一题）"],
+    ["实时流程 · 采样温度 0.8", "同上，采样温度 0.8：出口检查拦下 → 重试"],
     ["现行配置", "录制的问答（现行配置）"],
     ["采样温度 0.8", "对照：采样温度 0.8，看出口检查拦下了什么"],
     ["边界题库", "能力之外的问法：不该照做的，设备设置是否保持不变"],
@@ -411,7 +545,7 @@
       box.replaceChildren(...CHIP_GROUPS.map(([config, title]) => {
         const buttons = items.map((it, i) => [it, i]).filter(([it]) => it.config === config)
           .map(([it, i]) => el("button", { type: "button", class: it.boundary ? "boundary" : null,
-            text: it.question, onclick: () => onAsk(it.question, i) }));
+            title: it.label || null, text: it.question, onclick: () => onAsk(it.question, i) }));
         return buttons.length ? el("div", { class: "chip-group" }, el("span", { text: title }), el("div", { class: "chips" }, ...buttons)) : null;
       }).filter(Boolean));
     } else {
@@ -477,6 +611,10 @@
       $("#only-bad").addEventListener("change", () => renderLink(Store.state));
       $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); const i = $("#ask-input"); onAsk(i.value); i.value = ""; });
       $("#hist-load").addEventListener("click", loadHistory);
+      // 等模型时让"等模型… x.x s"走起来；不在问答页或没有在等的就什么也不做。
+      setInterval(() => {
+        if (selectedAnswer && selectedAnswer.awaiting && !$("#assistant").hidden) renderTrace(selectedAnswer);
+      }, 200);
       Store.subscribe((s) => {
         renderCards(s); renderFan(s); renderDevices(s);
         if (!$("#monitor").hidden) renderLiveChart(s);

@@ -86,6 +86,7 @@
   // ---------------------------------------------------------------- 状态仓库
   const WINDOW_POINTS = 4000; // 每通道保留的点数，够画一小时（1163 点）
   const MAX_LINK_EVENTS = 400;
+  const MAX_STEP_QUESTIONS = 60; // 只留最近这么多个问题的步骤；手机提的问题也会推过来
 
   function freshState() {
     const channels = {};
@@ -101,6 +102,7 @@
         serverStats: null,
       },
       chat: [],
+      steps: {}, // question_id → 按 seq 排好的步骤（docs/decisions/08-web.md 6.1）
       devices: [],
       mode: "",
     };
@@ -160,10 +162,28 @@
           break;
         }
         case "assistant_detail": {
-          // 迟到的模型结果：接到最近一个还在等的回答上。
-          const pending = [...s.chat].reverse().find((m) => m.role === "a" && m.awaiting);
-          if (pending) Object.assign(pending, { awaiting: false, late: msg });
-          else s.chat.push({ role: "a", answer: msg, awaiting: false });
+          // 迟到的模型结果：有 question_id 就按编号接到那一问上；
+          // 旧版网关没有编号，退回原来的做法——接到最近一个还在等的回答上。
+          const owner = msg.question_id
+            ? s.chat.find((m) => m.role === "a" && m.qid === msg.question_id)
+            : [...s.chat].reverse().find((m) => m.role === "a" && m.awaiting);
+          if (owner) Object.assign(owner, { awaiting: false, late: msg });
+          else if (!msg.question_id) s.chat.push({ role: "a", answer: msg, awaiting: false });
+          break;
+        }
+        case "assistant_step": {
+          const key = msg.question_id;
+          const list = s.steps[key] || (s.steps[key] = []);
+          if (list.some((x) => x.seq === msg.seq)) return; // 重复推送（REST 与 WS 各来一份时）
+          list.push(msg);
+          list.sort((a, b) => a.seq - b.seq);
+          const keys = Object.keys(s.steps);
+          if (keys.length > MAX_STEP_QUESTIONS) delete s.steps[keys[0]];
+          if (msg.kind === "answered" && msg.final) {
+            // 最终答案已定：不必再等（模型没给出可用结果时不会有 assistant_detail）。
+            const owner = s.chat.find((m) => m.role === "a" && m.qid === key);
+            if (owner) owner.awaiting = false;
+          }
           break;
         }
         default:

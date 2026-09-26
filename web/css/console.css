@@ -258,6 +258,38 @@ td.hex { font-family: var(--mono); max-width: 360px; overflow: hidden; text-over
 .flow span.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .flow i { color: var(--muted); font-style: normal; }
 
+/* 实时流程：左侧时间，竖线串起每一步；颜色只标三件事——模型参与、代码拦下、最终答案 */
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.timeline li { display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 6px 0 8px; border-left: 2px solid var(--rule); margin-left: 58px; padding-left: 12px; position: relative; font-size: 13px; }
+.timeline li .at { position: absolute; left: -64px; width: 56px; text-align: right; top: 6px; font: 11.5px/1.6 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.timeline li > div { grid-column: 1 / -1; display: grid; gap: 3px; min-width: 0; }
+.timeline li::before { content: ""; position: absolute; left: -6px; top: 11px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); border: 2px solid var(--rule); }
+.timeline li strong { font-weight: 600; font-size: 13px; }
+.timeline li p { margin: 0; overflow-wrap: anywhere; }
+.timeline li .quote { padding: 4px 8px; background: var(--panel-2); border-radius: 4px; }
+.timeline li.model::before { border-color: var(--hex-meta); }
+.timeline li.model strong { color: var(--hex-meta); }
+.timeline li.ok::before { border-color: var(--accent); }
+.timeline li.warn::before { border-color: var(--warn); }
+.timeline li.warn strong { color: var(--warn); }
+.timeline li.bad::before { border-color: var(--alert); background: var(--alert); }
+.timeline li.bad strong { color: var(--alert); }
+.timeline li.idle strong { color: var(--muted); }
+.timeline li.final::before { border-color: var(--accent); background: var(--accent); }
+.timeline li.final strong { color: var(--accent); }
+.timeline li.waiting::before { border-style: dashed; }
+.timeline li.waiting strong { color: var(--muted); }
+.checks { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; }
+.checks li { display: grid; grid-template-columns: 16px 64px 1fr; gap: 6px; border: 0; margin: 0; padding: 0; }
+.checks li::before { display: none; }
+.checks .mark { font-weight: 700; }
+.checks .pass .mark { color: var(--pass); }
+.checks .fail .mark, .checks .fail span { color: var(--alert); }
+.checks .detail { font-family: var(--mono); overflow-wrap: anywhere; }
+.timeline .verdict { font-weight: 600; font-size: 12.5px; }
+.timeline .verdict.ok { color: var(--accent); }
+.timeline .verdict.bad { color: var(--alert); }
+
 /* ---------- 历史 ---------- */
 .hist-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
