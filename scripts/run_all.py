@@ -88,6 +88,7 @@ from api.local_api import LocalApi  # noqa: E402
 from gateway.server import (  # noqa: E402
     assistant_detail_sink,
     assistant_sink,
+    assistant_steps_sink,
     create_app,
     set_question_observer,
 )
@@ -285,6 +286,7 @@ def main(argv: list[str] | None = None) -> int:
             # The trace goes only to the gateway: the web console shows it,
             # the desktop panel does not (2026-09-23).
             on_assistant_detail=assistant_detail_sink(gateway_app),
+            on_assistant_steps=assistant_steps_sink(gateway_app),
         )
     )
     runner.start()

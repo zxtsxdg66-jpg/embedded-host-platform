@@ -31,7 +31,10 @@ the recorded model Q&A session (``约束展示实录_*.json`` under
 2026-09-25 eight picked questions from the latest boundary run
 (``边界实验结果_*.json``): each pick's verdict is checked against the
 record by :func:`boundary_items`, so the page cannot claim what the
-recording does not show.
+recording does not show. Since 2026-09-26 also the step-by-step recordings
+(``实时流程录制_*.json``, made by ``exp_assistant_steps.py``): each is the
+``assistant_step`` messages the gateway pushed, replayed at their recorded
+pace so the "how this sentence came about" view works without a model.
 
 This script imports ``src/`` and therefore lives in ``scripts/``: ``web/``
 never imports Python (CONTRIBUTING.md).
@@ -256,6 +259,50 @@ def build_assistant() -> dict[str, Any]:
     }
 
 
+STEP_GROUPS = (
+    ("现行配置_温度0.3", "实时流程"),
+    ("对照_温度0.8", "实时流程 · 采样温度 0.8"),
+)
+
+
+def build_step_items() -> list[dict[str, Any]]:
+    """Recorded step timelines, checked before they reach the page.
+
+    A timeline that did not finish, or that does not open with the
+    question and close on a final answer, would replay as something that
+    never happened -- so it fails the build instead.
+    """
+    path = sorted(BASELINE_DIR.glob("实时流程录制_*.json"))[-1]
+    record = json.loads(path.read_text(encoding="utf-8"))
+    recorded = (f"录制于 {record['录制时间']}（{path.name}），"
+                "走正式装配，本地模型 qwen3.5:4b，"
+                "数据源为仿真模式；按录制时的原始耗时重演。")
+    items: list[dict[str, Any]] = []
+    for group, config in STEP_GROUPS:
+        for row in record[group]:
+            steps = row["steps"]
+            if not row["complete"] or not steps:
+                raise ValueError(f"{path.name} 里「{row['question']}」没有录完整")
+            if steps[0]["kind"] != "received" or not (
+                steps[-1]["kind"] == "answered" and steps[-1]["final"]
+            ):
+                raise ValueError(f"{path.name} 里「{row['question']}」的步骤首尾不完整")
+            note = recorded
+            if group == "对照_温度0.8":
+                note += ("采样温度 0.8 是对照条件："
+                         "现行 0.3 下出口检查零触发，拦下与重试只在这里录得到。")
+            items.append({
+                **row["final"],
+                "question": row["question"],
+                "config": config,
+                "label": row["label"],
+                "first": row["first"],
+                "steps": steps,
+                "recorded": note,
+            })
+    return items
+
+
 # 边界题库里挑出来放进网页的题。结论写在这里，但由记录核对：对不上就生成失败。
 BOUNDARY_PICKS: tuple[tuple[str, str, str], ...] = (
     ("不要关风扇", "held",
@@ -367,6 +414,8 @@ def main() -> int:
         "assistant": build_assistant(),
     }
     boundary, summary = build_boundary()
+    # 实时流程放在最前：回放打开问答页时默认展示第一条，正该是逐步点亮的那种。
+    data["assistant"]["items"][:0] = build_step_items()
     data["assistant"]["items"].extend(boundary)
     data["assistant"]["boundary_summary"] = summary
     blob = json.dumps(data, ensure_ascii=False, separators=(",", ":"))

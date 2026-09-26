@@ -111,11 +111,12 @@ from device.state import ConnectionState, DeviceStatus  # noqa: E402
 from gateway.server import (  # noqa: E402
     assistant_detail_sink,
     assistant_sink,
+    assistant_steps_sink,
     create_app,
     set_question_observer,
 )
 from llm.ollama import DEFAULT_MODEL as DEFAULT_LLM_MODEL  # noqa: E402
-from service.assistant.models import Answer  # noqa: E402
+from service.assistant.models import Answer, AnswerStep  # noqa: E402
 
 DEFAULT_HTTP_HOST = "0.0.0.0"
 DEFAULT_HTTP_PORT = 8000
@@ -406,6 +407,7 @@ def _start_runner_thread(
     runner: SimulatorRuntimeRunner | HardwareRuntimeRunner,
     on_assistant_answer: Callable[[str, str], None] | None = None,
     on_assistant_detail: Callable[[Answer], None] | None = None,
+    on_assistant_steps: Callable[[tuple[AnswerStep, ...]], None] | None = None,
 ) -> threading.Thread:
     """Drive ``runner.run_once()`` on a daemon thread.
 
@@ -420,7 +422,7 @@ def _start_runner_thread(
     left ventilation dead in this launcher.
     """
     poll_once = make_poll_once(
-        runtime, runner, on_assistant_answer, on_assistant_detail
+        runtime, runner, on_assistant_answer, on_assistant_detail, on_assistant_steps
     )
 
     def _loop() -> None:
@@ -599,6 +601,7 @@ def main(argv: list[str] | None = None) -> int:
         runner,
         logging_answer_sink(question_log, assistant_sink(app)),
         assistant_detail_sink(app),
+        assistant_steps_sink(app),
     )
 
     web_mounted = not args.no_web and mount_web_console(app)

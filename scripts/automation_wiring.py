@@ -60,7 +60,7 @@ from application.runtime import ApplicationRuntime  # noqa: E402
 from core.models import DeviceId  # noqa: E402
 from llm.ollama import DEFAULT_MODEL, OllamaClient  # noqa: E402
 from service.alarm_announcer import AlertKind  # noqa: E402
-from service.assistant.models import Answer  # noqa: E402
+from service.assistant.models import Answer, AnswerStep  # noqa: E402
 from service.history import HistoryStore  # noqa: E402
 from storage.export_ledger import SqliteExportLedger  # noqa: E402
 from storage.sqlite_history import (  # noqa: E402
@@ -130,6 +130,7 @@ def make_poll_once(
     runner: object,
     on_assistant_answer: AssistantAnswerSink | None = None,
     on_assistant_detail: Callable[[Answer], None] | None = None,
+    on_assistant_steps: Callable[[tuple[AnswerStep, ...]], None] | None = None,
 ) -> Callable[[], None]:
     """Build the callable a launcher's timer/thread should drive.
 
@@ -149,6 +150,13 @@ def make_poll_once(
     exit checks did (added 2026-09-23). It is separate from
     ``on_assistant_answer`` so the ``(text, source)`` sink the desktop
     controller shares keeps its shape.
+
+    ``on_assistant_steps`` receives the answering steps recorded since the
+    previous cycle -- the web console's live view of how a sentence came
+    about (added 2026-09-26, docs/decisions/08-web.md). Drained
+    every cycle, not only when a late answer arrives: the steps of an
+    ``ask()`` are recorded on the gateway's request thread and would
+    otherwise wait for the next model result.
     """
     run_once = runner.run_once  # type: ignore[attr-defined]
 
@@ -159,9 +167,17 @@ def make_poll_once(
         # 之外的东西时也必须写历史。把它放到 return 之后，就会变成
         # "界面模式记得下来、网关模式记不下来"——正是本模块存在的那类漂移。
         runtime.history_recorder.flush_if_due()
-        if on_assistant_answer is None and on_assistant_detail is None:
+        if (
+            on_assistant_answer is None
+            and on_assistant_detail is None
+            and on_assistant_steps is None
+        ):
             return
         improved = runtime.poll_assistant()
+        if on_assistant_steps is not None:
+            steps = runtime.drain_assistant_steps()
+            if steps:
+                on_assistant_steps(steps)
         if improved is None:
             return
         if on_assistant_answer is not None:
