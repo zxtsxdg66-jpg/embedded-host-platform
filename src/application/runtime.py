@@ -52,7 +52,7 @@ from service.alarm_announcer import AlarmAnnouncer, AnnouncementCallback
 from service.assistant.assistant import Assistant
 from service.assistant.export_status_port import ExportStatus
 from service.assistant.llm_port import LlmClient
-from service.assistant.models import Answer
+from service.assistant.models import Answer, AnswerStep
 from service.command_models import Command, CommandResult
 from service.control_service_impl import InMemoryControlService
 from service.data_models import DataPoint
@@ -365,6 +365,15 @@ class ApplicationRuntime:
             # a late rephrasing of it belongs to.
             self._answer_dispatcher.record(improved)
         return improved
+
+    def drain_assistant_steps(self) -> tuple[AnswerStep, ...]:
+        """Every answering step recorded since the last call. Never raises.
+
+        For the web console's live view of how an answer came about
+        (docs/decisions/08-web.md). Read-only: draining changes
+        nothing the assistant decides.
+        """
+        return self._assistant.drain_steps()
 
     def attach_language_model(self, llm: LlmClient) -> None:
         """Replace the assistant's model client.

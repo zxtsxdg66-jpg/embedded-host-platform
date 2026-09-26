@@ -290,7 +290,9 @@ def test_the_poll_loop_persists_before_its_early_return() -> None:
 
     source = inspect.getsource(make_poll_once)
     flush_at = source.index("history_recorder.flush_if_due()")
-    return_at = source.index("if on_assistant_answer is None")
+    # 2026-09-26 起提前 return 的条件多了 on_assistant_steps，写成了多行括号；
+    # 这里只找条件的第一项，断言的顺序关系不变。
+    return_at = source.index("on_assistant_answer is None")
     assert flush_at < return_at
 
 
@@ -332,3 +334,33 @@ def test_attaching_history_starts_recording_published_readings(tmp_path) -> None
     ]
     assert store.count() == 1
     store.close()
+
+
+def test_the_poll_loop_forwards_answering_steps_every_cycle() -> None:
+    """步骤要每轮都送出，而不是等模型结果回来才送（2026-09-26）。
+
+    ask() 在网关的请求线程上记下步骤；若只在 poll_assistant 有结果时才取，
+    不接模型时这些步骤就永远不会离开日志。
+    """
+    runtime = run_gui.build_simulator_runtime()[0]
+    received: list[object] = []
+    poll_once = make_poll_once(
+        runtime, _CountingRunner(), on_assistant_steps=received.extend
+    )
+    runtime.ask("现在温度多少")
+    poll_once()
+    kinds = [step.kind.value for step in received]  # type: ignore[attr-defined]
+    assert kinds[0] == "received"
+    assert kinds[-1] == "answered"
+    poll_once()
+    assert len(received) == len(kinds)  # drained once, not resent
+
+
+def test_every_gateway_launcher_pushes_answering_steps() -> None:
+    """两个带网关的启动器都要接步骤推送，否则网页的实时流程在那种模式下安静地不亮。"""
+    import inspect
+
+    from scripts import run_all
+
+    for module in (run_api_server, run_all):
+        assert "assistant_steps_sink" in inspect.getsource(module), module.__name__

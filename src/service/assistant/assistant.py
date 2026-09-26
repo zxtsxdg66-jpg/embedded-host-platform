@@ -23,6 +23,7 @@ answers, which is the default and always correct.
 from __future__ import annotations
 
 import re
+from collections import deque
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 
@@ -37,10 +38,14 @@ from service.assistant.llm_port import LlmClient, NullLlmClient
 from service.assistant.models import (
     Answer,
     AnswerSource,
+    AnswerStep,
+    CheckResult,
+    CheckVerdict,
     Facts,
     Intent,
     IntentKind,
     RephraseAttempt,
+    StepKind,
 )
 from service.assistant.retrieval import DeviceLister, FactRetriever
 from service.sensor_data_processor import SensorDataProcessor
@@ -257,6 +262,14 @@ what makes it safe to hand all of them to a 4B model running on a laptop
 CPU.
 """
 
+STEP_LOG_LIMIT = 500
+"""How many recorded steps are kept for :meth:`Assistant.drain_steps`.
+
+Bounded because only the gateway drains them: the desktop panel never
+does, and an unbounded log there would grow for as long as it runs. Five
+hundred is far more than one question produces (under twenty), so a
+consumer polling every cycle never loses one."""
+
 CONTROL_CONFIRM_SECONDS = 25
 """确认问句的有效期，与 :data:`CONTROL_CLARIFY_SECONDS` 取同一个值。
 
@@ -362,6 +375,21 @@ class Assistant:
         same reason a person would ask "湿度什么" after a long silence --
         see :data:`CHANNEL_MEMORY_SECONDS`.
         """
+        # -- step log (2026-09-26) -------------------------------------------
+        # A read-only record of how each answer came about, drained by the
+        # gateway for the web console (docs/decisions/08-web.md).
+        # Nothing below reads it back: every branch decides exactly as it
+        # did before the log existed.
+        self._steps: deque[AnswerStep] = deque(maxlen=STEP_LOG_LIMIT)
+        self._last_qid = 0
+        self._active_qid = 0
+        """The question the steps being recorded right now belong to: the
+        one being asked inside :meth:`ask`, or the one whose model job is
+        being collected inside :meth:`poll_rephrasing`."""
+        self._pending_qid = 0
+        """The question the model job in flight belongs to."""
+        self._qid_start_ms: dict[int, int] = {}
+        self._qid_seq: dict[int, int] = {}
 
     @property
     def llm(self) -> LlmClient:
@@ -386,6 +414,96 @@ class Assistant:
         Either way one model request is started at most, and a caller that
         never polls simply keeps what ``ask`` returned.
         """
+        qid = self._begin_question(question)
+        answer = self._answer(question)
+        in_flight = bool(self._pending_job) and self._pending_qid == qid
+        self._log(
+            StepKind.ANSWERED,
+            text=answer.text,
+            source=answer.source,
+            final=not in_flight,
+        )
+        return replace(answer, question_id=qid)
+
+    # -- step log (2026-09-26) ----------------------------------------------
+
+    def drain_steps(self) -> tuple[AnswerStep, ...]:
+        """Every step recorded since the last call, oldest first.
+
+        For the gateway's live view of how an answer came about. Draining
+        is the only way steps leave the log, and nothing inside the
+        assistant reads them, so a caller that never drains changes nothing
+        but the log's contents (bounded by :data:`STEP_LOG_LIMIT`).
+        """
+        # popleft rather than copy-then-clear: the gateway asks on its
+        # request thread while the poll loop drains, and a step appended
+        # between a copy and a clear would be lost. deque's popleft and
+        # append are each atomic.
+        steps: list[AnswerStep] = []
+        while True:
+            try:
+                steps.append(self._steps.popleft())
+            except IndexError:
+                return tuple(steps)
+
+    def _begin_question(self, question: str) -> int:
+        self._last_qid += 1
+        qid = self._last_qid
+        self._active_qid = qid
+        self._qid_start_ms[qid] = self._clock_ms()
+        self._qid_seq[qid] = 0
+        # Keep the bookkeeping for the current question and the one whose
+        # model job may still be running; older ones can no longer log.
+        for old in [k for k in self._qid_start_ms if k not in (qid, self._pending_qid)]:
+            del self._qid_start_ms[old]
+            self._qid_seq.pop(old, None)
+        self._log(StepKind.RECEIVED, text=question)
+        return qid
+
+    def _log(
+        self,
+        kind: StepKind,
+        *,
+        qid: int | None = None,
+        text: str = "",
+        job: str = "",
+        note: str = "",
+        intent: Intent | None = None,
+        facts: Facts | None = None,
+        source: AnswerSource | None = None,
+        checks: tuple[CheckResult, ...] = (),
+        verdict: CheckVerdict | None = None,
+        final: bool = False,
+    ) -> None:
+        """Append one step to the log. Records only; decides nothing."""
+        owner = self._active_qid if qid is None else qid
+        if owner not in self._qid_start_ms:
+            return
+        seq = self._qid_seq.get(owner, 0) + 1
+        self._qid_seq[owner] = seq
+        self._steps.append(AnswerStep(
+            question_id=owner,
+            seq=seq,
+            at_ms=self._clock_ms() - self._qid_start_ms[owner],
+            kind=kind,
+            text=text,
+            job=job,
+            note=note,
+            intent=intent,
+            facts=facts,
+            source=source,
+            checks=checks,
+            verdict=verdict,
+            final=final,
+        ))
+
+    def _log_context(self, before: Intent, after: Intent, reason: str) -> None:
+        """Record that conversational memory changed what the rules read."""
+        if after != before:
+            self._log(StepKind.CONTEXT, intent=after, note=reason)
+
+    def _answer(self, question: str) -> Answer:
+        """The body of :meth:`ask`, which wraps it with the step log."""
         confirmed = self._settle_confirmation(question)
         if confirmed is not None:
             return confirmed
@@ -393,14 +511,21 @@ class Assistant:
         if compound is not None:
             return self._answer_compound(*compound)
         recognised = intent_rules.recognise(question, self._recent_channel())
+        self._log(StepKind.RULES, intent=recognised)
+        before = recognised
         recognised = self._inherit_kind(question, recognised)
+        self._log_context(before, recognised, "inherited_kind")
+        before = recognised
         recognised = self._settle_bare_switch(question, recognised)
+        self._log_context(before, recognised, "fan_topic")
         # Settling runs before the control split, not after it: a pending
         # instruction is completed by a bare channel word, and that word
         # classifies as a plain question. Checking CONTROL_KINDS first would
         # route it to retrieval and drop the instruction on the floor.
         self._settled_question = ""
+        before = recognised
         recognised = self._settle_clarification(recognised, question)
+        self._log_context(before, recognised, "clarification")
         if recognised.kind in control.CONTROL_KINDS:
             if recognised.kind in _FAN_ACTIONS:
                 self._fan_topic_ms = self._clock_ms()
@@ -428,6 +553,8 @@ class Assistant:
 
         facts = self._retriever.retrieve(recognised)
         text = phrasing.render(facts)
+        self._log(StepKind.FACTS, intent=recognised, facts=facts)
+        self._log(StepKind.TEMPLATE, text=text)
 
         if facts.needs_channel:
             # Ask back, and remember what for -- but let the model try the
@@ -604,11 +731,18 @@ class Assistant:
         二者都只认得单个意图。
         """
         self._pending_clarify = None
+        self._log(
+            StepKind.COMPOUND,
+            note=f"{len(questions)}+{0 if instruction is None else 1}",
+        )
         parts: list[str] = []
         first: Answer | None = None
         for recognised in questions:
             facts = self._retriever.retrieve(recognised)
             text = phrasing.render(facts)
+            self._log(StepKind.RULES, intent=recognised)
+            self._log(StepKind.FACTS, intent=recognised, facts=facts)
+            self._log(StepKind.TEMPLATE, text=text)
             parts.append(text)
             if first is None:
                 first = Answer(
@@ -629,6 +763,7 @@ class Assistant:
             return replace(first, text=prefix)
 
         recognised, clause = instruction
+        self._log(StepKind.RULES, intent=recognised, text=clause)
         if recognised.kind in _FAN_ACTIONS:
             self._fan_topic_ms = self._clock_ms()
         if self._start_review(recognised, clause):
@@ -783,6 +918,7 @@ class Assistant:
         """
         self._discard_pending()
         facts = self._control.execute(recognised, question)
+        self._log(StepKind.EXECUTED, intent=recognised, facts=facts, text=question)
         return Answer(
             text=phrasing.render(facts),
             source=source,
@@ -829,8 +965,10 @@ class Assistant:
         self._pending_confirm = None
         self._pending_confirm_question = ""
         if not fresh:
+            self._log(StepKind.CONFIRMATION, intent=pending, note="expired")
             return None
         if intent_rules.is_denial(question):
+            self._log(StepKind.CONFIRMATION, intent=pending, note="deny")
             return Answer(
                 text=phrasing.CONTROL_CANCELLED_TEXT,
                 source=AnswerSource.TEMPLATE,
@@ -838,11 +976,13 @@ class Assistant:
                 facts=None,
             )
         if intent_rules.is_affirmation(question):
+            self._log(StepKind.CONFIRMATION, intent=pending, note="affirm")
             if pending.kind in _FAN_ACTIONS:
                 self._fan_topic_ms = self._clock_ms()
             return self._perform_control(
                 pending, source_text, AnswerSource.TEMPLATE
             )
+        self._log(StepKind.CONFIRMATION, intent=pending, note="other")
         return None
 
     def _start_review(self, recognised: Intent, question: str) -> bool:
@@ -862,7 +1002,10 @@ class Assistant:
         if not text:
             return False
         if not self._llm.submit(text, system=parsing.PARSE_SYSTEM_PROMPT):
+            self._log(StepKind.MODEL_UNAVAILABLE, job=JOB_REVIEW)
             return False
+        self._pending_qid = self._active_qid
+        self._log(StepKind.MODEL_SUBMIT, job=JOB_REVIEW, text=text)
         self._pending_job = JOB_REVIEW
         self._pending_question = question
         self._pending_reply = ""
@@ -893,10 +1036,19 @@ class Assistant:
         question = self._pending_review_question
         reply = self._pending_reply
         prefix = self._pending_prefix
-        self._discard_pending()
+        self._discard_pending(abandoned=False)
         if pending is None:
             return None
         proposed = parsing.parse_reply(reply)
+        if proposed is not None and proposed.kind is pending.kind:
+            review_note = "agree"
+        elif not reply.strip():
+            review_note = "silent"
+        else:
+            review_note = "disagree"
+        self._log(
+            StepKind.LABEL, job=JOB_REVIEW, intent=proposed, note=review_note
+        )
         if proposed is not None and proposed.kind is pending.kind:
             return _with_prefix(
                 self._perform_control(pending, question, AnswerSource.TEMPLATE),
@@ -941,7 +1093,10 @@ class Assistant:
         if not text:
             return False
         if not self._llm.submit(text, system=parsing.PARSE_SYSTEM_PROMPT):
+            self._log(StepKind.MODEL_UNAVAILABLE, job=JOB_PARSE)
             return False
+        self._pending_qid = self._active_qid
+        self._log(StepKind.MODEL_SUBMIT, job=JOB_PARSE, text=text)
         self._pending_job = JOB_PARSE
         self._pending_question = question
         self._pending_reply = ""
@@ -969,8 +1124,12 @@ class Assistant:
         explain = recognised.kind in EXPLAINED_KINDS and facts.available
         prompt = phrasing.facts_brief(facts) if explain else text
         system = EXPLAIN_SYSTEM_PROMPT if explain else REPHRASE_SYSTEM_PROMPT
+        job = JOB_EXPLAIN if explain else JOB_REPHRASE
         if not self._llm.submit(prompt, system=system):
+            self._log(StepKind.MODEL_UNAVAILABLE, job=job)
             return
+        self._pending_qid = self._active_qid
+        self._log(StepKind.MODEL_SUBMIT, job=job, text=prompt)
         self._pending_job = JOB_EXPLAIN if explain else JOB_REPHRASE
         self._pending_expanded = explain
         self._pending_facts = facts
@@ -978,8 +1137,12 @@ class Assistant:
         self._pending_intent = recognised
         self._pending_reply = ""
 
-    def _discard_pending(self) -> None:
+    def _discard_pending(self, abandoned: bool = True) -> None:
         """Drop any in-flight model work and the state tracking it.
+
+        ``abandoned`` only affects the step log: the ``_finish_*`` methods
+        pass False because the job they clear has completed, not been
+        dropped.
 
         A pending **review** is dropped with the rest, which means the
         instruction it was holding is dropped too: the user asked something
@@ -988,6 +1151,10 @@ class Assistant:
         state is deliberately *not* cleared here -- it is waiting on the
         user, not on the model, and ``_settle_confirmation`` retires it.
         """
+        if abandoned and self._pending_job:
+            self._log(
+                StepKind.ABANDONED, qid=self._pending_qid, job=self._pending_job
+            )
         if self._llm.is_busy():
             self._llm.cancel()
         self._pending_review = None
@@ -1026,7 +1193,22 @@ class Assistant:
         """
         if not self._pending_job:
             return None
+        qid = self._pending_qid
+        self._active_qid = qid
+        answer = self._collect()
+        if answer is not None:
+            self._log(
+                StepKind.ANSWERED, text=answer.text, source=answer.source, final=True
+            )
+            return replace(answer, question_id=qid)
+        if not self._pending_job:
+            # The job finished and produced nothing to show: the immediate
+            # answer is the final one.
+            self._log(StepKind.ANSWERED, note="immediate_stands", final=True)
+        return None
 
+    def _collect(self) -> Answer | None:
+        """The body of :meth:`poll_rephrasing`, which wraps it with the log."""
         chunk = self._llm.poll()
         if chunk is None:
             return None
@@ -1038,6 +1220,9 @@ class Assistant:
         self._pending_reply += chunk
         if self._llm.is_busy():
             return None
+        self._log(
+            StepKind.MODEL_REPLY, job=self._pending_job, text=self._pending_reply
+        )
 
         if self._pending_job == JOB_REVIEW:
             return self._finish_review()
@@ -1058,6 +1243,18 @@ class Assistant:
             self._pending_reply,
             self._pending_facts,
             expanded=self._pending_expanded,
+        )
+        self._log(
+            StepKind.CHECKS,
+            job=self._pending_job,
+            text=self._pending_reply,
+            checks=phrasing.explain_checks(
+                self._pending_template,
+                self._pending_reply,
+                self._pending_facts,
+                expanded=self._pending_expanded,
+            ),
+            verdict=verdict,
         )
         # Recorded before the retry decision, so a refused first attempt is
         # kept even when the retry is what finally answers.
@@ -1081,7 +1278,7 @@ class Assistant:
             facts=self._pending_facts,
             trace=tuple(self._pending_attempts),
         )
-        self._discard_pending()
+        self._discard_pending(abandoned=False)
         return answer
 
     def _retry_rephrasing(self) -> bool:
@@ -1099,6 +1296,7 @@ class Assistant:
             return False
         self._retry_used = True
         self._pending_reply = ""
+        self._log(StepKind.RETRY, job=self._pending_job, text=self._pending_template)
         return True
 
     def _finish_parsing(self) -> Answer | None:
@@ -1118,7 +1316,13 @@ class Assistant:
         recognised = parsing.parse_reply(self._pending_reply)
         question = self._pending_question
         placeholder = self._pending_placeholder
-        self._discard_pending()
+        self._discard_pending(abandoned=False)
+        self._log(
+            StepKind.LABEL,
+            job=JOB_PARSE,
+            intent=recognised,
+            note="unusable" if recognised is None else "",
+        )
         if recognised is None:
             if not placeholder:
                 return None
@@ -1150,8 +1354,11 @@ class Assistant:
             )
 
         facts = self._retriever.retrieve(recognised)
+        text = phrasing.render(facts)
+        self._log(StepKind.FACTS, intent=recognised, facts=facts)
+        self._log(StepKind.TEMPLATE, text=text)
         return Answer(
-            text=phrasing.render(facts),
+            text=text,
             source=AnswerSource.MODEL_INTENT,
             intent=recognised,
             facts=facts,

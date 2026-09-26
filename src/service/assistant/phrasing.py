@@ -21,6 +21,7 @@ from device.sensors.channels import HUMIDITY_CHANNEL, TEMPERATURE_CHANNEL
 from service.assistant import control
 from service.assistant.models import (
     AnswerSource,
+    CheckResult,
     CheckVerdict,
     Facts,
     Intent,
@@ -180,11 +181,20 @@ def numbers_are_grounded(text: str, facts: Facts | None) -> bool:
 
     With no facts at all, any number is ungrounded.
     """
+    return not ungrounded_numbers(text, facts)
+
+
+def ungrounded_numbers(text: str, facts: Facts | None) -> list[str]:
+    """The numbers in ``text`` that do not trace back to ``facts``, in order.
+
+    :func:`numbers_are_grounded` is this list being empty. Split out
+    2026-09-26 so the web console can show *which* number failed the check.
+    """
     found = _NUMBER_PATTERN.findall(text)
     if not found:
-        return True
+        return []
     if facts is None:
-        return False
+        return found
 
     allowed: set[str] = set(facts.citation_numbers())
     for number in facts.numbers():
@@ -192,7 +202,7 @@ def numbers_are_grounded(text: str, facts: Facts | None) -> bool:
         allowed.add(f"{number:g}")
         if number.is_integer():
             allowed.add(str(int(number)))
-    return all(token in allowed for token in found)
+    return [token for token in found if token not in allowed]
 
 
 SWITCH_CLARIFY_TEXT = "你是要开关风扇吗？说一声「开风扇」或「关风扇」就行。"
@@ -667,6 +677,73 @@ def judge(
     if not expanded and _is_padded(template_text, candidate):
         return template_text, AnswerSource.TEMPLATE, CheckVerdict.TOO_LONG
     return candidate, AnswerSource.MODEL, CheckVerdict.ACCEPTED
+
+
+_CHECK_VERDICTS = {
+    "grounding": CheckVerdict.UNGROUNDED_NUMBER,
+    "alarm": CheckVerdict.UNSUPPORTED_ALARM,
+    "judgement": CheckVerdict.UNSUPPORTED_JUDGEMENT,
+    "advice": CheckVerdict.ADVICE,
+    "length": CheckVerdict.TOO_LONG,
+}
+"""Which :class:`CheckVerdict` each of :func:`explain_checks`' results
+stands for, in :func:`judge`'s order."""
+
+
+def explain_checks(
+    template_text: str,
+    model_text: str | None,
+    facts: Facts | None,
+    expanded: bool = False,
+) -> tuple[CheckResult, ...]:
+    """Run each of :func:`judge`'s five checks on its own, for display.
+
+    :func:`judge` stops at the first check that fails, which is all an
+    answer needs; a person watching wants to see all five. This evaluates
+    every one independently and says what each found. **It decides
+    nothing** -- the assistant still acts on :func:`judge` alone -- and a
+    test holds that the first failure here is always the check ``judge``
+    names. Empty when the reply never reached the checks (none, or shorter
+    than two characters). Added 2026-09-26.
+    """
+    if model_text is None:
+        return ()
+    candidate = model_text.strip()
+    if len(candidate) < 2:
+        return ()
+
+    missing = ungrounded_numbers(candidate, facts)
+    alarm_words = (
+        []
+        if facts is not None and facts.triggered is True
+        else [w for w in ALARM_CLAIM_WORDS if w in candidate]
+    )
+    judgement_words = (
+        [w for w in STATE_WORDS if w in candidate]
+        if _adds_an_unsupported_judgement(template_text, candidate, facts)
+        else []
+    )
+    advice_words = (
+        [w for w in ADVICE_WORDS if w in candidate]
+        if _gives_advice(candidate) and not _gives_advice(template_text)
+        else []
+    )
+    limit = len(template_text) * LENGTH_SLACK + LENGTH_MARGIN
+    if expanded:
+        length = CheckResult("length", True, "解释档不设长度上限")
+    else:
+        length = CheckResult(
+            "length",
+            not _is_padded(template_text, candidate),
+            f"{len(candidate)} 字 / 上限 {limit:.0f} 字",
+        )
+    return (
+        CheckResult("grounding", not missing, "、".join(missing)),
+        CheckResult("alarm", not alarm_words, "、".join(alarm_words)),
+        CheckResult("judgement", not judgement_words, "、".join(judgement_words)),
+        CheckResult("advice", not advice_words, "、".join(advice_words)),
+        length,
+    )
 
 
 def facts_brief(facts: Facts) -> str:

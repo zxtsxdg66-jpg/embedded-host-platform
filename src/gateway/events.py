@@ -25,7 +25,7 @@ from typing import Any
 
 from core.link_events import LinkEvent, LinkStatistics
 from gateway.channel_units import channel_unit
-from service.assistant.models import Answer, Facts
+from service.assistant.models import Answer, AnswerStep, Facts, Intent
 from service.data_models import DataPoint
 from service.sensor_data_processor import ChannelStatistics, ThresholdStatus
 from service.ventilation_controller import FanDecision, VentilationSettings
@@ -37,6 +37,7 @@ MESSAGE_TYPE_ASSISTANT = "assistant"
 MESSAGE_TYPE_FAN_DECISION = "fan_decision"
 MESSAGE_TYPE_ASSISTANT_DETAIL = "assistant_detail"
 MESSAGE_TYPE_LINK_EVENT = "link_event"
+MESSAGE_TYPE_ASSISTANT_STEP = "assistant_step"
 
 
 def isoformat_or_none(value: Any) -> str | None:
@@ -192,11 +193,9 @@ def answer_detail(answer: Answer) -> dict[str, Any]:
     (docs/decisions/08-web.md). Additive: the
     Android client reads ``text``/``source`` and ignores the rest.
     """
-    intent = answer.intent
     return {
-        "intent": None
-        if intent is None
-        else {"kind": intent.kind.name, "channel": intent.channel},
+        "question_id": answer.question_id,
+        "intent": _intent_payload(answer.intent),
         "facts": facts_payload(answer.facts),
         "trace": [
             {
@@ -207,6 +206,43 @@ def answer_detail(answer: Answer) -> dict[str, Any]:
             }
             for attempt in answer.trace
         ],
+    }
+
+
+def _intent_payload(intent: Intent | None) -> dict[str, Any] | None:
+    if intent is None:
+        return None
+    return {"kind": intent.kind.name, "channel": intent.channel}
+
+
+def assistant_step_message(step: AnswerStep) -> dict[str, Any]:
+    """One stage of answering a question, as a ``type: "assistant_step"``
+    message.
+
+    Added 2026-09-26 for the web console's live view of how a sentence came
+    about (docs/decisions/08-web.md). The
+    phone does not read it: its parser files unknown types under
+    ``Unknown`` and moves on. ``question_id`` and ``seq`` let a client
+    attach the step to its question and drop a duplicate.
+    """
+    return {
+        "type": MESSAGE_TYPE_ASSISTANT_STEP,
+        "question_id": step.question_id,
+        "seq": step.seq,
+        "at_ms": step.at_ms,
+        "kind": step.kind.value,
+        "text": step.text,
+        "job": step.job,
+        "note": step.note,
+        "intent": _intent_payload(step.intent),
+        "facts": facts_payload(step.facts),
+        "source": None if step.source is None else step.source.value,
+        "checks": [
+            {"name": c.name, "passed": c.passed, "detail": c.detail}
+            for c in step.checks
+        ],
+        "verdict": None if step.verdict is None else step.verdict.value,
+        "final": step.final,
     }
 
 

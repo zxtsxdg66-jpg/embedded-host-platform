@@ -464,3 +464,75 @@ class Answer:
     trace: tuple[RephraseAttempt, ...] = ()
     """Every model rewording behind this answer, in order (empty when the
     model was not asked to reword). Read-only record, added 2026-09-23."""
+    question_id: int = 0
+    """Which ``ask()`` this answer belongs to; 0 when not assigned.
+
+    A late answer carries the id of the question it answers, so a view can
+    attach it to the right one instead of guessing (added 2026-09-26)."""
+
+
+class StepKind(Enum):
+    """One stage an answer went through, as recorded in :class:`AnswerStep`.
+
+    Added 2026-09-26 for the web console's live view of how a sentence came
+    about (docs/decisions/08-web.md). Like
+    :class:`CheckVerdict`, it records what already happened; nothing in the
+    assistant branches on it.
+    """
+
+    RECEIVED = "received"
+    CONFIRMATION = "confirmation"
+    COMPOUND = "compound"
+    RULES = "rules"
+    CONTEXT = "context"
+    FACTS = "facts"
+    TEMPLATE = "template"
+    MODEL_SUBMIT = "model_submit"
+    MODEL_UNAVAILABLE = "model_unavailable"
+    MODEL_REPLY = "model_reply"
+    LABEL = "label"
+    CHECKS = "checks"
+    RETRY = "retry"
+    EXECUTED = "executed"
+    ANSWERED = "answered"
+    ABANDONED = "abandoned"
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    """One exit check's outcome on one rewording, for display.
+
+    ``name`` is one of ``grounding``, ``alarm``, ``judgement``, ``advice``,
+    ``length``; ``detail`` says what the check found (the unmatched numbers,
+    the word that tripped it, the lengths compared), empty when it passed.
+    """
+
+    name: str
+    passed: bool
+    detail: str = ""
+
+
+@dataclass(frozen=True)
+class AnswerStep:
+    """One recorded stage of answering one question.
+
+    Which fields are filled depends on ``kind``; the rest keep their
+    defaults. ``note`` carries the small sub-case codes a stage has --
+    ``agree``/``disagree``/``silent`` for a review label, the reason a
+    ``context`` step rewrote the rules' reading, and so on. ``at_ms`` is
+    measured from the moment the question was received.
+    """
+
+    question_id: int
+    seq: int
+    at_ms: int
+    kind: StepKind
+    text: str = ""
+    job: str = ""
+    note: str = ""
+    intent: Intent | None = None
+    facts: Facts | None = None
+    source: AnswerSource | None = None
+    checks: tuple[CheckResult, ...] = ()
+    verdict: CheckVerdict | None = None
+    final: bool = False

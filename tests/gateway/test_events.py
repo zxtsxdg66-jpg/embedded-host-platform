@@ -111,3 +111,44 @@ def test_statistics_message_carries_all_snapshot_fields() -> None:
     assert message["average"] == 22.7
     assert message["sample_count"] == 128
     assert message["unit"] == "°C"
+
+
+def test_assistant_step_message_serialises_every_field() -> None:
+    from gateway.events import assistant_step_message
+    from service.assistant.models import (
+        AnswerSource,
+        AnswerStep,
+        CheckResult,
+        CheckVerdict,
+        Intent,
+        IntentKind,
+        StepKind,
+    )
+
+    step = AnswerStep(
+        question_id=3,
+        seq=7,
+        at_ms=3410,
+        kind=StepKind.CHECKS,
+        text="温度 27.1℃，请注意保暖。",
+        job="rephrase",
+        intent=Intent(kind=IntentKind.CURRENT_VALUE, channel="temperature"),
+        source=AnswerSource.TEMPLATE,
+        checks=(
+            CheckResult("grounding", False, "27.1"),
+            CheckResult("advice", False, "请注意"),
+        ),
+        verdict=CheckVerdict.UNGROUNDED_NUMBER,
+    )
+    message = assistant_step_message(step)
+    assert message["type"] == "assistant_step"
+    assert (message["question_id"], message["seq"], message["at_ms"]) == (3, 7, 3410)
+    assert message["kind"] == "checks"
+    assert message["intent"] == {"kind": "CURRENT_VALUE", "channel": "temperature"}
+    assert message["source"] == "template"
+    assert message["verdict"] == "ungrounded_number"
+    assert message["checks"][0] == {
+        "name": "grounding", "passed": False, "detail": "27.1"
+    }
+    assert message["facts"] is None
+    assert message["final"] is False

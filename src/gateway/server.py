@@ -64,6 +64,7 @@ from gateway.events import (
     answer_detail,
     assistant_answer_message,
     assistant_detail_message,
+    assistant_step_message,
     data_point_message,
     fan_decision_message,
     isoformat_or_none,
@@ -72,7 +73,7 @@ from gateway.events import (
     statistics_message,
     ventilation_payload,
 )
-from service.assistant.models import Answer
+from service.assistant.models import Answer, AnswerStep
 from service.command_models import Command
 from service.ventilation_controller import FanDecision, FanMode
 
@@ -465,6 +466,23 @@ def assistant_detail_sink(app: FastAPI) -> Callable[[Answer], None]:
 
     def publish(answer: Answer) -> None:
         hub.publish(assistant_detail_message(answer))
+
+    return publish
+
+
+def assistant_steps_sink(
+    app: FastAPI,
+) -> Callable[[tuple[AnswerStep, ...]], None]:
+    """Build the callback that pushes answering steps to WS clients.
+
+    One message per step, in order. Matches ``automation_wiring.make_poll_once``'s
+    ``on_assistant_steps`` parameter (added 2026-09-26).
+    """
+    hub: EventHub = app.state.hub
+
+    def publish(steps: tuple[AnswerStep, ...]) -> None:
+        for step in steps:
+            hub.publish(assistant_step_message(step))
 
     return publish
 

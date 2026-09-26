@@ -505,3 +505,31 @@ def test_late_answer_detail_reaches_websocket_with_its_trace(
     assert [a["verdict"] for a in message["trace"]] == ["advice", "accepted"]
     assert message["trace"][1]["retry"] is True
 
+
+
+# -- live answering steps (2026-09-26, docs/decisions/08-web.md 6.1) ---------------
+
+
+def test_ask_reply_carries_its_question_id(client: TestClient) -> None:
+    first = client.post("/assistant/ask", json={"question": "现在温度多少"}).json()
+    second = client.post("/assistant/ask", json={"question": "湿度呢"}).json()
+    assert first["question_id"] >= 1
+    assert second["question_id"] == first["question_id"] + 1
+
+
+def test_answering_steps_reach_websocket_one_message_each(
+    client: TestClient, runtime: ApplicationRuntime
+) -> None:
+    from gateway.server import assistant_steps_sink
+
+    client.post("/assistant/ask", json={"question": "现在温度多少"})
+    steps = runtime.drain_assistant_steps()
+    assert steps
+    with client.websocket_connect("/ws") as websocket:
+        assistant_steps_sink(client.app)(steps)  # type: ignore[arg-type]
+        messages = [websocket.receive_json() for _ in steps]
+    assert {m["type"] for m in messages} == {"assistant_step"}
+    assert [m["seq"] for m in messages] == [s.seq for s in steps]
+    assert messages[0]["kind"] == "received"
+    assert messages[0]["text"] == "现在温度多少"
+    assert messages[-1]["kind"] == "answered"
