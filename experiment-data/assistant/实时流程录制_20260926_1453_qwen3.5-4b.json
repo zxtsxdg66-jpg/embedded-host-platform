@@ -1,0 +1,3299 @@
+{
+ "录制时间": "20260926_1453",
+ "数据源": "仿真模式",
+ "说明": "每题的步骤即网关推送的 assistant_step 消息，question_id 置 0，at_ms 为距提问的原始毫秒数。",
+ "现行配置_温度0.3": [
+  {
+   "label": "取数",
+   "question": "现在温度多少",
+   "first": {
+    "text": "温度现在是 34.9℃。",
+    "source": "template",
+    "question_id": 1,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 34.85993384073338,
+     "minimum": 33.002283025666294,
+     "maximum": 36.46318284526847,
+     "average": 34.81713367213349,
+     "sample_count": 148,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 0.1400661592666168,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "现在温度是 34.9℃。",
+    "source": "model",
+    "question_id": 1,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 34.85993384073338,
+     "minimum": 33.002283025666294,
+     "maximum": 36.46318284526847,
+     "average": 34.81713367213349,
+     "sample_count": 148,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 0.1400661592666168,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "温度现在是 34.9℃。",
+      "reply": "现在温度是 34.9℃。",
+      "verdict": "accepted",
+      "retry": false
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "现在温度多少",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 34.85993384073338,
+      "minimum": 33.002283025666294,
+      "maximum": 36.46318284526847,
+      "average": 34.81713367213349,
+      "sample_count": 148,
+      "threshold": 35.0,
+      "threshold_is_maximum": true,
+      "threshold_high": 35.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 0.1400661592666168,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "温度现在是 34.9℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 11,
+     "kind": "model_submit",
+     "text": "温度现在是 34.9℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 11,
+     "kind": "answered",
+     "text": "温度现在是 34.9℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 2028,
+     "kind": "model_reply",
+     "text": "现在温度是 34.9℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 2028,
+     "kind": "checks",
+     "text": "现在温度是 34.9℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "12 字 / 上限 23 字"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 2028,
+     "kind": "answered",
+     "text": "现在温度是 34.9℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "解释档",
+   "question": "噪声超标了吗",
+   "first": {
+    "text": "噪声当前 47.1dB，未超过报警阈值 80dB，一切正常。",
+    "source": "template",
+    "question_id": 2,
+    "intent": {
+     "kind": "ALARM_STATE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "ALARM_STATE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 47.14517376598881,
+     "minimum": 40.01479015569629,
+     "maximum": 94.72617262667411,
+     "average": 56.739528499355885,
+     "sample_count": 257,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 32.85482623401119,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "通道噪声当前监测值为 47.1dB，在 257 个采样点中，最高值曾达 94.7dB，平均值为 56.7dB。该数值未超过基于 GB 37488—2019 标准设定的 80dB 报警阈值，距离限值仍有 32.9dB 的余量。",
+    "source": "model",
+    "question_id": 2,
+    "intent": {
+     "kind": "ALARM_STATE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "ALARM_STATE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 47.14517376598881,
+     "minimum": 40.01479015569629,
+     "maximum": 94.72617262667411,
+     "average": 56.739528499355885,
+     "sample_count": 257,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 32.85482623401119,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "噪声当前 47.1dB，未超过报警阈值 80dB，一切正常。",
+      "reply": "通道噪声当前监测值为 47.1dB，在 257 个采样点中，最高值曾达 94.7dB，平均值为 56.7dB。该数值未超过基于 GB 37488—2019 标准设定的 80dB 报警阈值，距离限值仍有 32.9dB 的余量。",
+      "verdict": "accepted",
+      "retry": false
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "噪声超标了吗",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "ALARM_STATE",
+      "channel": "noise"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "ALARM_STATE",
+      "channel": "noise"
+     },
+     "facts": {
+      "kind": "ALARM_STATE",
+      "available": true,
+      "channel": "noise",
+      "channel_label": "噪声",
+      "unit": "dB",
+      "value": 47.14517376598881,
+      "minimum": 40.01479015569629,
+      "maximum": 94.72617262667411,
+      "average": 56.739528499355885,
+      "sample_count": 257,
+      "threshold": 80.0,
+      "citation": "GB 37488—2019",
+      "threshold_is_maximum": true,
+      "threshold_high": 80.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 32.85482623401119,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "噪声当前 47.1dB，未超过报警阈值 80dB，一切正常。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 2,
+     "kind": "model_submit",
+     "text": "通道：噪声\n当前值：47.1dB\n最低值：40.0dB\n最高值：94.7dB\n平均值：56.7dB\n采样点数：257\n报警阈值：80dB（高于即报警）\n阈值依据：GB 37488—2019\n距阈值还有：32.9dB\n是否越限：否",
+     "job": "explain",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 2,
+     "kind": "answered",
+     "text": "噪声当前 47.1dB，未超过报警阈值 80dB，一切正常。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 10638,
+     "kind": "model_reply",
+     "text": "通道噪声当前监测值为 47.1dB，在 257 个采样点中，最高值曾达 94.7dB，平均值为 56.7dB。该数值未超过基于 GB 37488—2019 标准设定的 80dB 报警阈值，距离限值仍有 32.9dB 的余量。",
+     "job": "explain",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 10638,
+     "kind": "checks",
+     "text": "通道噪声当前监测值为 47.1dB，在 257 个采样点中，最高值曾达 94.7dB，平均值为 56.7dB。该数值未超过基于 GB 37488—2019 标准设定的 80dB 报警阈值，距离限值仍有 32.9dB 的余量。",
+     "job": "explain",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "解释档不设长度上限"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 10638,
+     "kind": "answered",
+     "text": "通道噪声当前监测值为 47.1dB，在 257 个采样点中，最高值曾达 94.7dB，平均值为 56.7dB。该数值未超过基于 GB 37488—2019 标准设定的 80dB 报警阈值，距离限值仍有 32.9dB 的余量。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "规则落空，交给模型分类",
+   "question": "站台暖和吗",
+   "first": {
+    "text": "让我想想…",
+    "source": "pending",
+    "question_id": 3,
+    "intent": {
+     "kind": "HELP",
+     "channel": null
+    },
+    "facts": {
+     "kind": "HELP",
+     "available": true,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "温度现在是 34.1℃。",
+    "source": "model_intent",
+    "question_id": 3,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 34.09620112913773,
+     "minimum": 25.577500369703692,
+     "maximum": 36.46318284526847,
+     "average": 32.00341332146061,
+     "sample_count": 953,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 0.9037988708622677,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "站台暖和吗",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "HELP",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "HELP",
+      "channel": null
+     },
+     "facts": {
+      "kind": "HELP",
+      "available": true,
+      "sample_count": 0,
+      "threshold_is_maximum": true,
+      "needs_channel": false,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "我可以回答这些问题：\n· 现在温度／湿度／噪声多少\n· 噪声超标了吗\n· 温度最高／最低／平均是多少\n· 噪声的报警阈值是多少\n· 风扇在转吗、为什么在转\n· 有几个设备在线\n也可以直接下指令：\n· 把风扇打开／关掉风扇／风扇交给自动\n· 把通风温度阈值调到某个值",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 13,
+     "kind": "model_submit",
+     "text": "站台暖和吗",
+     "job": "parse",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 13,
+     "kind": "answered",
+     "text": "让我想想…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 3589,
+     "kind": "model_reply",
+     "text": "current_value temperature",
+     "job": "parse",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 3589,
+     "kind": "label",
+     "text": "",
+     "job": "parse",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 3589,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 34.09620112913773,
+      "minimum": 25.577500369703692,
+      "maximum": 36.46318284526847,
+      "average": 32.00341332146061,
+      "sample_count": 953,
+      "threshold": 35.0,
+      "threshold_is_maximum": true,
+      "threshold_high": 35.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 0.9037988708622677,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 10,
+     "at_ms": 3589,
+     "kind": "template",
+     "text": "温度现在是 34.1℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 11,
+     "at_ms": 3589,
+     "kind": "answered",
+     "text": "温度现在是 34.1℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model_intent",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "指令：复核一致",
+   "question": "帮我把风扇打开",
+   "first": {
+    "text": "收到，让我确认一下这句话的意思…",
+    "source": "pending",
+    "question_id": 4,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "final": {
+    "text": "已把风扇切到手动常开，当前判定是运行。",
+    "source": "template",
+    "question_id": 4,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": {
+     "kind": "FAN_ON",
+     "available": true,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "fan_running": true,
+     "fan_reason": "手动开启",
+     "fan_mode": "MANUAL_ON",
+     "readings": [],
+     "applied": true,
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "帮我把风扇打开",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 19,
+     "kind": "model_submit",
+     "text": "帮我把风扇打开",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 19,
+     "kind": "answered",
+     "text": "收到，让我确认一下这句话的意思…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 3567,
+     "kind": "model_reply",
+     "text": "fan_on",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 3567,
+     "kind": "label",
+     "text": "",
+     "job": "review",
+     "note": "agree",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 3567,
+     "kind": "executed",
+     "text": "帮我把风扇打开",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": {
+      "kind": "FAN_ON",
+      "available": true,
+      "sample_count": 0,
+      "threshold_is_maximum": true,
+      "needs_channel": false,
+      "past_scoped": false,
+      "margin_requested": false,
+      "fan_running": true,
+      "fan_reason": "手动开启",
+      "fan_mode": "MANUAL_ON",
+      "readings": [],
+      "applied": true,
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 3567,
+     "kind": "answered",
+     "text": "已把风扇切到手动常开，当前判定是运行。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "指令：规则与模型不一致",
+   "question": "我没让你开风扇",
+   "first": {
+    "text": "收到，让我确认一下这句话的意思…",
+    "source": "pending",
+    "question_id": 5,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "final": {
+    "text": "你是想让我把风扇切到手动常开吗？说「是」我就执行，说「不用」就算了。",
+    "source": "template",
+    "question_id": 5,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "我没让你开风扇",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 13,
+     "kind": "model_submit",
+     "text": "我没让你开风扇",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 13,
+     "kind": "answered",
+     "text": "收到，让我确认一下这句话的意思…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 3472,
+     "kind": "model_reply",
+     "text": "unknown",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 3472,
+     "kind": "label",
+     "text": "",
+     "job": "review",
+     "note": "disagree",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 3472,
+     "kind": "answered",
+     "text": "你是想让我把风扇切到手动常开吗？说「是」我就执行，说「不用」就算了。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "回答确认问句",
+   "question": "不用了",
+   "first": {
+    "text": "好，那就不动它。",
+    "source": "template",
+    "question_id": 6,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "final": {
+    "text": "好，那就不动它。",
+    "source": "template",
+    "question_id": 6,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "不用了",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "confirmation",
+     "text": "",
+     "job": "",
+     "note": "deny",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "answered",
+     "text": "好，那就不动它。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "越界数值",
+   "question": "通风温度阈值调到1000度",
+   "first": {
+    "text": "收到，让我确认一下这句话的意思…",
+    "source": "pending",
+    "question_id": 7,
+    "intent": {
+     "kind": "SET_VENT_THRESHOLD",
+     "channel": "temperature"
+    },
+    "facts": null,
+    "trace": []
+   },
+   "final": {
+    "text": "温度的通风阈值不能设成 1000℃，超出了传感器的量程。",
+    "source": "template",
+    "question_id": 7,
+    "intent": {
+     "kind": "SET_VENT_THRESHOLD",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "SET_VENT_THRESHOLD",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 1000.0,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "applied": false,
+     "rejection": "out_of_range",
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "通风温度阈值调到1000度",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "SET_VENT_THRESHOLD",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "model_submit",
+     "text": "通风温度阈值调到1000度",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "answered",
+     "text": "收到，让我确认一下这句话的意思…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 3891,
+     "kind": "model_reply",
+     "text": "set_vent_threshold temperature",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 3891,
+     "kind": "label",
+     "text": "",
+     "job": "review",
+     "note": "agree",
+     "intent": {
+      "kind": "SET_VENT_THRESHOLD",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 3891,
+     "kind": "executed",
+     "text": "通风温度阈值调到1000度",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "SET_VENT_THRESHOLD",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "SET_VENT_THRESHOLD",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 1000.0,
+      "sample_count": 0,
+      "threshold_is_maximum": true,
+      "needs_channel": false,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "applied": false,
+      "rejection": "out_of_range",
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 3891,
+     "kind": "answered",
+     "text": "温度的通风阈值不能设成 1000℃，超出了传感器的量程。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "复合句",
+   "question": "现在多少度啊，有点热，你可以帮我打开风扇嘛",
+   "first": {
+    "text": "温度现在是 25.9℃。收到，让我确认一下这句话的意思…",
+    "source": "pending",
+    "question_id": 8,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": null,
+    "trace": []
+   },
+   "final": {
+    "text": "温度现在是 25.9℃。已把风扇切到手动常开，当前判定是运行。",
+    "source": "template",
+    "question_id": 8,
+    "intent": {
+     "kind": "FAN_ON",
+     "channel": null
+    },
+    "facts": {
+     "kind": "FAN_ON",
+     "available": true,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "fan_running": true,
+     "fan_reason": "手动开启",
+     "fan_mode": "MANUAL_ON",
+     "readings": [],
+     "applied": true,
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "现在多少度啊，有点热，你可以帮我打开风扇嘛",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "compound",
+     "text": "",
+     "job": "",
+     "note": "1+1",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 25.934554231893234,
+      "minimum": 25.577500369703692,
+      "maximum": 36.46318284526847,
+      "average": 31.478655720211396,
+      "sample_count": 1534,
+      "threshold": 35.0,
+      "threshold_is_maximum": true,
+      "threshold_high": 35.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 9.065445768106766,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "温度现在是 25.9℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "你可以帮我打开风扇嘛",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 1,
+     "kind": "model_submit",
+     "text": "你可以帮我打开风扇嘛",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 1,
+     "kind": "answered",
+     "text": "温度现在是 25.9℃。收到，让我确认一下这句话的意思…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 3544,
+     "kind": "model_reply",
+     "text": "fan_on",
+     "job": "review",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 10,
+     "at_ms": 3544,
+     "kind": "label",
+     "text": "",
+     "job": "review",
+     "note": "agree",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 11,
+     "at_ms": 3545,
+     "kind": "executed",
+     "text": "你可以帮我打开风扇嘛",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "FAN_ON",
+      "channel": null
+     },
+     "facts": {
+      "kind": "FAN_ON",
+      "available": true,
+      "sample_count": 0,
+      "threshold_is_maximum": true,
+      "needs_channel": false,
+      "past_scoped": false,
+      "margin_requested": false,
+      "fan_running": true,
+      "fan_reason": "手动开启",
+      "fan_mode": "MANUAL_ON",
+      "readings": [],
+      "applied": true,
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 12,
+     "at_ms": 3545,
+     "kind": "answered",
+     "text": "温度现在是 25.9℃。已把风扇切到手动常开，当前判定是运行。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "错误前提",
+   "question": "温度都40度了吧",
+   "first": {
+    "text": "温度现在是 29.0℃。",
+    "source": "template",
+    "question_id": 9,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 29.024417792644062,
+     "minimum": 24.199974034034003,
+     "maximum": 36.46318284526847,
+     "average": 30.926746823119906,
+     "sample_count": 1716,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 5.975582207355938,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "现在温度是 29.0℃。",
+    "source": "model",
+    "question_id": 9,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 29.024417792644062,
+     "minimum": 24.199974034034003,
+     "maximum": 36.46318284526847,
+     "average": 30.926746823119906,
+     "sample_count": 1716,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 5.975582207355938,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "温度现在是 29.0℃。",
+      "reply": "现在温度是 29.0℃。",
+      "verdict": "accepted",
+      "retry": false
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "温度都40度了吧",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 1,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 29.024417792644062,
+      "minimum": 24.199974034034003,
+      "maximum": 36.46318284526847,
+      "average": 30.926746823119906,
+      "sample_count": 1716,
+      "threshold": 35.0,
+      "threshold_is_maximum": true,
+      "threshold_high": 35.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 5.975582207355938,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 1,
+     "kind": "template",
+     "text": "温度现在是 29.0℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 27,
+     "kind": "model_submit",
+     "text": "温度现在是 29.0℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 27,
+     "kind": "answered",
+     "text": "温度现在是 29.0℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 2088,
+     "kind": "model_reply",
+     "text": "现在温度是 29.0℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 2089,
+     "kind": "checks",
+     "text": "现在温度是 29.0℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "12 字 / 上限 23 字"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 2089,
+     "kind": "answered",
+     "text": "现在温度是 29.0℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "范围外",
+   "question": "今天股市怎么样",
+   "first": {
+    "text": "让我想想…",
+    "source": "pending",
+    "question_id": 10,
+    "intent": {
+     "kind": "HELP",
+     "channel": null
+    },
+    "facts": {
+     "kind": "HELP",
+     "available": true,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "这句我没听懂。想知道我能回答哪些，问一句「你能干什么」。",
+    "source": "fallback",
+    "question_id": 10,
+    "intent": {
+     "kind": "HELP",
+     "channel": null
+    },
+    "facts": {
+     "kind": "HELP",
+     "available": true,
+     "sample_count": 0,
+     "threshold_is_maximum": true,
+     "needs_channel": false,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "今天股市怎么样",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "HELP",
+      "channel": null
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "HELP",
+      "channel": null
+     },
+     "facts": {
+      "kind": "HELP",
+      "available": true,
+      "sample_count": 0,
+      "threshold_is_maximum": true,
+      "needs_channel": false,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "我可以回答这些问题：\n· 现在温度／湿度／噪声多少\n· 噪声超标了吗\n· 温度最高／最低／平均是多少\n· 噪声的报警阈值是多少\n· 风扇在转吗、为什么在转\n· 有几个设备在线\n也可以直接下指令：\n· 把风扇打开／关掉风扇／风扇交给自动\n· 把通风温度阈值调到某个值",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 19,
+     "kind": "model_submit",
+     "text": "今天股市怎么样",
+     "job": "parse",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 19,
+     "kind": "answered",
+     "text": "让我想想…",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "pending",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 3465,
+     "kind": "model_reply",
+     "text": "unknown",
+     "job": "parse",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 3465,
+     "kind": "label",
+     "text": "",
+     "job": "parse",
+     "note": "unusable",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 3465,
+     "kind": "answered",
+     "text": "这句我没听懂。想知道我能回答哪些，问一句「你能干什么」。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "fallback",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  }
+ ],
+ "对照_温度0.8": [
+  {
+   "label": "高温改写",
+   "question": "噪声多大",
+   "first": {
+    "text": "噪声现在是 54.9dB。",
+    "source": "template",
+    "question_id": 3,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 54.876119481149985,
+     "minimum": 40.055896461297465,
+     "maximum": 94.4340198350655,
+     "average": 55.39686260180957,
+     "sample_count": 367,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 25.123880518850015,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "当前监测到噪声为 54.9dB。",
+    "source": "model",
+    "question_id": 3,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 54.876119481149985,
+     "minimum": 40.055896461297465,
+     "maximum": 94.4340198350655,
+     "average": 55.39686260180957,
+     "sample_count": 367,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 25.123880518850015,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "噪声现在是 54.9dB。",
+      "reply": "现在的环境噪声是 54.9dB。监测数据已更新完毕。",
+      "verdict": "too_long",
+      "retry": false
+     },
+     {
+      "template": "噪声现在是 54.9dB。",
+      "reply": "当前监测到噪声为 54.9dB。",
+      "verdict": "accepted",
+      "retry": true
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "噪声多大",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 1,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "noise"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 1,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "noise"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "noise",
+      "channel_label": "噪声",
+      "unit": "dB",
+      "value": 54.876119481149985,
+      "minimum": 40.055896461297465,
+      "maximum": 94.4340198350655,
+      "average": 55.39686260180957,
+      "sample_count": 367,
+      "threshold": 80.0,
+      "citation": "GB 37488—2019",
+      "threshold_is_maximum": true,
+      "threshold_high": 80.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 25.123880518850015,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 1,
+     "kind": "template",
+     "text": "噪声现在是 54.9dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 26,
+     "kind": "model_submit",
+     "text": "噪声现在是 54.9dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 26,
+     "kind": "answered",
+     "text": "噪声现在是 54.9dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 2709,
+     "kind": "model_reply",
+     "text": "现在的环境噪声是 54.9dB。监测数据已更新完毕。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 2709,
+     "kind": "checks",
+     "text": "现在的环境噪声是 54.9dB。监测数据已更新完毕。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": false,
+       "detail": "26 字 / 上限 24 字"
+      }
+     ],
+     "verdict": "too_long",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 2710,
+     "kind": "retry",
+     "text": "噪声现在是 54.9dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 10,
+     "at_ms": 5451,
+     "kind": "model_reply",
+     "text": "当前监测到噪声为 54.9dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 11,
+     "at_ms": 5451,
+     "kind": "checks",
+     "text": "当前监测到噪声为 54.9dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "16 字 / 上限 24 字"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 12,
+     "at_ms": 5451,
+     "kind": "answered",
+     "text": "当前监测到噪声为 54.9dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "高温改写",
+   "question": "屋里热吗",
+   "first": {
+    "text": "温度现在是 21.5℃。",
+    "source": "template",
+    "question_id": 22,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 21.46028004494323,
+     "minimum": 20.0,
+     "maximum": 28.909905392423966,
+     "average": 23.055529606491678,
+     "sample_count": 3103,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 13.539719955056771,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "当前地铁内温度为 21.5℃。",
+    "source": "model",
+    "question_id": 22,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "temperature"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "temperature",
+     "channel_label": "温度",
+     "unit": "℃",
+     "value": 21.46028004494323,
+     "minimum": 20.0,
+     "maximum": 28.909905392423966,
+     "average": 23.055529606491678,
+     "sample_count": 3103,
+     "threshold": 35.0,
+     "threshold_is_maximum": true,
+     "threshold_high": 35.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 13.539719955056771,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "温度现在是 21.5℃。",
+      "reply": "现在温度是 21.5℃，环境比较舒适。",
+      "verdict": "unsupported_judgement",
+      "retry": false
+     },
+     {
+      "template": "温度现在是 21.5℃。",
+      "reply": "当前地铁内温度为 21.5℃。",
+      "verdict": "accepted",
+      "retry": true
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "屋里热吗",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 0,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 0,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "temperature"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "temperature",
+      "channel_label": "温度",
+      "unit": "℃",
+      "value": 21.46028004494323,
+      "minimum": 20.0,
+      "maximum": 28.909905392423966,
+      "average": 23.055529606491678,
+      "sample_count": 3103,
+      "threshold": 35.0,
+      "threshold_is_maximum": true,
+      "threshold_high": 35.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 13.539719955056771,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 0,
+     "kind": "template",
+     "text": "温度现在是 21.5℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 11,
+     "kind": "model_submit",
+     "text": "温度现在是 21.5℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 11,
+     "kind": "answered",
+     "text": "温度现在是 21.5℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 2427,
+     "kind": "model_reply",
+     "text": "现在温度是 21.5℃，环境比较舒适。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 2427,
+     "kind": "checks",
+     "text": "现在温度是 21.5℃，环境比较舒适。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": false,
+       "detail": "舒适"
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "19 字 / 上限 23 字"
+      }
+     ],
+     "verdict": "unsupported_judgement",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 2427,
+     "kind": "retry",
+     "text": "温度现在是 21.5℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 10,
+     "at_ms": 5082,
+     "kind": "model_reply",
+     "text": "当前地铁内温度为 21.5℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 11,
+     "at_ms": 5082,
+     "kind": "checks",
+     "text": "当前地铁内温度为 21.5℃。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "15 字 / 上限 23 字"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 12,
+     "at_ms": 5082,
+     "kind": "answered",
+     "text": "当前地铁内温度为 21.5℃。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  },
+  {
+   "label": "高温改写",
+   "question": "吵不吵",
+   "first": {
+    "text": "噪声现在是 54.2dB。",
+    "source": "template",
+    "question_id": 23,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 54.24600973657327,
+     "minimum": 40.00353056303743,
+     "maximum": 94.97434472264047,
+     "average": 55.41367774886196,
+     "sample_count": 3358,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 25.75399026342673,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": []
+   },
+   "final": {
+    "text": "现在监测到的噪声为 54.2dB。",
+    "source": "model",
+    "question_id": 23,
+    "intent": {
+     "kind": "CURRENT_VALUE",
+     "channel": "noise"
+    },
+    "facts": {
+     "kind": "CURRENT_VALUE",
+     "available": true,
+     "channel": "noise",
+     "channel_label": "噪声",
+     "unit": "dB",
+     "value": 54.24600973657327,
+     "minimum": 40.00353056303743,
+     "maximum": 94.97434472264047,
+     "average": 55.41367774886196,
+     "sample_count": 3358,
+     "threshold": 80.0,
+     "citation": "GB 37488—2019",
+     "threshold_is_maximum": true,
+     "threshold_high": 80.0,
+     "needs_channel": false,
+     "triggered": false,
+     "margin": 25.75399026342673,
+     "past_scoped": false,
+     "margin_requested": false,
+     "readings": [],
+     "device_ids": []
+    },
+    "trace": [
+     {
+      "template": "噪声现在是 54.2dB。",
+      "reply": "现在噪声是 54.2dB。该数值正常。",
+      "verdict": "unsupported_judgement",
+      "retry": false
+     },
+     {
+      "template": "噪声现在是 54.2dB。",
+      "reply": "现在监测到的噪声为 54.2dB。",
+      "verdict": "accepted",
+      "retry": true
+     }
+    ]
+   },
+   "steps": [
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 1,
+     "at_ms": 0,
+     "kind": "received",
+     "text": "吵不吵",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 2,
+     "at_ms": 1,
+     "kind": "rules",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "noise"
+     },
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 3,
+     "at_ms": 1,
+     "kind": "facts",
+     "text": "",
+     "job": "",
+     "note": "",
+     "intent": {
+      "kind": "CURRENT_VALUE",
+      "channel": "noise"
+     },
+     "facts": {
+      "kind": "CURRENT_VALUE",
+      "available": true,
+      "channel": "noise",
+      "channel_label": "噪声",
+      "unit": "dB",
+      "value": 54.24600973657327,
+      "minimum": 40.00353056303743,
+      "maximum": 94.97434472264047,
+      "average": 55.41367774886196,
+      "sample_count": 3358,
+      "threshold": 80.0,
+      "citation": "GB 37488—2019",
+      "threshold_is_maximum": true,
+      "threshold_high": 80.0,
+      "needs_channel": false,
+      "triggered": false,
+      "margin": 25.75399026342673,
+      "past_scoped": false,
+      "margin_requested": false,
+      "readings": [],
+      "device_ids": []
+     },
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 4,
+     "at_ms": 1,
+     "kind": "template",
+     "text": "噪声现在是 54.2dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 5,
+     "at_ms": 1,
+     "kind": "model_submit",
+     "text": "噪声现在是 54.2dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 6,
+     "at_ms": 1,
+     "kind": "answered",
+     "text": "噪声现在是 54.2dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "template",
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 7,
+     "at_ms": 2510,
+     "kind": "model_reply",
+     "text": "现在噪声是 54.2dB。该数值正常。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 8,
+     "at_ms": 2510,
+     "kind": "checks",
+     "text": "现在噪声是 54.2dB。该数值正常。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": false,
+       "detail": "正常"
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "19 字 / 上限 24 字"
+      }
+     ],
+     "verdict": "unsupported_judgement",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 9,
+     "at_ms": 2511,
+     "kind": "retry",
+     "text": "噪声现在是 54.2dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 10,
+     "at_ms": 5298,
+     "kind": "model_reply",
+     "text": "现在监测到的噪声为 54.2dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [],
+     "verdict": null,
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 11,
+     "at_ms": 5298,
+     "kind": "checks",
+     "text": "现在监测到的噪声为 54.2dB。",
+     "job": "rephrase",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": null,
+     "checks": [
+      {
+       "name": "grounding",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "alarm",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "judgement",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "advice",
+       "passed": true,
+       "detail": ""
+      },
+      {
+       "name": "length",
+       "passed": true,
+       "detail": "17 字 / 上限 24 字"
+      }
+     ],
+     "verdict": "accepted",
+     "final": false
+    },
+    {
+     "type": "assistant_step",
+     "question_id": 0,
+     "seq": 12,
+     "at_ms": 5298,
+     "kind": "answered",
+     "text": "现在监测到的噪声为 54.2dB。",
+     "job": "",
+     "note": "",
+     "intent": null,
+     "facts": null,
+     "source": "model",
+     "checks": [],
+     "verdict": null,
+     "final": true
+    }
+   ],
+   "complete": true
+  }
+ ],
+ "对照_温度0.8_总尝试": 24,
+ "对照_温度0.8_被拦题数": 4
+}
