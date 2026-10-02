@@ -278,12 +278,11 @@ class MainWindow(QMainWindow):
         ``DataPanelWidget.add_data_point`` appends to it whether or not
         it is the visible page, and the stored readings were already
         pulled in once per subscription (see
-        :meth:`_prefill_channel_history`). Calling ``load_history`` again
-        here would *append* a second copy of every stored row --
-        ``prefill_history`` appends, it does not replace -- so a user
-        paging back and forth would silently grow duplicates. If a
-        deliberate refresh is ever wanted, it needs a replace-mode fill
-        in the widget first; that is a separate change, not a free one.
+        :meth:`_prefill_channel_history`). Since 2026-09-29
+        ``prefill_history`` replaces the channel's column rather than
+        appending, so a re-fetch here would no longer duplicate rows -- but
+        it would still be a database query on every page flip for nothing
+        the live path has not already shown.
         """
         layout = QVBoxLayout()
         layout.addWidget(self._data_panel.history_group(), stretch=1)
@@ -485,6 +484,7 @@ class MainWindow(QMainWindow):
         )
         self._controller.data_received.connect(self._data_panel.add_data_point)
         self._controller.history_loaded.connect(self._data_panel.prefill_history)
+        self._data_panel.set_alarm_bands(self._controller.alarm_bands())
         self._controller.data_received.connect(self._on_data_received_for_chart)
         self._controller.data_received.connect(
             self._on_data_received_for_metric_card
@@ -602,6 +602,9 @@ class MainWindow(QMainWindow):
         violation in the activity log (not recoveries -- see
         ControlPanelWidget.show_alarm's docstring)."""
         self._data_panel.set_alarm(device_id, channel, triggered)
+        self._data_panel.set_reading_status(
+            device_id, channel, value, threshold, kind, triggered
+        )
         if triggered:
             self._control_panel.show_alarm(device_id, channel, value, threshold, kind)
 
@@ -668,6 +671,13 @@ class MainWindow(QMainWindow):
         """
         if not self._selected_device_id:
             self._control_panel.show_error("请先在左侧选择一个设备，再订阅通道")
+            return
+        # 已订阅的再点一次：什么都不做，只回显。此前会再预填一遍历史、再登记
+        # 一个订阅，历史列每条读数出现两次（2026-09-29 截图时发现）。
+        if self._controller.is_subscribed(self._selected_device_id, channel_id):
+            self._control_panel.append_activity(
+                f"已在接收 {self._selected_device_id} / {channel_id}"
+            )
             return
         self._prefill_channel_history(self._selected_device_id, channel_id)
         self._controller.subscribe(self._selected_device_id, channel_id)

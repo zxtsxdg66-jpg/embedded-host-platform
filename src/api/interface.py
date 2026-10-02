@@ -43,6 +43,9 @@ Capabilities, per the task this module was built for:
 11. get_link_statistics / subscribe_link_events -- 串口链路监视（2026-09-23
     新增）。供 Web 控制台的协议检查器使用；纯增量，
     既有方法签名一个未动。设计见 docs/decisions/08-web.md
+12. get_alarm_bands -- 报警阈值的上下限查询（2026-09-29 新增）。
+    桌面历史表从历史库预填的读数不带判定，要按阈值标出"超限"就得知道阈值，
+    而界面只能经本接口取数。只读、纯增量，既有方法签名一个未动
 """
 
 from __future__ import annotations
@@ -205,6 +208,17 @@ class ApiInterface(ABC):
         Returns an empty list -- rather than raising -- when no store is
         attached or the range holds nothing. Both are ordinary states: a
         view displays "no data", it does not recover from an exception.
+        """
+
+    @abstractmethod
+    def get_alarm_bands(self) -> dict[ChannelId, tuple[float | None, float | None]]:
+        """Return each alarmed channel's nominal ``(minimum, maximum)``.
+
+        Either bound may be None (temperature and noise have only a
+        maximum). Nominal means without the clearing deadband: callers use
+        it to mark readings that carry no alarm state, such as ones loaded
+        from the history store, and such a reading can only be "over the
+        limit", never a confirmed alarm.
         """
 
     @abstractmethod

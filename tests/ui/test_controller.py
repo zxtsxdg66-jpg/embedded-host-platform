@@ -430,3 +430,20 @@ def test_the_view_offer_needs_no_precondition() -> None:
     )
 
     assert _offer_tag(reply) == "cloud_view"
+
+
+def test_subscribing_twice_delivers_each_reading_once(qtbot) -> None:
+    # 2026-09-29: a second subscribe used to register a second subscription,
+    # so every reading arrived twice and unsubscribe removed only one.
+    controller, runtime = _make_controller(value=7)
+    received: list[tuple] = []
+    controller.data_received.connect(lambda *a: received.append(a))
+
+    controller.subscribe("sim-1", "ch1")
+    controller.subscribe("sim-1", "ch1")
+    runtime.report_data("sim-1", "ch1")
+    assert len(received) == 1
+
+    controller.unsubscribe("sim-1", "ch1")
+    runtime.report_data("sim-1", "ch1")
+    assert len(received) == 1

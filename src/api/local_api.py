@@ -140,6 +140,9 @@ class LocalApi(ApiInterface):
         """
         return self._runtime.query_history(device_id, channel_id, start, end, limit)
 
+    def get_alarm_bands(self) -> dict[ChannelId, tuple[float | None, float | None]]:
+        return self._runtime.get_alarm_bands()
+
     def get_link_statistics(self) -> LinkStatistics:
         return self._runtime.get_link_statistics()
 

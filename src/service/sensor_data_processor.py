@@ -194,6 +194,21 @@ _ALARM_RULES: dict[ChannelId, AlarmBand] = {
 }
 
 
+def alarm_bands() -> dict[ChannelId, tuple[float | None, float | None]]:
+    """Each channel's nominal ``(minimum, maximum)``; either may be None.
+
+    For views that must mark readings which carry no verdict of their own
+    -- the desktop history table prefilled from the store, which keeps
+    values only (2026-09-29). Plain tuples rather than :class:`AlarmBand`
+    so presentation never needs this module's types, and nominal bounds
+    without hysteresis: a stored reading has no alarm state to widen them.
+    """
+    return {
+        channel: (band.minimum, band.maximum)
+        for channel, band in _ALARM_RULES.items()
+    }
+
+
 @dataclass(frozen=True)
 class AlarmEvent:
     """One threshold violation for one (device_id, channel) reading."""

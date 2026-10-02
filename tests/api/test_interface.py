@@ -45,5 +45,9 @@ def test_api_interface_declares_expected_abstract_members() -> None:
             # Purely additive -- no existing member changed.
             "get_link_statistics",
             "subscribe_link_events",
+            # Alarm bounds, added 2026-09-29 with explicit authorisation, so
+            # the desktop history table can mark prefilled readings that go
+            # over a limit. Read-only and purely additive.
+            "get_alarm_bands",
         }
     )

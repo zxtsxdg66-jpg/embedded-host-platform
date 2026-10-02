@@ -63,6 +63,7 @@ from service.sensor_data_processor import (
     SensorDataProcessor,
     StatisticsCallback,
     StatusCallback,
+    alarm_bands,
 )
 from service.ventilation_controller import (
     FanDecisionCallback,
@@ -558,6 +559,11 @@ class ApplicationRuntime:
         the object returned at wiring time.
         """
         return self._fan_dispatcher
+
+    def get_alarm_bands(self) -> dict[ChannelId, tuple[float | None, float | None]]:
+        """Nominal threshold-alarm bounds per channel; see
+        :func:`service.sensor_data_processor.alarm_bands`."""
+        return alarm_bands()
 
     def get_link_statistics(self) -> LinkStatistics:
         """Counters from :attr:`link_monitor`; inactive in Simulator mode."""

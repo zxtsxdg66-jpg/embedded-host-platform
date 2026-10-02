@@ -405,3 +405,87 @@ def test_live_data_still_reaches_the_history_table_while_it_is_hidden(qtbot) -> 
     runtime.report_data("sim-1", "ch1")
 
     assert window._data_panel.history_count() == 1
+
+
+# -- history 状态 column against the real signal order (2026-09-29) ------------
+
+
+def test_history_status_reads_each_reading_through_the_full_stack(qtbot) -> None:
+    # The same run as the 15:10 hardware screenshot, in miniature: a lone
+    # spike (超限), two readings that confirm (the first 超限, the second
+    # 报警), then recovery. Driven through the real processor and controller,
+    # so whichever order the two signals arrive in is the one tested.
+    from device.simulator import SequenceValueGenerator
+    from service.sensor_data_processor import NOISE_ALARM_MAX
+
+    over = NOISE_ALARM_MAX + 10
+    values = [50.0, over, 50.0, over, over, 50.0]
+    runtime = ApplicationRuntime()
+    device = SimulatorDevice(
+        device_id="mcu-1",
+        channels=[
+            SimulatedChannel(
+                channel_id="noise", generator=SequenceValueGenerator(values)
+            )
+        ],
+    )
+    runtime.register_device(device, LoopbackChannel())
+    window = MainWindow(MainController(LocalApi(runtime), client_id="ui-test"))
+    qtbot.addWidget(window)
+    _select_device(window)
+    window._control_panel._channel_input.setCurrentText("noise")
+    qtbot.mouseClick(window._control_panel._subscribe_button, Qt.MouseButton.LeftButton)
+
+    for _ in values:
+        runtime.report_data("mcu-1", "noise")
+
+    table = window._data_panel._history_tables["noise"]
+    # Newest on top, so the column reads the run backwards.
+    statuses = [table.item(row, 2).text() for row in range(table.rowCount())]
+    assert statuses == ["正常", "报警", "超限", "正常", "超限", "正常"]
+
+
+def test_clicking_subscribe_twice_does_not_double_the_history(qtbot) -> None:
+    window, runtime = _make_window(qtbot, value=7)
+    _select_device(window)
+    window._control_panel._channel_input.setCurrentText("ch1")
+    qtbot.mouseClick(window._control_panel._subscribe_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(window._control_panel._subscribe_button, Qt.MouseButton.LeftButton)
+
+    runtime.report_data("sim-1", "ch1")
+
+    assert window._data_panel.history_count() == 1
+
+
+def test_prefilled_history_marks_a_stored_reading_over_the_limit(qtbot) -> None:
+    # Full stack: store -> LocalApi -> controller -> window. The bounds come
+    # from the service's rules through ApiInterface.get_alarm_bands().
+    from device.simulator import SequenceValueGenerator
+    from service.history import InMemoryHistoryStore
+    from service.sensor_data_processor import NOISE_ALARM_MAX
+
+    runtime = ApplicationRuntime()
+    device = SimulatorDevice(
+        device_id="mcu-1",
+        channels=[
+            SimulatedChannel(
+                channel_id="noise",
+                generator=SequenceValueGenerator([50.0, NOISE_ALARM_MAX + 1.5]),
+            )
+        ],
+    )
+    runtime.register_device(device, LoopbackChannel())
+    runtime.attach_history(InMemoryHistoryStore())
+    runtime.report_data("mcu-1", "noise")
+    runtime.report_data("mcu-1", "noise")
+    runtime.history_recorder.flush()
+
+    window = MainWindow(MainController(LocalApi(runtime), client_id="ui-test"))
+    qtbot.addWidget(window)
+    _select_device(window)
+    window._control_panel._channel_input.setCurrentText("noise")
+    qtbot.mouseClick(window._control_panel._subscribe_button, Qt.MouseButton.LeftButton)
+
+    table = window._data_panel._history_tables["noise"]
+    statuses = [table.item(row, 2).text() for row in range(table.rowCount())]
+    assert statuses == ["超限", "正常"]  # newest on top

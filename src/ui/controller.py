@@ -213,7 +213,16 @@ class MainController(QObject):
 
     def subscribe(self, device_id: DeviceId, channel_id: ChannelId) -> None:
         """Subscribe to data on device_id/channel_id; delivery arrives via
-        ``data_received``."""
+        ``data_received``.
+
+        A second subscribe to the same pair is a no-op (2026-09-29). It used
+        to register another subscription and overwrite the stored id, so
+        every reading reached the view twice (the history column showed each
+        temperature row doubled) and unsubscribe could only remove one of
+        the two, leaving the other delivering for good.
+        """
+        if (device_id, channel_id) in self._subscription_ids:
+            return
         try:
             subscription_id = self._api.subscribe_data(
                 device_id, channel_id, self._handle_data_point
@@ -222,6 +231,9 @@ class MainController(QObject):
             self.error_occurred.emit(str(exc))
             return
         self._subscription_ids[(device_id, channel_id)] = subscription_id
+
+    def is_subscribed(self, device_id: DeviceId, channel_id: ChannelId) -> bool:
+        return (device_id, channel_id) in self._subscription_ids
 
     def unsubscribe(self, device_id: DeviceId, channel_id: ChannelId) -> None:
         subscription_id = self._subscription_ids.pop((device_id, channel_id), None)
@@ -420,6 +432,10 @@ class MainController(QObject):
             answer.text, answer.source.value, _offer_tag(answer)
         )
         self.refresh_ventilation_settings()
+
+    def alarm_bands(self) -> dict[ChannelId, tuple[float | None, float | None]]:
+        """Nominal alarm bounds per channel, for marking prefilled history."""
+        return self._api.get_alarm_bands()
 
     def load_history(
         self, device_id: DeviceId, channel_id: ChannelId, limit: int = 500

@@ -483,3 +483,18 @@ def test_query_history_passes_the_time_range_through() -> None:
 
     future = datetime(2099, 1, 1, tzinfo=timezone.utc)
     assert api.query_history("sim-1", "ch1", start=future) == []
+
+
+def test_get_alarm_bands_matches_the_service_rules() -> None:
+    from service.sensor_data_processor import (
+        HUMIDITY_ALARM_MAX,
+        HUMIDITY_ALARM_MIN,
+        NOISE_ALARM_MAX,
+        TEMPERATURE_ALARM_MAX,
+    )
+
+    bands = LocalApi(ApplicationRuntime()).get_alarm_bands()
+
+    assert bands["temperature"] == (None, TEMPERATURE_ALARM_MAX)
+    assert bands["humidity"] == (HUMIDITY_ALARM_MIN, HUMIDITY_ALARM_MAX)
+    assert bands["noise"] == (None, NOISE_ALARM_MAX)

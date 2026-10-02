@@ -80,8 +80,9 @@ def test_history_is_capped_at_configured_limit(qtbot) -> None:
     # 所以总数仍是 3。设备与通道不再是列——通道是这一列本身，设备写在列标题上。
     assert panel.history_count_for("ch1") == 3
     table = panel._history_tables["ch1"]
-    # oldest entries are dropped, newest survive
-    assert table.item(2, 1).text() == "9"
+    # oldest entries are dropped, newest survive -- newest on top (2026-09-29)
+    assert table.item(0, 1).text() == "9"
+    assert table.item(2, 1).text() == "7"
     assert panel._history_titles["ch1"].title().endswith("sim-1")
 
 
@@ -138,17 +139,17 @@ def test_prefill_history_fills_the_table(qtbot) -> None:
     assert panel.history_count() == 2
 
 
-def test_prefill_history_puts_the_oldest_at_the_top(qtbot) -> None:
+def test_prefill_history_puts_the_newest_at_the_top(qtbot) -> None:
     """存储按"新的在前"返回，表格却要自上而下顺着时间读——
-    与实时路径追加的方向一致，否则同一张表两半边的时序是反的。"""
+    位置一致，否则同一张表两半边的时序是反的。"""
     panel = DataPanelWidget()
     qtbot.addWidget(panel)
 
     panel.prefill_history("sim-1", "ch1", [_stored(2, 26.0), _stored(1, 25.0)])
 
     table = panel._history_tables["ch1"]
-    assert table.item(0, 1).text() == "25.0"
-    assert table.item(1, 1).text() == "26.0"
+    assert table.item(0, 1).text() == "26.0"
+    assert table.item(1, 1).text() == "25.0"
 
 
 def test_prefill_history_does_not_touch_the_real_time_table(qtbot) -> None:
@@ -281,8 +282,8 @@ def test_history_status_column_reflects_last_known_alarm_state(qtbot) -> None:
     panel.add_data_point("sim-1", "temperature", "40.0")  # now alarming
 
     table = panel._history_tables["temperature"]
-    assert table.item(0, 2).text() == "正常"
-    assert table.item(1, 2).text() == "报警"
+    assert table.item(0, 2).text() == "报警"  # newest on top
+    assert table.item(1, 2).text() == "正常"
 
 
 def test_set_alarm_is_a_no_op_for_an_unknown_row(qtbot) -> None:
@@ -424,3 +425,152 @@ def test_prefill_history_rounds_the_same_way_as_the_live_path(qtbot) -> None:
 
     table = panel._history_tables["temperature"]
     assert table.item(0, 1).text() == table.item(1, 1).text() == "25.03"
+
+
+# -- per-reading status in the history columns (2026-09-29) ---------------------
+
+
+def _status(panel: DataPanelWidget, channel: str, index: int = -1) -> str:
+    """Status of the ``index``-th reading in arrival order (-1 = latest).
+
+    The table shows the newest reading on top, so arrival order runs
+    bottom-up.
+    """
+    table = panel._history_tables[channel]
+    count = table.rowCount()
+    position = count + index if index < 0 else index
+    return table.item(count - 1 - position, 2).text()
+
+
+def test_a_lone_reading_over_the_limit_reads_over_limit_not_normal(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.add_data_point("mcu-1", "noise", "87.6")
+    panel.set_reading_status("mcu-1", "noise", 87.6, 80.0, "ABOVE_MAX", False)
+    assert _status(panel, "noise") == "超限"
+
+
+def test_the_confirming_reading_itself_reads_alarm(qtbot) -> None:
+    # Reading first, verdict second: the row is written with the last known
+    # state and then corrected by its own verdict.
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    for value, triggered in ((81.0, False), (82.0, True)):
+        panel.add_data_point("mcu-1", "noise", str(value))
+        panel.set_alarm("mcu-1", "noise", triggered)
+        panel.set_reading_status("mcu-1", "noise", value, 80.0, "ABOVE_MAX", triggered)
+    assert _status(panel, "noise", 0) == "超限"
+    assert _status(panel, "noise", 1) == "报警"
+
+
+def test_the_first_reading_after_recovery_reads_normal(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.set_alarm("mcu-1", "noise", True)
+    panel.add_data_point("mcu-1", "noise", "45.0")
+    panel.set_alarm("mcu-1", "noise", False)
+    panel.set_reading_status("mcu-1", "noise", 45.0, 80.0, "ABOVE_MAX", False)
+    assert _status(panel, "noise") == "正常"
+
+
+def test_a_low_side_limit_is_read_the_other_way(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.add_data_point("mcu-1", "humidity", "28")
+    panel.set_reading_status("mcu-1", "humidity", 28.0, 30.0, "BELOW_MIN", False)
+    assert _status(panel, "humidity") == "超限"
+
+
+def test_a_verdict_for_another_reading_leaves_the_row_alone(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.add_data_point("mcu-1", "noise", "50")
+    panel.set_reading_status("mcu-1", "noise", 90.0, 80.0, "ABOVE_MAX", True)
+    panel.set_reading_status("mcu-2", "noise", 50.0, 80.0, "ABOVE_MAX", True)
+    assert _status(panel, "noise") == "正常"
+
+
+# The real stack delivers the verdict *before* the reading (the processor
+# subscribes when the runtime is built, before the UI). The first version of
+# set_reading_status() only handled the opposite order, and "超限" never
+# appeared on hardware; see tests/ui/test_main_window.py for the full stack.
+
+
+def test_a_verdict_that_arrives_first_is_used_when_its_reading_comes(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.add_data_point("mcu-1", "noise", "77.4")
+    panel.set_reading_status("mcu-1", "noise", 104.9, 80.0, "ABOVE_MAX", False)
+    panel.add_data_point("mcu-1", "noise", "104.9")
+    assert _status(panel, "noise", 0) == "正常"
+    assert _status(panel, "noise", 1) == "超限"
+
+
+def test_verdict_first_does_not_touch_an_earlier_row_with_the_same_value(
+    qtbot,
+) -> None:
+    # Two equal readings in a row: the second one's verdict must land on the
+    # second row, not rewrite the first because the value matches.
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.set_reading_status("mcu-1", "noise", 81.0, 80.0, "ABOVE_MAX", False)
+    panel.add_data_point("mcu-1", "noise", "81.0")
+    panel.set_alarm("mcu-1", "noise", True)
+    panel.set_reading_status("mcu-1", "noise", 81.0, 80.0, "ABOVE_MAX", True)
+    panel.add_data_point("mcu-1", "noise", "81.0")
+    assert _status(panel, "noise", 0) == "超限"
+    assert _status(panel, "noise", 1) == "报警"
+
+
+# -- prefilled rows judged against the alarm bounds (2026-09-29) ----------------
+# The store keeps values only; before this every prefilled row read 正常,
+# and an 81.50 dB reading from an earlier run showed as normal.
+
+
+def test_a_prefilled_reading_over_the_maximum_reads_over_limit(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.set_alarm_bands({"ch1": (None, 80.0)})
+    panel.prefill_history("sim-1", "ch1", [_stored(2, 52.3), _stored(1, 81.5)])
+    table = panel._history_tables["ch1"]
+    assert [table.item(r, 2).text() for r in range(2)] == ["正常", "超限"]
+
+
+def test_a_prefilled_reading_under_the_minimum_reads_over_limit(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.set_alarm_bands({"ch1": (30.0, 75.0)})
+    panel.prefill_history("sim-1", "ch1", [_stored(1, 28.0)])
+    assert panel._history_tables["ch1"].item(0, 2).text() == "超限"
+
+
+def test_a_prefilled_reading_is_never_marked_as_a_confirmed_alarm(qtbot) -> None:
+    # Two over-limit readings in a row would have confirmed an alarm live,
+    # but the store does not record that it did.
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.set_alarm_bands({"ch1": (None, 80.0)})
+    panel.prefill_history("sim-1", "ch1", [_stored(2, 90.0), _stored(1, 91.0)])
+    table = panel._history_tables["ch1"]
+    assert [table.item(r, 2).text() for r in range(2)] == ["超限", "超限"]
+
+
+def test_a_channel_without_bounds_prefills_as_normal(qtbot) -> None:
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.prefill_history("sim-1", "ch1", [_stored(1, 999.0)])
+    assert panel._history_tables["ch1"].item(0, 2).text() == "正常"
+
+
+def test_prefilling_again_replaces_the_column_instead_of_duplicating(qtbot) -> None:
+    # "暂停接收" then "订阅" fills the column a second time; the store
+    # already holds what the live path showed, so nothing is lost.
+    panel = DataPanelWidget()
+    qtbot.addWidget(panel)
+    panel.prefill_history("sim-1", "ch1", [_stored(1, 25.0)])
+    panel.add_data_point("sim-1", "ch1", "26.0")
+    stored = [_stored(3, 27.0), _stored(2, 26.0), _stored(1, 25.0)]
+    panel.prefill_history("sim-1", "ch1", stored)
+    table = panel._history_tables["ch1"]
+    values = [table.item(r, 1).text() for r in range(table.rowCount())]
+    assert values == ["27.0", "26.0", "25.0"]
