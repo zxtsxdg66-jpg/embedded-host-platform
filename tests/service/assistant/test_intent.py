@@ -674,3 +674,14 @@ def test_viewing_is_not_in_the_control_whitelist() -> None:
     from service.assistant.control import CONTROL_KINDS
 
     assert IntentKind.CLOUD_VIEW_HINT not in CONTROL_KINDS
+
+
+def test_disowning_an_instruction_is_a_question_about_the_fan() -> None:
+    """2026-09-26 消融实验：拆句后"不是让你关风扇"被读成关风扇，
+    复核的模型也同意，风扇真关了。"""
+    from service.assistant.intent import recognise
+    from service.assistant.models import IntentKind
+
+    for q in ("不是让你关风扇，是问风扇开没开", "我没让你开风扇", "谁让你开风扇的"):
+        assert recognise(q).kind is IntentKind.FAN_STATE, q
+    assert recognise("把风扇关了").kind is IntentKind.FAN_OFF

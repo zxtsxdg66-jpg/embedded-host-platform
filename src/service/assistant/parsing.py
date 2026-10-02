@@ -43,6 +43,38 @@ from service.assistant.models import Intent, IntentKind
 
 PARSE_SYSTEM_PROMPT = (
     "你是地铁站环境监测系统的语句分类器。只输出一行：一个标签；"
+    "若涉及测量通道，再加空格和通道名，涉及几个通道就写几个。不要解释。\n"
+    "提问类：current_value 当前读数 / maximum 最高 / minimum 最低 / "
+    "average 平均 / alarm_state 是否超标 / threshold_info 报警阈值 / "
+    "sample_count 记录了多少条数据 / fan_state 风扇状态 / device_list 在线设备\n"
+    "指令类：fan_on 开风扇 / fan_off 关风扇 / fan_auto 风扇转自动 / "
+    "set_vent_threshold 修改通风阈值\n"
+    "无法归类：unknown\n"
+    "通道：temperature 冷热气温 / humidity 干湿潮气 / noise 吵闹分贝声音\n"
+    "必须以标签开头，只给通道名是错的。不要输出句子里的数字。"
+    "确实拿不准是哪一类时，可以写两到三个候选标签，用空格分开。\n"
+    "例：现在多热 -> current_value temperature\n"
+    "例：最吵的时候有多少 -> maximum noise\n"
+    "例：温度和湿度现在多少 -> current_value temperature humidity\n"
+    "例：一共记了多少条数据 -> sample_count\n"
+    "例：风扇转着吗 -> fan_state\n"
+    "例：太闷了让风扇转起来 -> fan_on\n"
+    "例：通风阈值调到 28 度 -> set_vent_threshold temperature\n"
+    "例：明天下雨吗 -> unknown"
+)
+"""2026-09-26 起多了三处（docs/decisions/03-intent.md 3.3）：``sample_count`` 标签、
+"涉及几个通道就写几个"、"拿不准时可以写两到三个候选"，各配一个示例（候选的那条
+刻意不配示例，以免把确定的句子也教成犹豫的）。改动前后在 148 句留出题库上的
+对照见 ``experiment-data/assistant/README.md``"分类提示词改动"一节。
+
+Fixed, for the same reason :data:`assistant.REPHRASE_SYSTEM_PROMPT` is:
+an unchanging prefix is what lets Ollama reuse its KV cache between
+requests. Note the two prompts alternate, so a run that mixes parsing and
+rephrasing loses some of that benefit -- acceptable, because parsing only
+happens for questions the rules already failed, which are the minority."""
+
+REVIEW_SYSTEM_PROMPT = (
+    "你是地铁站环境监测系统的语句分类器。只输出一行：一个标签；"
     "若涉及某个测量通道，再加一个空格和通道名。不要解释。\n"
     "提问类：current_value 当前读数 / maximum 最高 / minimum 最低 / "
     "average 平均 / alarm_state 是否超标 / threshold_info 报警阈值 / "
@@ -59,11 +91,20 @@ PARSE_SYSTEM_PROMPT = (
     "例：通风阈值调到 28 度 -> set_vent_threshold temperature\n"
     "例：明天下雨吗 -> unknown"
 )
-"""Fixed, for the same reason :data:`assistant.REPHRASE_SYSTEM_PROMPT` is:
-an unchanging prefix is what lets Ollama reuse its KV cache between
-requests. Note the two prompts alternate, so a run that mixes parsing and
-rephrasing loses some of that benefit -- acceptable, because parsing only
-happens for questions the rules already failed, which are the minority."""
+"""The prompt for the **instruction review**, kept exactly as it was before
+2026-09-26.
+
+The review is the safety net behind "the model may veto, never initiate"
+(``Assistant._start_review``), and its measured value -- 21 of the rules'
+22 confident misreadings on the held-out bank surfaced as a disagreement --
+was measured with this text. When :data:`PARSE_SYSTEM_PROMPT` gained
+multi-channel and candidate labels on 2026-09-26, the review briefly shared
+the change, and the ablation run that evening caught the cost: "不是让你关
+风扇" had been refused as ``unknown`` five times out of five, and under the
+new text was agreed as ``fan_off`` four times out of five -- so the fan was
+switched off. A review returns one label; nothing it does needs the new
+wording. So the two jobs now have separate prompts, and a change meant for
+classification can no longer move the safety net."""
 
 MODEL_INTENT_CONFIDENCE = 0.6
 """What a model-derived intent scores, against 1.0 for a rule match.
@@ -83,6 +124,7 @@ _LABELS: dict[str, IntentKind] = {
     "threshold_info": IntentKind.THRESHOLD_INFO,
     "fan_state": IntentKind.FAN_STATE,
     "device_list": IntentKind.DEVICE_LIST,
+    "sample_count": IntentKind.SAMPLE_COUNT,
     "fan_on": IntentKind.FAN_ON,
     "fan_off": IntentKind.FAN_OFF,
     "fan_auto": IntentKind.FAN_AUTO,
@@ -131,6 +173,27 @@ _MAX_DISTINCT_LABELS = 1
 more than one means the model listed options instead of choosing."""
 
 
+MAX_CANDIDATES = 3
+"""How many distinct labels :func:`parse_candidates` accepts as options to
+ask the user about (2026-09-26). More than this is the menu echo the module
+docstring describes, and is still thrown away."""
+
+_QUESTION_KINDS = frozenset(
+    {
+        IntentKind.CURRENT_VALUE,
+        IntentKind.MAXIMUM,
+        IntentKind.MINIMUM,
+        IntentKind.AVERAGE,
+        IntentKind.ALARM_STATE,
+        IntentKind.THRESHOLD_INFO,
+        IntentKind.SAMPLE_COUNT,
+    }
+)
+"""Channel questions, the only kinds a single label may carry several
+channels for. An instruction naming two channels is still refused: one
+sentence changing two settings is two chances to change the wrong one."""
+
+
 def build_prompt(question: str) -> str:
     """The user half of the request. Kept trivial so the prefix stays fixed."""
     return question.strip()
@@ -164,6 +227,64 @@ def parse_reply(reply: str) -> Intent | None:
     return Intent(kind=kind, channel=channel, confidence=MODEL_INTENT_CONFIDENCE)
 
 
+def parse_candidates(reply: str) -> tuple[Intent, ...]:
+    """Read a classification reply that may name several channels or labels.
+
+    Added 2026-09-26 (docs/decisions/03-intent.md). Where
+    :func:`parse_reply` gives up on anything but one label and at most one
+    channel, this keeps two more shapes, each in its own narrow case:
+
+    - **One question label, several channels** (``current_value temperature
+      humidity``): one intent per channel, answered in turn. The model had
+      understood "现在环境怎么样" as all three readings and the parser used
+      to throw that away. Instructions naming several channels still yield
+      nothing.
+    - **Two or three different labels**: the model is unsure, and each
+      label becomes an option the assistant asks the user to pick from.
+      More than :data:`MAX_CANDIDATES` is a menu echo and yields nothing.
+
+    Everything else behaves exactly as :func:`parse_reply` does: a single
+    label with one channel or none gives one intent, or nothing when the
+    kind needs a channel. An empty tuple means "unusable".
+    """
+    text = reply.strip().lower()
+    if not text or _UNKNOWN_LABEL in text:
+        return ()
+    labels = sorted(
+        (text.find(label), label) for label in _LABELS if label in text
+    )
+    if not labels or len(labels) > MAX_CANDIDATES:
+        return ()
+    channels = [
+        _CHANNELS[name]
+        for _, name in sorted((text.find(n), n) for n in _CHANNELS if n in text)
+    ]
+
+    if len(labels) == 1:
+        kind = _LABELS[labels[0][1]]
+        if len(channels) > 1:
+            if kind not in _QUESTION_KINDS:
+                return ()
+            return tuple(
+                Intent(kind=kind, channel=c, confidence=MODEL_INTENT_CONFIDENCE)
+                for c in channels
+            )
+        single = parse_reply(reply)
+        return () if single is None else (single,)
+
+    channel = channels[0] if len(channels) == 1 else None
+    options: list[Intent] = []
+    for _, label in labels:
+        kind = _LABELS[label]
+        takes_channel = kind in _CHANNEL_REQUIRED
+        options.append(Intent(
+            kind=kind,
+            channel=channel if takes_channel else None,
+            confidence=MODEL_INTENT_CONFIDENCE,
+        ))
+    return tuple(options)
+
+
 def _match_channel(text: str) -> ChannelId | None:
     found = {name for name in _CHANNELS if name in text}
     if len(found) != 1:
@@ -174,8 +295,11 @@ def _match_channel(text: str) -> ChannelId | None:
 
 
 __all__ = [
+    "MAX_CANDIDATES",
     "MODEL_INTENT_CONFIDENCE",
+    "REVIEW_SYSTEM_PROMPT",
     "PARSE_SYSTEM_PROMPT",
     "build_prompt",
+    "parse_candidates",
     "parse_reply",
 ]

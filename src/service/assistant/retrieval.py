@@ -74,6 +74,25 @@ channel-to-rule mapping is restated, because the processor keeps its own
 copy private.
 """
 
+COMFORT_BANDS: dict[ChannelId, tuple[float, float]] = {
+    TEMPERATURE_CHANNEL: (18.0, 28.0),
+    HUMIDITY_CHANNEL: (40.0, 65.0),
+}
+"""体感舒适区间（2026-09-27），与报警阈值是两回事：出了这个区间只是提醒一句
+"有点热，注意防暑"，不报警、不动风扇。
+
+湿度 40%~65% 取自 GB 37488—2019 对集中空调公共场所给出的范围，``sensor_data_processor``
+里湿度上限的说明引的也是它。温度 18~28℃ 是工程取值，没有引用出处——冬季取暖与夏季空调
+的推荐温度各不相同，这里取的是两者之间一个不分季节的宽区间。噪声没有舒适区间：
+越限已有报警，不到报警线时说"有点吵"没有依据。"""
+
+NOISE_NEAR_ALARM = NOISE_ALARM_MAX - 5.0
+"""噪声"接近报警线"的下沿（2026-09-27），工程取值：报警线下 5 dB。
+
+噪声没有舒适区间（见 :data:`COMFORT_BANDS`）：80 dB 以下哪里算"有点吵"找不到依据，
+模块的声压级也未经标定。所以只说一件有依据的事——离报警线还有多远；到这条线以上时
+提一句"离报警线不远了"，不给保护听力之类的建议。"""
+
 DeviceLister = Callable[[], Sequence[DeviceId]]
 
 
@@ -131,6 +150,19 @@ class FactRetriever:
             # 不查任何东西：云上有什么要连上 OSS 才知道，而那是按钮背后
             # 那个脚本的事。这里只负责说"可以去看"，不替它把话说满。
             return Facts(kind=IntentKind.CLOUD_VIEW_HINT)
+        if intent.kind is IntentKind.IDENTITY:
+            return Facts(kind=IntentKind.IDENTITY, topic=intent.topic)
+        if intent.kind is IntentKind.ALARM_OFF_REQUEST:
+            return Facts(kind=IntentKind.ALARM_OFF_REQUEST)
+        if intent.kind is IntentKind.CHANNEL_SET_REQUEST:
+            # 只要通道名：模板要说"温度是测出来的"，并且**不给读数**——
+            # 问的是改它，回一个当前值等于没听见。
+            label = CHANNEL_LABELS.get(intent.channel, "") if intent.channel else ""
+            return Facts(
+                kind=IntentKind.CHANNEL_SET_REQUEST,
+                channel=intent.channel,
+                channel_label=label,
+            )
         if intent.kind is IntentKind.DELETE_REQUEST:
             # Same shape, same reason. Deliberately does not look up how
             # many rows or files exist: a count would invite the reply
@@ -189,6 +221,26 @@ class FactRetriever:
                 threshold_is_maximum=base.threshold_is_maximum,
             )
 
+        comfort_low: float | None = None
+        comfort_high: float | None = None
+        comfort = ""
+        if channel == NOISE_CHANNEL:
+            comfort_high = NOISE_NEAR_ALARM
+            if stats.current >= NOISE_ALARM_MAX:
+                comfort = "high"
+            elif stats.current >= NOISE_NEAR_ALARM:
+                comfort = "near"
+            else:
+                comfort = "ok"
+        elif channel in COMFORT_BANDS:
+            comfort_low, comfort_high = COMFORT_BANDS[channel]
+            if stats.current < comfort_low:
+                comfort = "low"
+            elif stats.current > comfort_high:
+                comfort = "high"
+            else:
+                comfort = "ok"
+
         band = _ALARM_RULES.get(channel)
         triggered: bool | None = None
         margin: float | None = None
@@ -225,6 +277,11 @@ class FactRetriever:
             margin=margin,
             margin_requested=intent.wants_margin,
             past_scoped=intent.past_scoped,
+            comfort_low=comfort_low,
+            comfort_high=comfort_high,
+            comfort=comfort,
+            felt=intent.felt,
+            felt_claim=intent.felt_claim,
         )
 
     def _threshold_facts(self, channel: ChannelId) -> Facts:

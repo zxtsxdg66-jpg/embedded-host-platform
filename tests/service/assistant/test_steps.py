@@ -130,8 +130,11 @@ def test_a_refused_rewording_then_an_accepted_retry() -> None:
         StepKind.MODEL_REPLY, StepKind.CHECKS, StepKind.ANSWERED,
     ]
     refused, accepted = [s for s in steps if s.kind is StepKind.CHECKS]
-    assert refused.verdict is CheckVerdict.TOO_LONG
-    assert [c.name for c in refused.checks if not c.passed] == ["length"]
+    # 26.6℃ is inside the comfort band, so 防暑降温 is a direction the template
+    # never gave; since 2026-09-27 the advice check names it before the length
+    # check does.
+    assert refused.verdict is CheckVerdict.ADVICE
+    assert [c.name for c in refused.checks if not c.passed] == ["advice", "length"]
     assert accepted.verdict is CheckVerdict.ACCEPTED
     assert all(c.passed for c in accepted.checks)
     # The immediate answer is not final; the late one is, and both carry
@@ -357,7 +360,7 @@ def test_a_failed_check_says_what_it_found() -> None:
     }
     assert checks["grounding"].detail == "27.1"
     assert checks["alarm"].detail == "超标"
-    assert "请注意" in checks["advice"].detail
+    assert "注意" in checks["advice"].detail
 
 
 def test_the_explain_job_is_exempt_from_the_length_cap() -> None:

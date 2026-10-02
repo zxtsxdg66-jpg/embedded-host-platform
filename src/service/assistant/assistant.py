@@ -29,7 +29,11 @@ from dataclasses import replace
 
 from core.models import ChannelId
 from core.timestamps import monotonic_ms
-from device.sensors.channels import HUMIDITY_CHANNEL, TEMPERATURE_CHANNEL
+from device.sensors.channels import (
+    HUMIDITY_CHANNEL,
+    NOISE_CHANNEL,
+    TEMPERATURE_CHANNEL,
+)
 from service.assistant import control, parsing, phrasing
 from service.assistant import intent as intent_rules
 from service.assistant.control import ControlExecutor
@@ -66,6 +70,21 @@ dominant cost of a CPU-only model -- which is affordable here precisely
 because no readings need to be stuffed into the context.
 """
 
+TEASE_SYSTEM_PROMPT = (
+    REPHRASE_SYSTEM_PROMPT
+    + "原句是在对方说的体感与读数相反时轻轻调侃一句，改写时保留这种轻松的语气；"
+    "照读数说，不要附和对方的感受，不要给任何建议。"
+)
+"""For a template that answers "好冷啊" at 34℃ (``phrasing.mismatch_kind``).
+
+Added 2026-09-27 after the first smoke run: under the plain rephrase
+prompt the model kept the facts and dropped the joke -- "你喊冷？这句我可
+不太敢接" came back as "按数据判断已经是偏热了". A separate constant rather
+than a sentence added to the shared one, so the ordinary rephrase keeps
+its cached prefix. The checks are the same checks; the prompt only asks
+for a tone, and what stops agreement or advice is still
+``phrasing._advice_problem``."""
+
 REPHRASE_RETRY_SYSTEM_PROMPT = (
     REPHRASE_SYSTEM_PROMPT
     + "上一次改写被系统退回了：它加进了原句没有的判断或建议。"
@@ -96,6 +115,7 @@ _CHANNEL_QUESTION_KINDS = frozenset(
         IntentKind.AVERAGE,
         IntentKind.ALARM_STATE,
         IntentKind.THRESHOLD_INFO,
+        IntentKind.SAMPLE_COUNT,
     }
 )
 """换个通道重问一遍仍然说得通的问法。
@@ -270,6 +290,16 @@ does, and an unbounded log there would grow for as long as it runs. Five
 hundred is far more than one question produces (under twenty), so a
 consumer polling every cycle never loses one."""
 
+ALL_CHANNELS = (TEMPERATURE_CHANNEL, HUMIDITY_CHANNEL, NOISE_CHANNEL)
+"""What "三个都" expands to (docs/decisions/03-intent.md, item 2)."""
+
+CHOICE_SECONDS = 60
+"""How long a "你是想问 A 还是 B" question waits for its answer.
+
+Same as :data:`CLARIFY_SECONDS`: the options are all read-only questions
+or instructions the user will name explicitly, so a late answer costs a
+re-ask at worst."""
+
 CONTROL_CONFIRM_SECONDS = 25
 """确认问句的有效期，与 :data:`CONTROL_CLARIFY_SECONDS` 取同一个值。
 
@@ -337,6 +367,10 @@ class Assistant:
         界面会用迟到的答案**整条替换**先前那条占位，不带上这一段，
         已经显示出来的温度读数会在几秒后凭空消失。"""
         self._pending_confirm_ms: int = 0
+        self._pending_choice: tuple[Intent, ...] = ()
+        """模型拿不准时给出的几个候选，正在等用户挑（docs/decisions/03-intent.md）。"""
+        self._pending_choice_ms: int = 0
+        self._pending_choice_question: str = ""
         """复核发现分歧后，挂起等用户点头的那一条指令。
 
         与 ``_pending_clarify`` 分开是因为两者问的不是一件事：那个问"哪个通道"，
@@ -507,6 +541,140 @@ class Assistant:
         confirmed = self._settle_confirmation(question)
         if confirmed is not None:
             return confirmed
+        chosen = self._settle_choice(question)
+        if chosen is not None:
+            return chosen
+        every = self._settle_clarification_all(question)
+        if every is not None:
+            return every
+        if intent_rules.is_manipulation(question):
+            return self._answer_manipulation(question)
+        return self._answer_body(question)
+
+    def _answer_body(self, question: str) -> Answer:
+        """系统没有的东西先说明，其余交给规则。"""
+        absent = intent_rules.absent_mentions(question)
+        if absent:
+            return self._answer_absent(question, absent)
+        return self._answer_rules(question)
+
+    def _answer_manipulation(self, question: str) -> Answer:
+        """冒充身份、要求忽略规则：先说一句权限不是一句话能改的，再照常答剩下的。
+
+        2026-09-27。剩下的认不出（落到帮助）或只是一句裸开关，就只回那一句加能力简介，
+        **不交给模型**——整句话的用意就是让模型换个身份，没有理由把它送过去。
+        剩下的部分照常走规则、复核与执行；说明接在最前面，
+        做法与 :meth:`_answer_absent` 相同。
+        """
+        kept = intent_rules.strip_manipulation(question)
+        self._log(StepKind.MANIPULATION, text=kept)
+        leftover = (
+            intent_rules.recognise(kept, self._recent_channel()) if kept else None
+        )
+        if leftover is None or (
+            leftover.kind in (IntentKind.HELP, IntentKind.BARE_SWITCH)
+            and not intent_rules.absent_mentions(kept)
+        ):
+            self._discard_pending()
+            self._pending_clarify = None
+            text = phrasing.MANIPULATION_TEXT + phrasing.CAPABILITY_BRIEF
+            self._log(StepKind.TEMPLATE, text=text)
+            return Answer(
+                text=text,
+                source=AnswerSource.TEMPLATE,
+                intent=Intent(kind=IntentKind.HELP),
+                facts=None,
+            )
+        return self._with_notice(phrasing.MANIPULATION_TEXT, self._answer_body(kept))
+
+    def _with_notice(self, notice: str, answer: Answer) -> Answer:
+        """把一句说明接在回答前面，并让还在飞的模型工作不把它冲掉。
+
+        复核的结果到时经 ``_pending_prefix`` 接在说明后面；改写与分类这一轮放弃——
+        它们回来的整句会把说明换掉。"""
+        if self._pending_job == JOB_REVIEW:
+            self._pending_prefix = _join_sentences([notice, self._pending_prefix])
+        elif self._pending_job:
+            self._discard_pending(abandoned=False)
+        return _with_prefix(answer, notice)
+
+    def _answer_absent(self, question: str, absent: list[str]) -> Answer:
+        """句子里有系统没有的东西：先说明做不了，再只按剩下的那一段作答。
+
+        2026-09-26 外部题库查出的问题：规则整句读，"开风扇，顺便把灯关了"里属于灯的
+        "关"被算到了风扇头上，"把风扇打开，再把空调调到24度"读成了改通风阈值，
+        而做不了的那一半从来不说。改法是先把只关于没有的东西的那几段去掉
+        （``intent.strip_absent``），剩下的照常走规则、复核与执行，说明放在最前面。
+
+        剩下的认不出（落到帮助）或只是一句裸开关，就只回说明，不再交给模型猜：
+        那句话里系统能做的事一件也没有。例外是"空调现在几度"这类点了通道的提问，见下。
+
+        说明要一直留在回答里，所以这一轮不送改写——改写回来的整句会把它换掉。
+        复核照送，结果到时经 ``_pending_prefix`` 接在说明后面。
+        """
+        kept = intent_rules.strip_absent(question)
+        devices = intent_rules.absent_devices(absent)
+        fan_speed = intent_rules.FAN_SPEED in absent
+        measures = [
+            name
+            for name in absent
+            if name not in devices and name != intent_rules.FAN_SPEED
+        ]
+        self._log(StepKind.ABSENT, note="、".join(absent), text=kept)
+        station_reading = False
+        leftover = (
+            intent_rules.recognise(kept, self._recent_channel()) if kept else None
+        )
+        if leftover is None or leftover.kind in (
+            IntentKind.HELP,
+            IntentKind.BARE_SWITCH,
+        ):
+            # "空调现在温度是多少"：去掉空调那一段就什么也不剩了，但它确实在问温度，
+            # 此前答的也是站内温度。只提到了没有的**设备**、整句是一个点了通道的提问时，
+            # 说明之后照答站内读数；"室外温度多少"提到的是测量项，不在此列——
+            # 拿站内温度去答室外温度就是答错了。
+            whole = intent_rules.recognise(question, self._recent_channel())
+            if (
+                devices
+                and not measures
+                and not fan_speed
+                and whole.kind in _CHANNEL_QUESTION_KINDS
+                and whole.channel is not None
+                and intent_rules.is_question_clause(question)
+                and not intent_rules.asks_to_change(question)
+            ):
+                kept = question
+                leftover = whole
+                station_reading = True
+        if leftover is None or leftover.kind in (
+            IntentKind.HELP,
+            IntentKind.BARE_SWITCH,
+        ):
+            self._discard_pending()
+            self._pending_clarify = None
+            text = phrasing.absent_notice(
+                devices, measures, partial=False, fan_speed=fan_speed
+            )
+            self._log(StepKind.TEMPLATE, text=text)
+            return Answer(
+                text=text,
+                source=AnswerSource.TEMPLATE,
+                intent=Intent(kind=IntentKind.HELP),
+                facts=None,
+            )
+        notice = phrasing.absent_notice(
+            devices,
+            measures,
+            partial=True,
+            fan_speed=fan_speed,
+            station_reading=station_reading,
+        )
+        return self._with_notice(notice, self._answer_rules(kept))
+
+    def _answer_rules(self, question: str) -> Answer:
+        """规则、复核、执行与检索那一整段。
+
+        :meth:`_answer` 在几种待答状态都没接住后调用。"""
         compound = self._split_compound(question)
         if compound is not None:
             return self._answer_compound(*compound)
@@ -526,6 +694,16 @@ class Assistant:
         before = recognised
         recognised = self._settle_clarification(recognised, question)
         self._log_context(before, recognised, "clarification")
+        if (
+            recognised.kind is IntentKind.SET_VENT_THRESHOLD
+            and len(intent_rules.named_channels(question)) > 1
+        ):
+            # 一句话要改两个通风阈值（"温度和湿度阈值都调到 30 度"）：原先只改了
+            # 第一个通道、不提第二个。指令不展开（docs/decisions/03-intent.md 3.1），
+            # 于是把通道清空，走既有的"你要调的是温度还是湿度"反问，一次只改一个。
+            before = recognised
+            recognised = replace(recognised, channel=None)
+            self._log_context(before, recognised, "multi_channel_instruction")
         if recognised.kind in control.CONTROL_KINDS:
             if recognised.kind in _FAN_ACTIONS:
                 self._fan_topic_ms = self._clock_ms()
@@ -549,6 +727,11 @@ class Assistant:
             return self._perform_control(
                 recognised, source_text, AnswerSource.TEMPLATE
             )
+        expanded = self._expand_channels(recognised, question)
+        if expanded:
+            self._log(StepKind.EXPAND, note=str(len(expanded)), intent=expanded[0])
+            return self._answer_compound(expanded, None, log_compound=False)
+
         self._remember_channel(recognised.channel)
 
         facts = self._retriever.retrieve(recognised)
@@ -592,6 +775,9 @@ class Assistant:
             IntentKind.BARE_SWITCH,
             IntentKind.ANNOUNCE_REQUEST,
             IntentKind.DELETE_REQUEST,
+            IntentKind.CHANNEL_SET_REQUEST,
+            IntentKind.ALARM_OFF_REQUEST,
+            IntentKind.IDENTITY,
             IntentKind.CLOUD_VIEW_HINT,
         ):
             # Neither rephrased nor sent for classification: the rules
@@ -694,7 +880,12 @@ class Assistant:
                 and intent_rules.is_bare_channel_question(clause)
             ):
                 recognised = replace(recognised, kind=questions[-1].kind)
-            self._merge_question(questions, recognised)
+            named = intent_rules.named_channels(clause)
+            if len(named) > 1:
+                for each in named:
+                    self._merge_question(questions, replace(recognised, channel=each))
+            else:
+                self._merge_question(questions, recognised)
             channel = recognised.channel or channel
         if len(questions) + (instruction is not None) < 2:
             return None
@@ -714,7 +905,10 @@ class Assistant:
         questions.append(recognised)
 
     def _answer_compound(
-        self, questions: list[Intent], instruction: tuple[Intent, str] | None
+        self,
+        questions: list[Intent],
+        instruction: tuple[Intent, str] | None,
+        log_compound: bool = True,
     ) -> Answer:
         """先答提问，再处理指令，合成一条回答。
 
@@ -731,15 +925,18 @@ class Assistant:
         二者都只认得单个意图。
         """
         self._pending_clarify = None
-        self._log(
-            StepKind.COMPOUND,
-            note=f"{len(questions)}+{0 if instruction is None else 1}",
-        )
+        if log_compound:
+            self._log(
+                StepKind.COMPOUND,
+                note=f"{len(questions)}+{0 if instruction is None else 1}",
+            )
         parts: list[str] = []
+        every: list[Facts] = []
         first: Answer | None = None
         for recognised in questions:
             facts = self._retriever.retrieve(recognised)
             text = phrasing.render(facts)
+            every.append(facts)
             self._log(StepKind.RULES, intent=recognised)
             self._log(StepKind.FACTS, intent=recognised, facts=facts)
             self._log(StepKind.TEMPLATE, text=text)
@@ -760,7 +957,9 @@ class Assistant:
             # 靠 _start_rephrasing 顺手做掉，这里不改写，得自己做。
             self._discard_pending()
             assert first is not None  # 至少两件事且没有指令，提问必然非空
-            return replace(first, text=prefix)
+            return replace(
+                first, text=prefix, all_facts=tuple(every) if len(every) > 1 else ()
+            )
 
         recognised, clause = instruction
         self._log(StepKind.RULES, intent=recognised, text=clause)
@@ -792,6 +991,10 @@ class Assistant:
         if not self._fan_topic_ms:
             return recognised
         if self._clock_ms() - self._fan_topic_ms > FAN_TOPIC_SECONDS * 1000:
+            return recognised
+        if intent_rules.names_something_else(question):
+            # "有没有开关开着""窗户有没有打开的"：话题虽在风扇上，这句话点的却是别的东西
+            # （2026-09-26 外部题库快照对照查出，2026-09-27 修）。
             return recognised
         direction = intent_rules.bare_switch_direction(question)
         if direction is None:
@@ -834,6 +1037,158 @@ class Assistant:
             return None
         return self._last_channel
 
+    # -- several channels in one sentence; choosing between readings --------
+
+    def _expand_channels(self, recognised: Intent, question: str) -> list[Intent]:
+        """One sentence, several channels: one intent per channel, or none.
+
+        Three cases, all read-only questions (docs/decisions/03-intent.md 3.1):
+
+        - the sentence names two or more channels by their proper names
+          ("温度湿度噪声是多少") -- the rules used to keep the first and drop
+          the rest without a word;
+        - it asks for all of them ("三个都说一下"); when it states no
+          question of its own, the previous question's kind carries over,
+          otherwise it is the current reading;
+        - it asks how many readings were recorded without naming a channel.
+
+        Instructions, the fan and the device list are never expanded.
+        """
+        kind = recognised.kind
+        if kind in _CHANNEL_QUESTION_KINDS:
+            named = intent_rules.named_channels(question)
+            if len(named) > 1:
+                return [replace(recognised, channel=c) for c in named]
+            # 口语里并列的几个通道（"又热又闷吗""有多吵有多热"）：只在确实是问句、
+            # 或带"都说说"时展开，感叹句不展开（歧义题库调参集，2026-09-26）。
+            spoken = intent_rules.colloquial_channels(question)
+            if len(spoken) > 1 and (
+                intent_rules.is_question_clause(question)
+                or intent_rules.mentions_all_words(question)
+            ):
+                return [replace(recognised, channel=c) for c in spoken]
+            if kind is IntentKind.SAMPLE_COUNT and recognised.channel is None:
+                return [replace(recognised, channel=c) for c in ALL_CHANNELS]
+        if not intent_rules.asks_all_channels(question):
+            return []
+        if kind in _CHANNEL_QUESTION_KINDS:
+            return [replace(recognised, channel=c) for c in ALL_CHANNELS]
+        if kind is not IntentKind.HELP:
+            return []
+        recent = (
+            self._last_kind is not None
+            and self._clock_ms() - self._last_channel_ms
+            <= CHANNEL_MEMORY_SECONDS * 1000
+        )
+        carried = self._last_kind if recent and self._last_kind else None
+        return [
+            Intent(kind=carried or IntentKind.CURRENT_VALUE, channel=c)
+            for c in ALL_CHANNELS
+        ]
+
+    def _settle_choice(self, question: str) -> Answer | None:
+        """接住用户对"你是想问 A 还是 B"的回答（docs/decisions/03-intent.md）。
+
+        依次认否认、"都要"、序号，再用规则读这句话，读出的意图恰好对应一个
+        选项就选它。都不中就当新问题，挂起的选项作废——与确认问句同一个处理。
+        """
+        options = self._pending_choice
+        if not options:
+            return None
+        source_text = self._pending_choice_question
+        fresh = (
+            self._clock_ms() - self._pending_choice_ms <= CHOICE_SECONDS * 1000
+        )
+        self._pending_choice = ()
+        self._pending_choice_question = ""
+        if not fresh:
+            self._log(StepKind.CHOICE, note="expired")
+            return None
+        if intent_rules.is_denial(question):
+            self._log(StepKind.CHOICE, note="cancel")
+            return Answer(
+                text=phrasing.CHOICE_CANCELLED_TEXT,
+                source=AnswerSource.TEMPLATE,
+                intent=None,
+                facts=None,
+            )
+        if intent_rules.chooses_all(question):
+            asked = [o for o in options if o.kind not in control.CONTROL_KINDS]
+            if asked:
+                self._log(StepKind.CHOICE, note="all")
+                return self._answer_compound(asked, None, log_compound=False)
+        index = intent_rules.choice_index(question)
+        if index is None:
+            read = intent_rules.recognise(question, self._recent_channel())
+            matches = [
+                i for i, o in enumerate(options)
+                if o.kind is read.kind
+                and (o.channel is None or read.channel in (None, o.channel))
+            ]
+            if len(matches) == 1:
+                index = matches[0]
+                if options[index].channel is None and read.channel is not None:
+                    options = tuple(
+                        replace(o, channel=read.channel) if i == index else o
+                        for i, o in enumerate(options)
+                    )
+        if index is None or index >= len(options):
+            self._log(StepKind.CHOICE, note="other")
+            return None
+        picked = options[index]
+        self._log(StepKind.CHOICE, note=f"picked:{index + 1}", intent=picked)
+        if picked.kind in control.CONTROL_KINDS:
+            # 用户从代码写出的选项里明确挑了这个动作，选项文字写明了动作本身，
+            # 这就是授权；数值照旧只从用户最初那句话里读。
+            if picked.kind in _FAN_ACTIONS:
+                self._fan_topic_ms = self._clock_ms()
+            return self._perform_control(picked, source_text, AnswerSource.TEMPLATE)
+        expanded = self._expand_channels(picked, "")
+        if expanded:
+            return self._answer_compound(expanded, None, log_compound=False)
+        return self._answer_question(picked, source_text)
+
+    def _settle_clarification_all(self, question: str) -> Answer | None:
+        """对"你问的是温度、湿度还是噪声？"回一句"都要"：三个通道一起答。
+
+        原先这一问只接一个通道，"都要""三个都"会被当成新问题，于是又被问一遍
+        （歧义题库调参集"报警线定在哪"，2026-09-26）。只对提问生效；
+        指令的反问（"要调温度还是湿度的通风阈值"）仍然一次只接一个。"""
+        pending = self._pending_clarify
+        if pending is None or pending.kind in control.CONTROL_KINDS:
+            return None
+        if intent_rules.is_denial(question) or not intent_rules.chooses_all(question):
+            return None
+        fresh = (
+            self._clock_ms() - self._pending_clarify_ms <= CLARIFY_SECONDS * 1000
+        )
+        if not fresh:
+            return None
+        self._pending_clarify = None
+        self._pending_clarify_question = ""
+        self._log(StepKind.CHOICE, note="all")
+        return self._answer_compound(
+            [replace(pending, channel=c) for c in ALL_CHANNELS],
+            None,
+            log_compound=False,
+        )
+
+    def _answer_question(self, intent: Intent, question: str) -> Answer:
+        """取数、套模板，处理"缺通道就反问"。不送模型改写。"""
+        self._remember_channel(intent.channel)
+        facts = self._retriever.retrieve(intent)
+        text = phrasing.render(facts)
+        self._log(StepKind.FACTS, intent=intent, facts=facts)
+        self._log(StepKind.TEMPLATE, text=text)
+        if facts.needs_channel:
+            self._pending_clarify = intent
+            self._pending_clarify_ms = self._clock_ms()
+        else:
+            self._remember_kind(intent.kind)
+        return Answer(
+            text=text, source=AnswerSource.TEMPLATE, intent=intent, facts=facts
+        )
+
     def reset_conversation(self) -> None:
         """Forget the topic and any question left hanging.
 
@@ -857,6 +1212,8 @@ class Assistant:
         self._pending_review_question = ""
         self._last_channel = None
         self._last_channel_ms = 0
+        self._pending_choice = ()
+        self._pending_choice_question = ""
 
     def _settle_clarification(self, recognised: Intent, text: str) -> Intent:
         """Fold a one-word reply back into the question that prompted it.
@@ -1001,7 +1358,7 @@ class Assistant:
         text = parsing.build_prompt(question)
         if not text:
             return False
-        if not self._llm.submit(text, system=parsing.PARSE_SYSTEM_PROMPT):
+        if not self._llm.submit(text, system=parsing.REVIEW_SYSTEM_PROMPT):
             self._log(StepKind.MODEL_UNAVAILABLE, job=JOB_REVIEW)
             return False
         self._pending_qid = self._active_qid
@@ -1123,7 +1480,12 @@ class Assistant:
         self._discard_pending()
         explain = recognised.kind in EXPLAINED_KINDS and facts.available
         prompt = phrasing.facts_brief(facts) if explain else text
-        system = EXPLAIN_SYSTEM_PROMPT if explain else REPHRASE_SYSTEM_PROMPT
+        if explain:
+            system = EXPLAIN_SYSTEM_PROMPT
+        elif phrasing.mismatch_kind(facts) in phrasing.TEASING_MISMATCHES:
+            system = TEASE_SYSTEM_PROMPT
+        else:
+            system = REPHRASE_SYSTEM_PROMPT
         job = JOB_EXPLAIN if explain else JOB_REPHRASE
         if not self._llm.submit(prompt, system=system):
             self._log(StepKind.MODEL_UNAVAILABLE, job=job)
@@ -1313,17 +1675,29 @@ class Assistant:
         -- so nothing the model wrote reaches the user. It only chose which
         question was being asked.
         """
-        recognised = parsing.parse_reply(self._pending_reply)
+        candidates = parsing.parse_candidates(self._pending_reply)
         question = self._pending_question
         placeholder = self._pending_placeholder
         self._discard_pending(abandoned=False)
+        kinds = {c.kind for c in candidates}
+        if not candidates:
+            note = "unusable"
+        elif len(kinds) > 1:
+            note = "ambiguous"
+        elif len(candidates) > 1:
+            note = "multi_channel"
+        else:
+            note = ""
         self._log(
             StepKind.LABEL,
             job=JOB_PARSE,
-            intent=recognised,
-            note="unusable" if recognised is None else "",
+            intent=candidates[0] if candidates else None,
+            note=note,
+            text=" / ".join(phrasing.describe([c]) for c in candidates)
+            if len(candidates) > 1
+            else "",
         )
-        if recognised is None:
+        if not candidates:
             if not placeholder:
                 return None
             return Answer(
@@ -1333,13 +1707,29 @@ class Assistant:
                 facts=Facts(kind=IntentKind.HELP),
             )
 
+        if len(kinds) > 1:
+            # ⑤ 模型拿不准，给了几个候选：由代码写反问，选项只可能是系统真有的能力。
+            # 规则已经反问过通道的（不是占位句）不再叠一句不同的反问。
+            if not placeholder:
+                return None
+            self._pending_choice = candidates
+            self._pending_choice_ms = self._clock_ms()
+            self._pending_choice_question = question
+            return Answer(
+                text=phrasing.choice_text(candidates),
+                source=AnswerSource.MODEL_INTENT,
+                intent=None,
+                facts=None,
+            )
+
+        recognised = candidates[0]
         # The model got there first. Whatever was asked back is answered
         # now, so retiring it stops a later "温度" from being folded into a
         # question the user has already had answered.
         self._pending_clarify = None
-        self._remember_channel(recognised.channel)
 
         if recognised.kind in control.CONTROL_KINDS:
+            self._remember_channel(recognised.channel)
             # 规则认不出、模型单方面判成指令——这一路原先是直接执行的。
             # 改为反问确认：模型可以提议一个动作，但不能独自触发它，
             # 而这里没有第二个判断来跟它对照（裁决表第四行）。
@@ -1353,15 +1743,44 @@ class Assistant:
                 facts=None,
             )
 
-        facts = self._retriever.retrieve(recognised)
-        text = phrasing.render(facts)
-        self._log(StepKind.FACTS, intent=recognised, facts=facts)
-        self._log(StepKind.TEMPLATE, text=text)
-        return Answer(
-            text=text,
-            source=AnswerSource.MODEL_INTENT,
-            intent=recognised,
-            facts=facts,
+        # 模型只给标签，不给体感；"冻死我了"这类规则没认出、由模型判成问温度的句子，
+        # 体感方向仍由代码从原话里取（2026-09-27），否则 34℃ 时它会被答成"注意防暑"。
+        asked = [
+            replace(c, felt_claim=intent_rules.felt_claim(question, c.channel))
+            for c in candidates
+        ]
+        if (
+            len(asked) == 1
+            and recognised.kind is IntentKind.SAMPLE_COUNT
+            and recognised.channel is None
+        ):
+            asked = [replace(recognised, channel=c) for c in ALL_CHANNELS]
+        # ④ 模型分类出来的提问，先说按什么理解的：它毫不犹豫地选错时不会反问，
+        # 这一句是让错读一眼可见的补救。
+        parts: list[str] = []
+        every: list[Facts] = []
+        first: Answer | None = None
+        for intent in asked:
+            self._remember_channel(intent.channel)
+            facts = self._retriever.retrieve(intent)
+            text = phrasing.render(facts)
+            every.append(facts)
+            self._log(StepKind.FACTS, intent=intent, facts=facts)
+            self._log(StepKind.TEMPLATE, text=text)
+            parts.append(text)
+            if first is None:
+                first = Answer(
+                    text=text,
+                    source=AnswerSource.MODEL_INTENT,
+                    intent=intent,
+                    facts=facts,
+                )
+        assert first is not None
+        body = _join_sentences(parts)
+        return replace(
+            first,
+            text=phrasing.interpretation(asked) + body + phrasing.INTERPRETATION_TAIL,
+            all_facts=tuple(every) if len(every) > 1 else (),
         )
 
     def capabilities(self) -> Sequence[str]:
@@ -1377,4 +1796,5 @@ __all__ = [
     "JOB_REPHRASE",
     "JOB_REVIEW",
     "REPHRASE_SYSTEM_PROMPT",
+    "TEASE_SYSTEM_PROMPT",
 ]

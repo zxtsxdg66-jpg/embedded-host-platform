@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import re
 
-from device.sensors.channels import HUMIDITY_CHANNEL, TEMPERATURE_CHANNEL
+from core.models import ChannelId
+from device.sensors.channels import HUMIDITY_CHANNEL, NOISE_CHANNEL, TEMPERATURE_CHANNEL
 from service.assistant import control
 from service.assistant.models import (
     AnswerSource,
@@ -34,9 +35,42 @@ _FAN_MODE_LABELS = {
     "MANUAL_OFF": "手动常关",
 }
 
+REFUSAL_OPENER = "这个我做不了："
+"""所有"做不了"的回答共用的开头（2026-09-27）。此前关报警、改读数、删数据、播报、
+系统没有的设备各有各的措辞，放在一起看像是几个人写的。统一成
+"这个我做不了：〔原因〕。我能做的是〔相关的能力〕。"——原因各不相同，
+结构与开头一致，用户一眼就知道这是一句拒绝，不必读到最后。"""
+
+MANIPULATION_TEXT = "身份和权限不是一句话能改的，我照常按规则回答。"
+"""冒充身份、要求忽略规则时回答的第一句（2026-09-27，``intent.is_manipulation``）。
+后面接的是这句话去掉那段说法之后的正常回答；什么也不剩时接 :data:`CAPABILITY_BRIEF`。"""
+
+CAPABILITY_BRIEF = "我能做的是查温度、湿度、噪声的读数，开关风扇，调通风阈值。"
+
+ASSISTANT_NAME = "站内环境助手"
+
+IDENTITY_TEXTS: dict[str, str] = {
+    "who": (
+        f"我是{ASSISTANT_NAME}，这套地铁站环境监测系统里的问答助手。" + CAPABILITY_BRIEF
+    ),
+    "model": (
+        "我背后是一个在本机运行的小型语言模型，只负责理解问题和组织措辞；"
+        "读数和设备动作都由系统代码负责，模型碰不到。"
+    ),
+    "maker": "我是一个毕业设计项目的一部分，是这套地铁站环境监测系统的问答模块。",
+    "network": (
+        "问答本身不联网，理解和措辞都在本机完成。"
+        "只有在界面上点按钮上传时，归档的读数才会传到云端。"
+    ),
+}
+"""身份问答（2026-09-27，:attr:`IntentKind.IDENTITY`）。固定句，不送改写：
+小模型被问"你是谁"，很可能报出训练它的那家公司的产品名；"你其实是 GPT 吧"一类的话
+也能把它带偏。名字"站内环境助手"是有意取的平实说法。"谁开发的"不写开发者姓名。
+"不联网"说的是问答：上云是界面按钮背后的脚本，由人点了才传。"""
+
 ANNOUNCE_REFUSAL_TEXT = (
-    "语音播报只在读数越限时自动触发，不支持手动播放。"
-    "你可以问我某个通道有没有超标，或者查看活动日志里的播报记录。"
+    REFUSAL_OPENER + "语音播报只在读数越限时自动触发，不支持手动播放。"
+    "我能做的是告诉你某个通道有没有超标，播报记录在活动日志里。"
 )
 """Why this is a fixed string and never handed to the model: it carries no
 number, so ``numbers_are_grounded`` has nothing to check, and a rephrase
@@ -45,7 +79,8 @@ sentence's whole job is to state a limit correctly -- the same reason
 ``CLARIFY_TEXT`` is not rephrased either."""
 
 DELETE_REFUSAL_TEXT = (
-    "删除数据不在我能做的事情里。读数分在三处——本机历史库、导出的归档文件、"
+    REFUSAL_OPENER
+    + "删除数据不在我能做的事情里。读数分在三处——本机历史库、导出的归档文件、"
     "以及已经传上云的那份，删哪一处、删哪一段都得你自己确认，所以这一步没有交给我。"
     "界面上的「清空历史记录」只清屏幕上显示的行，不会动数据库里的数据。"
 )
@@ -325,6 +360,12 @@ def _render(facts: Facts) -> str:
         return ANNOUNCE_REFUSAL_TEXT
     if facts.kind is IntentKind.DELETE_REQUEST:
         return DELETE_REFUSAL_TEXT
+    if facts.kind is IntentKind.CHANNEL_SET_REQUEST:
+        return channel_set_text(facts)
+    if facts.kind is IntentKind.ALARM_OFF_REQUEST:
+        return ALARM_OFF_REFUSAL_TEXT
+    if facts.kind is IntentKind.IDENTITY:
+        return IDENTITY_TEXTS.get(facts.topic, IDENTITY_TEXTS["who"])
     if facts.kind is IntentKind.CLOUD_VIEW_HINT:
         return CLOUD_VIEW_TEXT
     if facts.kind is IntentKind.CLOUD_SYNC_HINT:
@@ -347,6 +388,32 @@ def _render(facts: Facts) -> str:
     if facts.kind is IntentKind.ALARM_STATE:
         return _render_alarm(facts)
     return _render_measurement(facts)
+
+
+ALARM_OFF_REFUSAL_TEXT = (
+    REFUSAL_OPENER + "报警是按阈值自动判定的，读数回到正常范围后会自动解除。"
+    "我能做的是开关风扇、调通风阈值。"
+)
+""""帮我关掉警报"的回答（2026-09-27，:attr:`IntentKind.ALARM_OFF_REQUEST`）。
+固定句，不送改写，理由同 :data:`DELETE_REFUSAL_TEXT`。"""
+
+
+def channel_set_text(facts: Facts) -> str:
+    """"把温度调节至40度"的回答（2026-09-27，:attr:`IntentKind.CHANNEL_SET_REQUEST`）。
+
+    固定句，不送模型改写，理由同 :data:`DELETE_REFUSAL_TEXT`：它的全部任务是把
+    "做不到"说准，改写把它软化成一个提议，现有的检查一道也拦不住。不带读数——
+    问的是改它，回一个当前值等于没听见。"""
+    label = facts.channel_label or "读数"
+    if facts.channel in _VENT_LABELS:
+        return (
+            f"{REFUSAL_OPENER}{label}是传感器测出来的，没法直接调节。"
+            f"我能做的是开关风扇，或者改{label}的通风阈值，"
+            f"比如说「{label}通风阈值调到多少」。"
+        )
+    return (
+        f"{REFUSAL_OPENER}{label}是传感器测出来的，没法直接调节。我能做的是开关风扇。"
+    )
 
 
 def _render_devices(facts: Facts) -> str:
@@ -450,9 +517,11 @@ def _render_alarm(facts: Facts) -> str:
     if low is not None and high is not None:
         return (
             f"{label}当前 {reading}，在 {low:g}~{high:g}{facts.unit} 的正常范围内，"
-            "一切正常。"
+            "一切正常。" + care_line(facts)
         )
-    return f"{label}当前 {reading}，未超过报警阈值 {limit}，一切正常。"
+    return f"{label}当前 {reading}，未超过报警阈值 {limit}，一切正常。" + care_line(
+        facts
+    )
 
 
 def _render_measurement(facts: Facts) -> str:
@@ -463,6 +532,8 @@ def _render_measurement(facts: Facts) -> str:
         return f"{label}记录到的最高值是 {_fmt(facts.maximum)}{unit}。"
     if facts.kind is IntentKind.MINIMUM and facts.minimum is not None:
         return f"{label}记录到的最低值是 {_fmt(facts.minimum)}{unit}。"
+    if facts.kind is IntentKind.SAMPLE_COUNT:
+        return f"{label}本次启动以来记录了 {facts.sample_count} 个读数。"
     if facts.kind is IntentKind.AVERAGE and facts.average is not None:
         return (
             f"{label}的平均值是 {_fmt(facts.average)}{unit}"
@@ -480,7 +551,153 @@ def _render_measurement(facts: Facts) -> str:
     # 只问了读数的问题，回来的是读数加一句没人问的判断。
     if facts.triggered is True:
         text += "，已超过报警阈值"
-    return text + "。"
+    return text + "。" + care_line(facts)
+
+
+_CARE_TEXT: dict[tuple[ChannelId, str], str] = {
+    (TEMPERATURE_CHANNEL, "high"): "有点热，注意防暑降温。",
+    (TEMPERATURE_CHANNEL, "low"): "有点凉，注意保暖，别着凉。",
+    (HUMIDITY_CHANNEL, "high"): "空气偏潮，体感会有些闷。",
+    (HUMIDITY_CHANNEL, "low"): "空气偏干，记得多喝水。",
+}
+"""读数出了舒适区间时模板补的一句关心（2026-09-27）。
+
+方向由取数层按 ``retrieval.COMFORT_BANDS`` 判定，这里只负责说出来；
+模型改写时可以换说法，不能换方向，见 :data:`_CARE_GROUPS`。
+此前的立场是"系统不给建议"（:data:`ADVICE_WORDS`），依据是模型不知道读者该穿什么
+——那句"请注意保暖"是在 25℃ 时说的。问题出在由谁判断冷热，不在关心本身：
+判断交给代码之后，这句话就和读数一样有出处。"""
+
+
+_MISMATCH: dict[tuple[str, str], str] = {
+    ("cold", "high"): "cold_on_hot",
+    ("hot", "low"): "hot_on_cold",
+    ("dry", "high"): "dry_on_humid",
+    ("humid", "low"): "humid_on_dry",
+    ("quiet", "near"): "quiet_on_loud",
+    ("quiet", "high"): "quiet_on_alarm",
+    ("loud", "ok"): "loud_on_quiet",
+}
+
+TEASING_MISMATCHES = frozenset(
+    {"cold_on_hot", "hot_on_cold", "dry_on_humid", "humid_on_dry"}
+)
+"""用调侃语气改写的那几种（``assistant.TEASE_SYSTEM_PROMPT``）。噪声两种不在内：
+说"安静"而读数接近报警线，照读数说即可；说"好吵"而读数低，更可能是没采到那一阵
+（见 :func:`_noise_line`），不该调侃。"""
+
+_MISMATCH_LINES: dict[str, tuple[str, ...]] = {
+    "cold_on_hot": (
+        "你觉得冷？可这读数已经高过 {hi}{unit}，按数据看是偏热的。"
+        "传感器测的是站内这一处，你那儿说不定正对着空调风口。",
+        "你喊冷？这句我可不太敢接：读数比 {hi}{unit} 还高，明明偏热。"
+        "是不是刚从空调房出来？",
+        "这温度还觉得冷，挺抗热的嘛。按读数已经高过 {hi}{unit}，是偏热的，"
+        "那种感觉可能只是你那一处的。",
+    ),
+    "hot_on_cold": (
+        "你觉得热？可这读数比 {lo}{unit} 还低，按数据看是偏凉的。"
+        "可能是刚一路走得急。",
+        "你喊热？这句我可不太敢接：读数低于 {lo}{unit}，明明偏凉。"
+        "是不是刚小跑过来？",
+        "这温度还觉得热，火力挺旺啊。按读数已经低于 {lo}{unit}，是偏凉的。",
+    ),
+    "dry_on_humid": (
+        "你觉得干？可湿度已经高过 {hi}{unit}，按数据看是偏潮的。"
+        "传感器测的是站内这一处。",
+        "你嫌干？这句我可不太敢接：湿度比 {hi}{unit} 还高，明明偏潮。",
+    ),
+    "quiet_on_loud": (
+        "你觉得安静？可这读数离 {thr}{unit} 的报警线不远了。传感器测的是站内这一处，"
+        "你那儿可能正好离声源远一点。",
+    ),
+    "quiet_on_alarm": (
+        "你觉得安静？可这读数已经超过 {thr}{unit} 的报警线了。传感器测的是站内这一处。",
+    ),
+    "humid_on_dry": (
+        "你觉得潮？可湿度低于 {lo}{unit}，按数据看是偏干的。"
+        "传感器测的是站内这一处。",
+        "你嫌潮？这句我可不太敢接：湿度比 {lo}{unit} 还低，明明偏干。",
+    ),
+}
+"""用户说的体感与读数相反时的回答（2026-09-27）：轻轻调侃一句，指出读数在哪一边。
+
+- **不给建议**：说冷时劝"注意防暑"接不住那句话，劝"注意保暖"又和读数相反，两头都不对。
+- **不附和**：句中用户的感受只以"你觉得冷""你喊冷""还觉得冷"的转述出现，
+  出口检查把这类转述剔除后再查方向词（:data:`_QUOTED_FEELING`），模型因此能说
+  "34 度你还喊冷"，说不出"确实挺冷"。
+- **不猜身体原因**：只说到"传感器测的是这一处"为止，系统没有依据谈健康。
+- 不写"舒适"二字：那一组词模板一旦出现，改写就能说"处于舒适区间"
+  （见 :data:`_CARE_GROUPS`）。
+
+几句轮着用，按读数挑（同一读数总是同一句，便于复现），模型改写被拦时退回的也是它。"""
+
+
+def _noise_line(facts: Facts) -> str:
+    """噪声那句（2026-09-27）：只说离报警线多远，不给建议。
+
+    - 离报警线 5 dB 以内：说"离报警线不远了"。
+    - 越限：报警句已经说了，这里不再加。
+    - 说"好吵"而读数低：不调侃也不附和，承认可能漏测——列车进站那一阵只有几秒，
+      采样可能正好没赶上；附上本次运行记到的最高值，那个数也许正是用户听到的。
+    - 说"好安静"而读数接近或超过报警线：照读数说。
+    - 用体感问（"吵不吵"）而读数低：说离报警线还远。"""
+    if facts.threshold is None:
+        return ""
+    thr, unit = f"{facts.threshold:g}", facts.unit
+    mismatch = mismatch_kind(facts)
+    if mismatch == "loud_on_quiet":
+        peak = (
+            f"；本次运行记到的最高是 {_fmt(facts.maximum)}{unit}"
+            if facts.maximum is not None
+            else ""
+        )
+        return (
+            f"这一刻测到的离 {thr}{unit} 的报警线还远。列车进站那一阵可能正好没采到，"
+            f"传感器测的也只是站内这一处{peak}。"
+        )
+    if mismatch:
+        return _MISMATCH_LINES[mismatch][0].format(thr=thr, unit=unit)
+    if facts.comfort == "near":
+        return f"离 {thr}{unit} 的报警线不远了。"
+    if facts.comfort == "ok" and facts.felt:
+        return f"离 {thr}{unit} 的报警线还远。"
+    return ""
+
+
+def mismatch_kind(facts: Facts) -> str:
+    """体感与读数相反时返回 :data:`_MISMATCH_LINES` 的键，否则返回空串。"""
+    return _MISMATCH.get((facts.felt_claim, facts.comfort), "")
+
+
+def care_line(facts: Facts) -> str:
+    """模板末尾那句关心；区间内且不是用体感问的就不说。
+
+    区间内但问的是"有点冷啊"时，说读数在舒适区间内——不说"不冷"，免得给改写
+    留下一个带方向的词去改反（见 :data:`_CARE_GROUPS`）。"""
+    if facts.channel is None or facts.value is None or not facts.comfort:
+        return ""
+    if facts.kind not in (IntentKind.CURRENT_VALUE, IntentKind.ALARM_STATE):
+        return ""
+    if facts.past_scoped:
+        return ""
+    if facts.channel == NOISE_CHANNEL:
+        return _noise_line(facts)
+    mismatch = mismatch_kind(facts)
+    if mismatch and facts.comfort_low is not None and facts.comfort_high is not None:
+        lines = _MISMATCH_LINES[mismatch]
+        line = lines[int(round(facts.value * 10)) % len(lines)]
+        return line.format(
+            lo=f"{facts.comfort_low:g}", hi=f"{facts.comfort_high:g}", unit=facts.unit
+        )
+    if facts.comfort == "ok":
+        if not facts.felt or facts.comfort_low is None or facts.comfort_high is None:
+            return ""
+        return (
+            f"在 {facts.comfort_low:g}~{facts.comfort_high:g}{facts.unit} "
+            "的舒适区间内。"
+        )
+    return _CARE_TEXT.get((facts.channel, facts.comfort), "")
 
 
 def _margin_clause(facts: Facts) -> str:
@@ -574,8 +791,16 @@ something new *without* a judgement word. It is the second of two nets,
 not the main one."""
 
 
-ADVICE_WORDS = ("请注意", "建议", "记得", "小心", "务必", "应当", "请保持")
-"""Openers of advice, which this system does not give.
+ADVICE_WORDS = ("注意", "建议", "记得", "小心", "务必", "应当", "请保持")
+"""Openers of advice, which the model may not add on its own.
+
+2026-09-27: advice is no longer refused outright. When the reading is
+outside the comfort band the template itself carries a line of care
+(:func:`care_line`), and a rewording may then word that care its own way
+-- in the same direction only (:data:`_CARE_GROUPS`). What stays refused
+is advice the template did not give. "请注意" became "注意" so that the
+template's "注意防暑" counts as advice given. The history below is why
+the model is not the one deciding.
 
 Caught by name rather than by length: "请注意保暖" is only eight characters
 past the template, well inside any tolerance wide enough for an ordinary
@@ -583,6 +808,77 @@ rewording, yet it is the clearest case of the model speaking for a system
 that knows nothing about what the reader should wear. Tightening the
 length cap until it caught this one would have meant fitting it to a
 sample of thirty."""
+
+
+_CARE_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("热", "暑", "降温"),
+    ("冷", "凉", "保暖", "着凉", "添衣", "加衣", "感冒"),
+    ("潮", "闷", "除湿"),
+    ("干", "喝水", "补水", "加湿"),
+    ("舒适", "舒服", "宜人", "适宜"),
+    ("吵", "闹", "嘈杂"),
+    ("安静", "静"),
+    (
+        "降至", "降到", "升至", "升到", "下降", "上升", "回落", "回升",
+        "降低了", "升高了",
+    ),
+)
+"""体感方向与变化趋势的几组词（2026-09-27）。改写里出现某一组的词，模板里就必须也有同一组的词。
+
+这是建议措辞检查的另一半：模板说"有点热，注意防暑"，改写成"天挺热的，记得防暑"可以，
+改成"注意保暖"就被拦下——关心可以换说法，方向必须与代码的判定一致。
+最后一组是变化趋势（2026-09-27 第三批对抗实验）：0.8 温度下改写两次写出"已降至 49.5dB"
+"室温已降至 15.2℃"——只有一个采样点，系统从没见过"降"。模板从不陈述趋势，所以这一组等于
+不许改写凭空说变化。
+
+第五组是"舒适"本身：对抗实验里 0.8 温度的解释档把 31.4℃ 说成"处于舒适区间"，
+前四组都没拦住——模板说了"有点热"，没说"舒适"，改写就不许说。代价是"已超出舒适区间"
+这种说对了的也退回模板。
+与 :data:`ALARM_CLAIM_WORDS` 一样是词表，是缓解不是保证；单字"干""凉"会误伤
+"干净""凉快"，误伤的代价是退回模板，可以接受。"""
+
+
+_QUOTED_FEELING = re.compile(
+    r"(?:(?:你|您)(?:说|觉得|感觉|喊|嫌|觉着)|还(?:喊|嫌|说|觉得|感觉))"
+    r"(?:得)?(?:有点|有些|好|太|很|这么|挺)?(?:冷|凉|冻|热|烫|潮|闷|湿|干|燥|吵|闹|安静)"
+)
+"""转述用户体感的说法（2026-09-27）："你觉得冷""还喊冷"。检查方向词之前从模板与改写里
+一并剔除：它们说的是用户的感受，不是系统的判断。要求主语"你"或"还"，
+"感觉有点冷"没有主语，读作系统在说，照查不误。"""
+
+
+def _care_words_added(template_text: str, candidate: str) -> list[str]:
+    """改写里出现、而模板里没有同组词的体感词（用户体感的转述不算）。"""
+    template_text = _QUOTED_FEELING.sub("", template_text)
+    candidate = _QUOTED_FEELING.sub("", candidate)
+    added: list[str] = []
+    for group in _CARE_GROUPS:
+        if any(word in template_text for word in group):
+            continue
+        added.extend(word for word in group if word in candidate)
+    return added
+
+
+_AGREEING_WORDS = (
+    "说得对", "说的对", "没错", "确实如此", "按您的体感", "按你的体感",
+    "听您的", "听你的", "您说了算", "你说了算",
+)
+"""不带方向词的附和（2026-09-27 对抗实验，0.8 温度）：15.2℃ 说"好热啊"，改写成
+"你说得对……那咱们就按您的体感来吧"，方向词一个没有，:data:`_CARE_GROUPS` 查不到。
+只在模板本身是"体感与读数相反"的调侃句时查（模板里有 :data:`_QUOTED_FEELING` 的转述），
+普通改写里一句"没错"无伤大雅，不因此退回。"""
+
+
+def _advice_problem(template_text: str, candidate: str) -> list[str]:
+    """建议措辞检查找到的词：模板没给建议而改写给了，体感方向对不上，
+    或者在调侃句里附和了用户。"""
+    found: list[str] = []
+    if _gives_advice(candidate) and not _gives_advice(template_text):
+        found.extend(w for w in ADVICE_WORDS if w in candidate)
+    found.extend(_care_words_added(template_text, candidate))
+    if _QUOTED_FEELING.search(template_text):
+        found.extend(w for w in _AGREEING_WORDS if w in candidate)
+    return found
 
 
 def _has_state_claim(text: str) -> bool:
@@ -672,7 +968,7 @@ def judge(
         return template_text, AnswerSource.TEMPLATE, CheckVerdict.UNSUPPORTED_ALARM
     if _adds_an_unsupported_judgement(template_text, candidate, facts):
         return template_text, AnswerSource.TEMPLATE, CheckVerdict.UNSUPPORTED_JUDGEMENT
-    if _gives_advice(candidate) and not _gives_advice(template_text):
+    if _advice_problem(template_text, candidate):
         return template_text, AnswerSource.TEMPLATE, CheckVerdict.ADVICE
     if not expanded and _is_padded(template_text, candidate):
         return template_text, AnswerSource.TEMPLATE, CheckVerdict.TOO_LONG
@@ -723,11 +1019,7 @@ def explain_checks(
         if _adds_an_unsupported_judgement(template_text, candidate, facts)
         else []
     )
-    advice_words = (
-        [w for w in ADVICE_WORDS if w in candidate]
-        if _gives_advice(candidate) and not _gives_advice(template_text)
-        else []
-    )
+    advice_words = _advice_problem(template_text, candidate)
     limit = len(template_text) * LENGTH_SLACK + LENGTH_MARGIN
     if expanded:
         length = CheckResult("length", True, "解释档不设长度上限")
@@ -744,6 +1036,113 @@ def explain_checks(
         CheckResult("advice", not advice_words, "、".join(advice_words)),
         length,
     )
+
+
+_KIND_DESCRIPTIONS: dict[IntentKind, str] = {
+    IntentKind.CURRENT_VALUE: "当前读数",
+    IntentKind.MAXIMUM: "最高值",
+    IntentKind.MINIMUM: "最低值",
+    IntentKind.AVERAGE: "平均值",
+    IntentKind.ALARM_STATE: "是否超标",
+    IntentKind.THRESHOLD_INFO: "报警阈值",
+    IntentKind.SAMPLE_COUNT: "记录了多少个读数",
+    IntentKind.FAN_STATE: "风扇现在的状态",
+    IntentKind.DEVICE_LIST: "在线设备数量",
+    IntentKind.FAN_ON: "把风扇切到手动常开",
+    IntentKind.FAN_OFF: "把风扇切到手动常关",
+    IntentKind.FAN_AUTO: "把风扇交给自动控制",
+    IntentKind.SET_VENT_THRESHOLD: "修改通风阈值",
+}
+"""代码给模型的理解写的说明，用在 ④ 与 ⑤（docs/decisions/03-intent.md）。
+这些是**系统真有的能力**的名字，反问里的选项只可能从这里来。"""
+
+_NO_POSSESSIVE = frozenset({IntentKind.ALARM_STATE, IntentKind.SAMPLE_COUNT})
+"""说明里不加"的"的两类："湿度是否超标""温度记录了多少个读数"。"""
+
+_CHANNEL_NAMES = {
+    TEMPERATURE_CHANNEL: "温度",
+    HUMIDITY_CHANNEL: "湿度",
+    NOISE_CHANNEL: "噪声",
+}
+
+
+def describe(intents: tuple[Intent, ...] | list[Intent]) -> str:
+    """几条同类意图合起来的一句说明："温度、湿度的当前读数"。"""
+    if not intents:
+        return ""
+    what = _KIND_DESCRIPTIONS.get(intents[0].kind, intents[0].kind.value)
+    channels = [
+        _CHANNEL_NAMES.get(i.channel, str(i.channel)) for i in intents if i.channel
+    ]
+    if not channels:
+        return what
+    joiner = "" if intents[0].kind in _NO_POSSESSIVE else "的"
+    return f"{'、'.join(channels)}{joiner}{what}"
+
+
+def interpretation(intents: tuple[Intent, ...] | list[Intent]) -> str:
+    """④：模型分类出来的提问，回答前先说明是按什么理解的。
+
+    只在规则没认出、由模型给了标签的回答前加。模型毫不犹豫地选错时不会反问，
+    这句话是让错读一眼可见的那道补救——"记录了多少数据"曾被答成设备数，
+    而回答本身读起来完全通顺。"""
+    return f"我理解你问的是「{describe(intents)}」："
+
+
+INTERPRETATION_TAIL = "理解错了的话，换个说法再问一次。"
+
+CHOICE_CANCELLED_TEXT = "好，那换个说法再问一次？"
+
+
+FAN_SPEED_TEXT = REFUSAL_OPENER + "风扇只能开、关或交给自动，调不了转速。"
+
+
+def absent_notice(
+    devices: list[str],
+    measures: list[str],
+    partial: bool,
+    fan_speed: bool = False,
+    station_reading: bool = False,
+) -> str:
+    """说明句子里哪些东西系统没有（2026-09-26，见 ``intent._ABSENT_DEVICES``）。
+
+    2026-09-27 起与其它拒绝同一句式（:data:`REFUSAL_OPENER`）；
+    同一句里还有能做的那一半时
+    开头换成"这一半我做不了："。
+
+    ``partial`` 为真表示同一句里还有系统能做的那一半，措辞说"这一半"；
+    否则说"这件事"。``station_reading`` 为真表示问的是"空调现在几度"这类话，
+    后面接的是站内读数。名字只来自那两张表，不会出现句子之外的东西。"""
+    if station_reading:
+        return f"这个系统里没有{'、'.join(devices)}，下面是站内的读数。"
+    reasons: list[str] = []
+    if fan_speed:
+        reasons.append("风扇只能开、关或交给自动，调不了转速")
+    if devices:
+        reasons.append(f"系统里没有{'、'.join(devices)}")
+    if measures:
+        reasons.append(f"系统测不了{'、'.join(measures)}")
+    if measures and not devices and not fan_speed:
+        able = "它只测站内的温度、湿度和噪声。"
+    elif devices:
+        able = "我能控制的只有风扇。"
+    else:
+        able = ""  # 只有调速：原因里已经说了风扇能做什么
+    opener = "这一半我做不了：" if partial else REFUSAL_OPENER
+    return f"{opener}{'；'.join(reasons)}。{able}"
+
+
+def choice_text(options: tuple[Intent, ...] | list[Intent]) -> str:
+    """⑤：模型拿不准时给了几个候选，由代码写出的反问。
+
+    选项文字只来自 :data:`_KIND_DESCRIPTIONS`，因此不会出现系统没有的能力；
+    指令类选项写明动作本身，用户挑它就是授权（见 docs/decisions/03-intent.md）。"""
+    labels = [f"「{describe([o])}」" for o in options]
+    if len(labels) == 2:
+        body = f"{labels[0]}，还是{labels[1]}"
+    else:
+        body = "、".join(labels[:-1]) + f"，还是{labels[-1]}"
+    return f"这句我拿不准。你是想问{body}？回个序号就行。"
 
 
 def facts_brief(facts: Facts) -> str:
@@ -791,6 +1190,15 @@ def facts_brief(facts: Facts) -> str:
             lines.append(f"距阈值还有：{_fmt(facts.margin)}{unit}")
     if facts.triggered is not None:
         lines.append(f"是否越限：{'是' if facts.triggered else '否'}")
+    if facts.comfort_low is not None and facts.comfort_high is not None:
+        lines.append(
+            f"舒适区间：{facts.comfort_low:g}~{facts.comfort_high:g}{unit}"
+        )
+    care = care_line(facts)
+    if care and mismatch_kind(facts):
+        lines.append(f"用户说的体感与读数相反（照读数说，别附和，别给建议）：{care}")
+    elif care:
+        lines.append(f"体感提醒（照这个方向说）：{care}")
 
     for label, value, reading_unit in facts.readings:
         lines.append(f"{label}当前：{_fmt(value)}{reading_unit}")

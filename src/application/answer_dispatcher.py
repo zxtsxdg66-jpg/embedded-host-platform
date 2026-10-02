@@ -94,6 +94,8 @@ VALUE_PARAMETER = "value"
 LIMIT_PARAMETER = "limit"
 FLAGS_PARAMETER = "flags"
 SOURCE_PARAMETER = "source"
+INDEX_PARAMETER = "idx"
+COUNT_PARAMETER = "count"
 
 SCALE = 10
 """Fixed-point factor for the two numeric fields.
@@ -195,6 +197,40 @@ def payload_for(answer: Answer, remote: bool = False) -> dict[str, int] | None:
     }
 
 
+MAX_PARTS = 3
+"""How many parts of one answer the board draws side by side.
+
+Matches ``UI_ANSWER_SLOTS`` in ``firmware/.../ui_screen.h``; a fourth part
+would be dropped by the board anyway, so it is not sent."""
+
+
+def payloads_for(answer: Answer, remote: bool = False) -> list[dict[str, int]]:
+    """One payload per displayable part of ``answer``, in order (2026-09-26).
+
+    A one-part answer yields exactly :func:`payload_for`'s payload, with no
+    extra keys -- the frame on the wire is byte-for-byte what it was before,
+    so an older board keeps working. Several parts each carry ``idx`` (0
+    first) and ``count``; the board starts a new answer when ``idx`` is 0
+    and draws the parts as rows. Parts the board cannot draw (a record
+    count, a clarification) are left out, and ``count`` counts only what is
+    sent, so the board is never told to wait for a row that will not come.
+    """
+    facts_list = answer.all_facts or ((answer.facts,) if answer.facts else ())
+    shown = []
+    for facts in facts_list:
+        part = Answer(text="", source=answer.source, facts=facts)
+        payload = payload_for(part, remote)
+        if payload is not None:
+            shown.append(payload)
+    shown = shown[:MAX_PARTS]
+    if len(shown) <= 1:
+        return shown
+    return [
+        {**payload, INDEX_PARAMETER: i, COUNT_PARAMETER: len(shown)}
+        for i, payload in enumerate(shown)
+    ]
+
+
 class AnswerDispatcher:
     """Shows the last displayable answer on one device's second page."""
 
@@ -211,6 +247,8 @@ class AnswerDispatcher:
         self._command_type = command_type
         self._pending: dict[str, int] | None = None
         self._applied: dict[str, int] | None = None
+        self._pending_all: list[dict[str, int]] = []
+        self._applied_all: list[dict[str, int]] = []
         self.dispatch_count = 0
         self.deferred_count = 0
         self.failure_count = 0
@@ -251,13 +289,14 @@ class AnswerDispatcher:
                 previous is not None
                 and previous[SOURCE_PARAMETER] == SOURCE_REMOTE
             )
-        payload = payload_for(answer, remote=remote)
-        if payload is None:
+        payloads = payloads_for(answer, remote=remote)
+        if not payloads:
             # Not displayable. The previous page stays -- a screen that
             # blanked whenever someone asked "你能干什么" would be worse
             # than one showing a slightly old answer.
             return
-        self._pending = payload
+        self._pending_all = payloads
+        self._pending = payloads[0]
 
     def dispatch_pending(self) -> None:
         """Send the pending payload if it differs from what is displayed.
@@ -265,22 +304,32 @@ class AnswerDispatcher:
         Never raises: a screen update is not worth taking the poll loop
         down for.
         """
-        if self._pending is None or self._pending == self._applied:
+        if not self._pending_all or self._pending_all == self._applied_all:
             return
-        desired = self._pending
+        desired_all = self._pending_all
         if not self._control_service.acquire(self._device_id, self._client_id):
             # A human client holds the device; the screen can wait a cycle.
             self.deferred_count += 1
             return
         try:
-            result = self._control_service.submit_command(
-                Command(
-                    device_id=self._device_id,
-                    command_type=self._command_type,
-                    origin=self._client_id,
-                    parameters=dict(desired),
+            # Several parts go out in order, first part first: the board
+            # starts a new answer on idx 0. One failure stops the rest and
+            # the whole set is retried next cycle -- resending the first part
+            # clears whatever partial set the board has drawn.
+            for desired in desired_all:
+                result = self._control_service.submit_command(
+                    Command(
+                        device_id=self._device_id,
+                        command_type=self._command_type,
+                        origin=self._client_id,
+                        parameters=dict(desired),
+                    )
                 )
-            )
+                self.dispatch_count += 1
+                if result.status is not CommandStatus.SUCCESS:
+                    # Leaves _applied alone so the next cycle retries.
+                    self.failure_count += 1
+                    return
         except Exception as exc:  # noqa: BLE001 -- see module docstring
             self.failure_count += 1
             self.last_error = exc
@@ -288,12 +337,8 @@ class AnswerDispatcher:
         finally:
             self._control_service.release(self._device_id, self._client_id)
 
-        self.dispatch_count += 1
-        if result.status is CommandStatus.SUCCESS:
-            self._applied = desired
-        else:
-            # Leaves _applied alone so the next cycle retries.
-            self.failure_count += 1
+        self._applied_all = desired_all
+        self._applied = desired_all[0]
 
 
 AnswerObserver = Callable[[Answer], None]

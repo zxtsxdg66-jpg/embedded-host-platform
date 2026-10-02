@@ -233,3 +233,85 @@ def test_a_device_held_by_someone_else_defers_rather_than_fails() -> None:
 
     assert dispatcher.deferred_count == 1
     assert dispatcher.dispatch_count == 0
+
+
+# -- several parts side by side (2026-09-26) ------------------------------------
+
+
+def _parts(*facts: Facts) -> Answer:
+    return Answer(
+        text="", source=AnswerSource.TEMPLATE, facts=facts[0], all_facts=facts
+    )
+
+
+def test_a_one_part_answer_travels_exactly_as_before() -> None:
+    """An older board must keep working: no new keys on a single answer."""
+    from application.answer_dispatcher import payloads_for
+
+    assert payloads_for(_answer(_reading())) == [payload_for(_answer(_reading()))]
+    assert "idx" not in payloads_for(_answer(_reading()))[0]
+
+
+def test_each_part_carries_its_index_and_the_count() -> None:
+    from application.answer_dispatcher import payloads_for
+    from device.sensors.channels import HUMIDITY_CHANNEL
+
+    answer = _parts(
+        _reading(),
+        _reading(channel=HUMIDITY_CHANNEL, unit="%RH", value=58.8, threshold=75.0),
+        _reading(channel=NOISE_CHANNEL, unit="dB", value=49.5, threshold=80.0),
+    )
+    payloads = payloads_for(answer)
+    assert [(p["idx"], p["count"]) for p in payloads] == [(0, 3), (1, 3), (2, 3)]
+    assert [p["channel"] for p in payloads] == [
+        AnswerChannel.TEMPERATURE, AnswerChannel.HUMIDITY, AnswerChannel.NOISE
+    ]
+    assert payloads[1]["value"] == 588
+
+
+def test_parts_the_board_cannot_draw_are_left_out_of_the_count() -> None:
+    """A record count has no template on the board; the count must not
+    promise a row that will never arrive."""
+    from application.answer_dispatcher import payloads_for
+
+    answer = _parts(
+        _reading(),
+        Facts(kind=IntentKind.SAMPLE_COUNT, channel=NOISE_CHANNEL, sample_count=3),
+        _reading(channel=NOISE_CHANNEL, unit="dB", value=49.5, threshold=80.0),
+    )
+    payloads = payloads_for(answer)
+    assert [(p["idx"], p["count"]) for p in payloads] == [(0, 2), (1, 2)]
+
+
+def test_all_parts_are_sent_in_order_first_part_first() -> None:
+    runtime = _runtime()
+    dispatcher = AnswerDispatcher(runtime.control_service, DEVICE_ID)
+    answer = _parts(
+        _reading(),
+        _reading(channel=NOISE_CHANNEL, unit="dB", value=49.5, threshold=80.0),
+    )
+
+    dispatcher.record(answer)
+    dispatcher.dispatch_pending()
+
+    assert dispatcher.dispatch_count == 2
+    assert dispatcher.applied is not None and dispatcher.applied["idx"] == 0
+    dispatcher.dispatch_pending()
+    assert dispatcher.dispatch_count == 2  # the same set is not resent
+
+
+def test_the_assistant_keeps_every_part_of_a_multi_channel_answer() -> None:
+    from service.assistant.assistant import Assistant
+    from service.data_models import DataPoint
+    from service.sensor_data_processor import SensorDataProcessor
+
+    processor = SensorDataProcessor()
+    readings = ((TEMPERATURE_CHANNEL, 26.6), ("humidity", 58.8), (NOISE_CHANNEL, 49.5))
+    for channel, value in readings:
+        processor.handle_data_point(
+            DataPoint(device_id="dev-1", channel=channel, value=value)
+        )
+    answer = Assistant(processor, lambda: ["dev-1"]).ask("现在温度湿度噪声是多少")
+
+    assert [f.channel for f in answer.all_facts] == [c for c, _ in readings]
+    assert answer.facts is answer.all_facts[0]

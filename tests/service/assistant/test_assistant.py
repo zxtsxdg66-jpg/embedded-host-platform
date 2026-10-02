@@ -21,7 +21,7 @@ from service.assistant.assistant import (
 )
 from service.assistant.llm_port import NullLlmClient
 from service.assistant.models import Answer, AnswerSource, IntentKind
-from service.assistant.parsing import PARSE_SYSTEM_PROMPT
+from service.assistant.parsing import PARSE_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT
 from service.data_models import DataPoint
 from service.sensor_data_processor import SensorDataProcessor
 from service.ventilation_controller import FanMode, VentilationController
@@ -479,7 +479,9 @@ def test_an_instruction_is_never_sent_to_the_model_for_rewording() -> None:
     assistant.ask("把风扇打开")
 
     assert llm.submit_count == 1
-    assert llm.systems == [PARSE_SYSTEM_PROMPT]
+    # 2026-09-26 起复核用自己的提示词（与改动前的分类提示词逐字相同），
+    # 见 parsing.REVIEW_SYSTEM_PROMPT
+    assert llm.systems == [REVIEW_SYSTEM_PROMPT]
     answer = _drain(assistant)
     assert isinstance(answer, Answer)
     assert "把风扇开到最大" not in answer.text
@@ -1180,10 +1182,13 @@ def test_the_boundary_document_quotes_the_prompts_verbatim() -> None:
     ):
         assert prompt in text, prompt[:30]
 
-    # 分类提示词是多行的，文档里逐行加了引用符号，故逐行核对
-    for line in PARSE_SYSTEM_PROMPT.splitlines():
-        if line.strip():
-            assert line in text, line[:30]
+    # 分类与复核提示词是多行的，文档里逐行加了引用符号，故逐行核对
+    from service.assistant.parsing import REVIEW_SYSTEM_PROMPT as review
+
+    for prompt in (PARSE_SYSTEM_PROMPT, review):
+        for line in prompt.splitlines():
+            if line.strip():
+                assert line in text, line[:30]
 
 
 # -- 一句话里的几件事（2026-09-15） ---------------------------------------------
