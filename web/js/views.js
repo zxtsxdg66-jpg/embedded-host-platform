@@ -9,8 +9,9 @@
     CURRENT_VALUE: "当前读数", MINIMUM: "最小值", MAXIMUM: "最大值", AVERAGE: "平均值",
     ALARM_STATE: "报警状态", THRESHOLD_INFO: "阈值", FAN_STATE: "风扇状态", DEVICE_LIST: "设备列表",
     HELP: "帮助", BARE_SWITCH: "未点明对象的开关", ANNOUNCE_REQUEST: "语音播报请求",
-    CLOUD_SYNC_HINT: "上云", CLOUD_VIEW_HINT: "查看云端", DELETE_REQUEST: "删除请求",
+    CLOUD_SYNC_HINT: "上云", CLOUD_VIEW_HINT: "查看云端", DELETE_REQUEST: "删除请求", CHANNEL_SET_REQUEST: "要求改读数", ALARM_OFF_REQUEST: "要求关报警", IDENTITY: "问身份",
     FAN_ON: "开风扇", FAN_OFF: "关风扇", FAN_AUTO: "风扇交给自动", SET_VENT_THRESHOLD: "设置通风阈值",
+    SAMPLE_COUNT: "记录了多少个读数",
   };
   const FACT_LABELS = {
     kind: "类型", available: "有数据", channel: "通道", channel_label: "通道名", unit: "单位",
@@ -18,7 +19,18 @@
     threshold: "阈值", citation: "阈值依据", threshold_is_maximum: "高于即报警",
     threshold_low: "下限", threshold_high: "上限", triggered: "是否越限", margin: "距阈值",
     applied: "已执行", fan_mode: "风扇模式", fan_running: "风扇运行",
+    comfort_low: "舒适下限", comfort_high: "舒适上限", comfort: "体感判定",
+    felt: "用体感问", felt_claim: "用户说的体感", topic: "身份问题",
   };
+  // 2026-09-27 起新增的几个事实字段取值是英文代号，这里译成中文（截图里曾直接露出 comfort: ok）。
+  const FACT_VALUES = {
+    comfort: { low: "偏低", high: "偏高", ok: "在区间内", near: "接近报警线" },
+    felt_claim: { cold: "冷", hot: "热", humid: "潮", dry: "干", loud: "吵", quiet: "安静" },
+    topic: { who: "你是谁", model: "什么模型", maker: "谁开发的", network: "能否联网" },
+  };
+  // 通道类问题才有意义的字段；问身份、被拒绝这类问题时它们只是默认值，不列。
+  const CHANNEL_DEFAULTS = new Set(["available", "sample_count", "threshold_is_maximum",
+    "needs_channel", "felt", "margin_requested", "past_scoped"]);
 
   // ============================================================ 监测
   let liveChart = null;
@@ -308,10 +320,19 @@
     if (typeof facts === "string") return el("pre", { class: "facts", text: facts });
     const show = (v) => (typeof v === "number" && !Number.isInteger(v) ? v.toFixed(2)
       : typeof v === "boolean" ? (v ? "是" : "否") : Array.isArray(v) ? v.join("、") : v);
+    const label = (k) => (k === "comfort_high" && facts.channel === "noise"
+      ? "提醒线（报警线下 5 dB）" : FACT_LABELS[k] || k);
+    const value = (k, v) => (k === "kind" ? INTENTS[v] || v
+      : FACT_VALUES[k] ? FACT_VALUES[k][v] || v : show(v));
     // 有中文标签的字段总是列出；其余字段为假或空列表时省略，免得满屏"否"。
+    // 不针对通道的问题（身份、拒绝、帮助……）只列非默认值：此前问"你是谁"时列出了
+    // "采样点数 0""高于即报警 是"这类与问题无关的默认值（2026-09-29 截图时发现）。
+    const noChannel = !facts.channel;
     const lines = Object.entries(facts)
+      .filter(([, v]) => v !== "" && v !== null && v !== undefined)
+      .filter(([k]) => !noChannel || !CHANNEL_DEFAULTS.has(k))
       .filter(([k, v]) => FACT_LABELS[k] || (v !== false && !(Array.isArray(v) && !v.length)))
-      .map(([k, v]) => `${FACT_LABELS[k] || k}：${k === "kind" ? INTENTS[v] || v : show(v)}`);
+      .map(([k, v]) => `${label(k)}：${value(k, v)}`);
     return el("pre", { class: "facts", text: lines.join("\n") });
   }
 
@@ -322,6 +343,11 @@
   const CHECK_NAMES = { grounding: "接地校验", alarm: "越限断言", judgement: "凭空判断", advice: "建议措辞", length: "长度上限" };
   const CONTEXT_NOTES = {
     inherited_kind: "沿用上一轮的问法", clarification: "补全了上一轮的反问", fan_topic: "话题还在风扇上，读成风扇指令",
+    multi_channel_instruction: "一句指令点了两个通道 → 不替用户挑，改为反问要调哪一个",
+  };
+  const CHOICE_NOTES = {
+    all: "都要 → 几个提问一起答", cancel: "都不是 → 不作答，请用户换个说法",
+    other: "没有选任何一项 → 选项作废，这句当新问题处理", expired: "反问已过期 → 选项作废",
   };
   const CONFIRM_NOTES = {
     affirm: "同意 → 执行挂起的那条指令", deny: "拒绝 → 不执行",
@@ -367,10 +393,35 @@
           const [t, c] = REVIEW_NOTES[st.note] || [st.note, ""];
           title = "复核裁决（代码作出）"; cls = c;
           body = [el("p", { text: `模型读成：${intentText(st.intent)}　${t}` })];
+        } else if (st.note === "ambiguous") {
+          title = "模型拿不准，给了几个候选"; cls = "warn";
+          body = [el("p", { text: `${st.text} → 由代码写反问，选项只可能是系统真有的能力` })];
+        } else if (st.note === "multi_channel") {
+          title = "模型给出的分类：一个问法、几个通道"; cls = "ok";
+          body = [el("p", { text: `${st.text} → 由代码逐个取数、套模板` })];
         } else {
           title = "模型给出的分类"; cls = st.intent ? "ok" : "warn";
           body = [el("p", { text: st.intent ? `${intentText(st.intent)} → 由代码按这个意图取数、套模板` : "标签无法使用 → 忽略" })];
         }
+        break;
+      case "expand": title = "一句话点了几个通道"; body = [el("p", { text: `展开成 ${st.note} 个提问，逐个取数、套模板（不送模型改写）` })]; break;
+      case "manipulation":
+        title = "冒充身份或要求忽略规则"; cls = "warn";
+        body = [el("p", { text: st.text
+          ? `先说明权限不是一句话能改的，只按「${st.text}」往下走`
+          : "先说明权限不是一句话能改的，其余什么也没剩，不交给模型" })];
+        break;
+      case "absent":
+        title = "提到了系统没有的东西"; cls = "warn";
+        body = [el("p", { text: st.text
+          ? `${st.note}：这一半说明做不了；只按「${st.text}」往下走（不送模型改写）`
+          : `${st.note}：整句都做不了，直接说明，不交给模型猜` })];
+        break;
+      case "choice":
+        title = "对反问的回答（规则接住）"; cls = st.note && st.note.startsWith("picked") ? "ok" : "warn";
+        body = [el("p", { text: st.note && st.note.startsWith("picked")
+          ? `选了第 ${st.note.split(":")[1]} 项：${intentText(st.intent)}`
+          : CHOICE_NOTES[st.note] || st.note })];
         break;
       case "checks": {
         const ok = st.verdict === "accepted";
