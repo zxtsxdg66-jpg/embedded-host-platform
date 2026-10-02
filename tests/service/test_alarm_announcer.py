@@ -162,20 +162,50 @@ def test_streaks_are_tracked_per_device_and_channel() -> None:
 
 
 @pytest.mark.parametrize(
-    ("channel", "expected"),
+    ("channel", "side", "expected"),
     [
-        ("temperature", AlertKind.TEMPERATURE),
-        ("humidity", AlertKind.HUMIDITY),
-        ("noise", AlertKind.NOISE),
+        ("temperature", AlarmKind.ABOVE_MAX, AlertKind.TEMPERATURE),
+        ("humidity", AlarmKind.BELOW_MIN, AlertKind.HUMIDITY),
+        ("humidity", AlarmKind.ABOVE_MAX, AlertKind.HUMIDITY_HIGH),
+        ("noise", AlarmKind.ABOVE_MAX, AlertKind.NOISE),
     ],
 )
-def test_each_channel_maps_to_its_phrase(channel: str, expected: AlertKind) -> None:
+def test_each_channel_and_side_maps_to_its_phrase(
+    channel: str, side: AlarmKind, expected: AlertKind
+) -> None:
     announcer, seen = _announcer()
 
-    announcer.handle_threshold_status(_status(channel=channel))
-    announcer.handle_threshold_status(_status(channel=channel))
+    announcer.handle_threshold_status(_status(channel=channel, kind=side))
+    announcer.handle_threshold_status(_status(channel=channel, kind=side))
 
     assert seen[0].kind is expected
+
+
+def test_damp_air_is_not_announced_as_too_dry() -> None:
+    """Regression, 2026-10-01: the phrase used to be chosen by channel
+    alone, so humidity above its upper bound played "湿度过低"."""
+    announcer, seen = _announcer()
+
+    for _ in range(2):
+        announcer.handle_threshold_status(
+            _status(channel="humidity", kind=AlarmKind.ABOVE_MAX)
+        )
+
+    assert [request.kind for request in seen] == [AlertKind.HUMIDITY_HIGH]
+
+
+@pytest.mark.parametrize("channel", ["temperature", "noise"])
+def test_a_side_without_a_phrase_is_not_announced(channel: str) -> None:
+    """There is no "too cold" or "too quiet" clip; saying "超标" for a
+    reading below a bound would state the opposite of the fact."""
+    announcer, seen = _announcer()
+
+    for _ in range(3):
+        announcer.handle_threshold_status(
+            _status(channel=channel, kind=AlarmKind.BELOW_MIN)
+        )
+
+    assert seen == []
 
 
 def test_unknown_channel_never_announces() -> None:
@@ -192,6 +222,7 @@ def test_alert_kind_value_is_the_wire_command_name() -> None:
     assert AlertKind.TEMPERATURE.value == "ALERT_TEMPERATURE"
     assert AlertKind.HUMIDITY.value == "ALERT_HUMIDITY"
     assert AlertKind.NOISE.value == "ALERT_NOISE"
+    assert AlertKind.HUMIDITY_HIGH.value == "ALERT_HUMIDITY_HIGH"
 
 
 # -- cooldown -----------------------------------------------------------------

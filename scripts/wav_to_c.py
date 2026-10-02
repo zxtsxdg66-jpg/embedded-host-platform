@@ -1,17 +1,19 @@
 """Convert alarm-phrase WAV files into the firmware's PCM table.
 
 Regenerates ``firmware/stm32f407/Drivers/BSP/AUDIO_ALERT/alert_pcm.c`` from
-three WAV files, so the spoken alarm phrases live in the MCU's internal
+four WAV files, so the spoken alarm phrases live in the MCU's internal
 flash as ``const`` arrays -- no SD card, no external SPI flash, no file
 system (see that firmware module's header for why).
 
 Usage
 -----
-    python scripts/wav_to_c.py 温度.wav 湿度.wav 噪声.wav
+    python scripts/wav_to_c.py 温度.wav 湿度.wav 噪声.wav 湿度过高.wav
 
-The three files are positional and **order matters**: temperature,
-humidity, noise -- matching ``audio_alert_id_t`` in the firmware and
-``AlertKind`` in ``src/service/alarm_announcer.py``.
+The four files are positional and **order matters**: temperature,
+humidity-too-low, noise, humidity-too-high -- matching ``audio_alert_id_t``
+in the firmware and ``AlertKind`` in ``src/service/alarm_announcer.py``.
+The fourth clip was appended (2026-10-01) rather than inserted so the
+first three keep their ids.
 
 Add ``-o`` to write somewhere else, and ``--dry-run`` to see the size
 report without touching anything.
@@ -37,7 +39,7 @@ from pathlib import Path
 TARGET_SAMPLE_RATE = 16000
 """Must match AUDIO_ALERT_SAMPLE_RATE in the firmware's audio_alert.h."""
 
-CLIP_NAMES = ("TEMPERATURE", "HUMIDITY", "NOISE")
+CLIP_NAMES = ("TEMPERATURE", "HUMIDITY", "NOISE", "HUMIDITY_HIGH")
 
 _DEFAULT_OUTPUT = (
     Path("firmware") / "stm32f407" / "Drivers" / "BSP" / "AUDIO_ALERT" / "alert_pcm.c"
@@ -129,8 +131,17 @@ SILENCE_ABSOLUTE_FLOOR = 64
 very quiet recording is not trimmed to nothing."""
 
 SILENCE_GUARD_SECONDS = 0.02
-"""Kept on each side of the speech, so trimming never clips the first
-consonant or the tail of the last vowel."""
+"""Kept after the speech, so trimming never clips the tail of the last vowel."""
+
+SILENCE_LEAD_SECONDS = 0.15
+"""Kept *before* the speech -- deliberately longer than the tail guard.
+
+Was the same 0.02 s as the tail until 2026-10-01, when the user reported
+hearing a clip that said only "超标". The data held the whole phrase
+"温度超标"; but its first word is about a third as loud as the second, and
+with 20 ms of lead-in it started the instant the I2S stream did, so the
+first syllables were plausibly lost to the codec's output stage settling.
+150 ms of silence in front costs 2400 samples (4.7 KB) per clip."""
 
 
 def _trim_silence(samples: array.array[int]) -> array.array[int]:
@@ -165,7 +176,8 @@ def _trim_silence(samples: array.array[int]) -> array.array[int]:
     )
 
     guard = int(SILENCE_GUARD_SECONDS * TARGET_SAMPLE_RATE)
-    start = max(0, first - guard)
+    lead = int(SILENCE_LEAD_SECONDS * TARGET_SAMPLE_RATE)
+    start = max(0, first - lead)
     end = min(len(samples), last + 1 + guard)
     return samples[start:end]
 
@@ -195,7 +207,7 @@ def _render_file(clips: list[tuple[str, array.array[int]]]) -> str:
         " *",
         f" * 格式：{TARGET_SAMPLE_RATE} Hz / 16 位有符号 / 单声道。",
         " * 重新生成：",
-        " *     python scripts/wav_to_c.py 温度.wav 湿度.wav 噪声.wav",
+        " *     python scripts/wav_to_c.py 温度.wav 湿度.wav 噪声.wav 湿度过高.wav",
         " ****************************************************************"
         "************************************",
         " */",
@@ -222,11 +234,12 @@ def _render_file(clips: list[tuple[str, array.array[int]]]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="把三个告警语音 WAV 转成固件用的 PCM 数组",
+        description="把四个告警语音 WAV 转成固件用的 PCM 数组",
     )
     parser.add_argument("temperature", type=Path, help="温度超限语音 WAV")
-    parser.add_argument("humidity", type=Path, help="湿度超限语音 WAV")
+    parser.add_argument("humidity", type=Path, help="湿度过低语音 WAV")
     parser.add_argument("noise", type=Path, help="噪声超限语音 WAV")
+    parser.add_argument("humidity_high", type=Path, help="湿度过高语音 WAV")
     parser.add_argument(
         "-o", "--output", type=Path, default=_DEFAULT_OUTPUT, help="输出的 .c 文件路径"
     )
@@ -240,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
-    sources = [args.temperature, args.humidity, args.noise]
+    sources = [args.temperature, args.humidity, args.noise, args.humidity_high]
     clips: list[tuple[str, array.array[int]]] = []
     total_bytes = 0
 

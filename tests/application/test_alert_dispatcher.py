@@ -109,6 +109,7 @@ def test_each_alert_kind_maps_to_its_command() -> None:
         "ALERT_TEMPERATURE",
         "ALERT_HUMIDITY",
         "ALERT_NOISE",
+        "ALERT_HUMIDITY_HIGH",
     ]
 
 

@@ -15,8 +15,11 @@ import math
 import wave
 from pathlib import Path
 
+import pytest
+
 from scripts.wav_to_c import (
     SILENCE_GUARD_SECONDS,
+    SILENCE_LEAD_SECONDS,
     TARGET_SAMPLE_RATE,
     _trim_silence,
     main,
@@ -54,8 +57,20 @@ def test_leading_and_trailing_silence_are_removed() -> None:
 
     trimmed = _trim_silence(padded)
 
-    guard = 2 * SILENCE_GUARD_SECONDS
+    guard = SILENCE_LEAD_SECONDS + SILENCE_GUARD_SECONDS
     assert 0.5 <= len(trimmed) / TARGET_SAMPLE_RATE <= 0.5 + guard + 0.01
+
+
+def test_more_silence_is_kept_before_the_speech_than_after() -> None:
+    """The lead-in lets the codec settle before the first syllable: with only
+    20 ms in front, "温度超标" was heard as just "超标" (2026-10-01)."""
+    padded = _silence(0.3) + _tone(0.5) + _silence(0.6)
+
+    trimmed = _trim_silence(padded)
+
+    lead = next(i for i, v in enumerate(trimmed) if v != 0)
+    assert lead >= int(0.9 * SILENCE_LEAD_SECONDS * TARGET_SAMPLE_RATE)
+    assert SILENCE_LEAD_SECONDS > SILENCE_GUARD_SECONDS
 
 
 def test_a_guard_margin_is_kept_so_speech_is_not_clipped() -> None:
@@ -96,9 +111,9 @@ def test_a_quiet_recording_is_not_trimmed_to_nothing() -> None:
 # -- end to end ---------------------------------------------------------------
 
 
-def _three_wavs(tmp_path: Path) -> list[str]:
+def _four_wavs(tmp_path: Path) -> list[str]:
     paths = []
-    for name in ("t", "h", "n"):
+    for name in ("t", "h", "n", "hh"):
         path = tmp_path / f"{name}.wav"
         _write_wav(path, _silence(0.1) + _tone(0.5) + _silence(0.6))
         paths.append(str(path))
@@ -106,7 +121,7 @@ def _three_wavs(tmp_path: Path) -> list[str]:
 
 
 def test_generated_table_is_much_smaller_with_trimming(tmp_path: Path) -> None:
-    sources = _three_wavs(tmp_path)
+    sources = _four_wavs(tmp_path)
     trimmed_out = tmp_path / "trimmed.c"
     kept_out = tmp_path / "kept.c"
 
@@ -117,7 +132,7 @@ def test_generated_table_is_much_smaller_with_trimming(tmp_path: Path) -> None:
 
 
 def test_dry_run_writes_nothing(tmp_path: Path) -> None:
-    sources = _three_wavs(tmp_path)
+    sources = _four_wavs(tmp_path)
     out = tmp_path / "nope.c"
 
     assert main([*sources, "-o", str(out), "--dry-run"]) == 0
@@ -125,17 +140,26 @@ def test_dry_run_writes_nothing(tmp_path: Path) -> None:
 
 
 def test_missing_source_is_reported_not_raised(tmp_path: Path) -> None:
-    sources = _three_wavs(tmp_path)
+    sources = _four_wavs(tmp_path)
     sources[1] = str(tmp_path / "absent.wav")
 
     assert main([*sources, "-o", str(tmp_path / "out.c")]) == 2
 
 
-def test_generated_file_declares_all_three_clips(tmp_path: Path) -> None:
+def test_generated_file_declares_all_four_clips(tmp_path: Path) -> None:
     out = tmp_path / "alert_pcm.c"
-    assert main([*_three_wavs(tmp_path), "-o", str(out)]) == 0
+    assert main([*_four_wavs(tmp_path), "-o", str(out)]) == 0
 
     text = out.read_text(encoding="utf-8")
     assert "g_alert_clips" in text
-    for name in ("temperature", "humidity", "noise"):
-        assert name in text
+    for name in ("temperature", "humidity", "noise", "humidity_high"):
+        assert f"s_pcm_{name}" in text
+    noise = text.index("AUDIO_ALERT_NOISE */")
+    assert noise < text.index("AUDIO_ALERT_HUMIDITY_HIGH */")
+
+
+def test_three_files_are_no_longer_enough(tmp_path: Path) -> None:
+    """The fourth clip is mandatory: a table with three entries would leave
+    AUDIO_ALERT_HUMIDITY_HIGH pointing past the end of g_alert_clips."""
+    with pytest.raises(SystemExit):
+        main([*_four_wavs(tmp_path)[:3], "-o", str(tmp_path / "out.c")])

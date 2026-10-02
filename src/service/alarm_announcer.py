@@ -74,22 +74,32 @@ DEFAULT_COOLDOWN_SECONDS = 30.0
 class AlertKind(Enum):
     """Which of the fixed spoken phrases an announcement asks for.
 
-    A closed set on purpose: the firmware stores three pre-synthesised
+    A closed set on purpose: the firmware stores four pre-synthesised
     clips in its flash, so this cannot grow without also adding audio on
     the device side. The value is the wire-level command name, keeping the
     mapping to a device command in one place.
+
+    ``HUMIDITY`` is the "too low" phrase. ``HUMIDITY_HIGH`` was added
+    2026-10-01: humidity gained its upper bound on 2026-09-08, but until
+    then the phrase was chosen by channel alone, so a damp station was
+    announced as "湿度过低".
     """
 
     TEMPERATURE = "ALERT_TEMPERATURE"
     HUMIDITY = "ALERT_HUMIDITY"
     NOISE = "ALERT_NOISE"
+    HUMIDITY_HIGH = "ALERT_HUMIDITY_HIGH"
 
 
-_CHANNEL_ALERTS: dict[ChannelId, AlertKind] = {
-    TEMPERATURE_CHANNEL: AlertKind.TEMPERATURE,
-    HUMIDITY_CHANNEL: AlertKind.HUMIDITY,
-    NOISE_CHANNEL: AlertKind.NOISE,
+_CHANNEL_ALERTS: dict[tuple[ChannelId, AlarmKind], AlertKind] = {
+    (TEMPERATURE_CHANNEL, AlarmKind.ABOVE_MAX): AlertKind.TEMPERATURE,
+    (HUMIDITY_CHANNEL, AlarmKind.BELOW_MIN): AlertKind.HUMIDITY,
+    (HUMIDITY_CHANNEL, AlarmKind.ABOVE_MAX): AlertKind.HUMIDITY_HIGH,
+    (NOISE_CHANNEL, AlarmKind.ABOVE_MAX): AlertKind.NOISE,
 }
+"""Phrase per (channel, side of the band). A combination with no phrase --
+there is none for "too cold" or "too quiet" -- is not announced at all,
+rather than announced with a phrase that says the opposite."""
 
 
 @dataclass(frozen=True)
@@ -151,7 +161,7 @@ class AlarmAnnouncer:
             self._streaks.pop(key, None)
             return
 
-        kind = _CHANNEL_ALERTS.get(status.channel)
+        kind = _CHANNEL_ALERTS.get((status.channel, status.kind))
         if kind is None:
             return
 

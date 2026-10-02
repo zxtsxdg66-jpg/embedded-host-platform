@@ -94,6 +94,9 @@ RESERVED_COMMAND_CODES: dict[CommandType, int] = {
     "ALERT_TEMPERATURE": 0x12,
     "ALERT_HUMIDITY": 0x13,
     "ALERT_NOISE": 0x14,
+    # "Humidity too high", added 2026-10-01. 0x13 keeps meaning "too low"
+    # so firmware already on a board behaves as before when it receives it.
+    "ALERT_HUMIDITY_HIGH": 0x17,
     # Per-channel alarm bitmap for the board's LCD. The device has to read
     # the payload, not just acknowledge it -- see
     # application.alarm_state_dispatcher.
