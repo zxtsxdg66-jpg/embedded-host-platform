@@ -2,8 +2,9 @@
 (logging, config, exceptions, common types).
 
 Currently implemented: common exceptions, timestamp utilities, shared id
-type aliases. Logging/config are not yet implemented. See src/core/README.md
-for the full module scope.
+type aliases, channel display conventions (channel_display) and serial-link
+event value types (link_events). Logging/config are not implemented.
+See src/core/README.md for the full module scope.
 """
 
 from core.exceptions import (

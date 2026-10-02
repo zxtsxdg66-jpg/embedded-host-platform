@@ -50,7 +50,7 @@ android/app/src/main/java/com/example/envmonitor/
 ```bash
 cd android
 ./gradlew assembleDebug          # Windows: gradlew.bat assembleDebug
-./gradlew testDebugUnitTest      # JVM 单元测试 41 项
+./gradlew testDebugUnitTest      # JVM 单元测试 43 项
 ```
 
 工程自带 Gradle Wrapper，也可以直接用 Android Studio 打开 `android/`。

@@ -59,10 +59,11 @@ JSON 没有构成瓶颈，而文本载荷在抓包、排障、写测试时都直
 | `0x01` | `DATA_REPORT` | 设备 → 上位机 | `{"channel": "temperature", "value": 27.43}` |
 | `0x02` | `COMMAND_ACK` | 设备 → 上位机 | `{"status": "success"}` 或 `"failed"` |
 | `0x10` / `0x11` | `FAN_ON` / `FAN_OFF` | 上位机 → 设备 | 无 |
-| `0x12`~`0x14` | `ALERT_TEMPERATURE` / `_HUMIDITY` / `_NOISE` | 上位机 → 设备 | 无；设备播放对应的预录语音 |
+| `0x12`~`0x14` | `ALERT_TEMPERATURE` / `_HUMIDITY` / `_NOISE` | 上位机 → 设备 | 无；设备播放对应的预录语音（`0x13` 是"湿度过低"） |
 | `0x15` | `ALERT_STATE` | 上位机 → 设备 | `{"bits": N}`，bit0 温度、bit1 湿度、bit2 噪声，为 1 表示报警中 |
 | `0x16` | `ANSWER_SHOW` | 上位机 → 设备 | 最近一次问答的结果，六个整数（见下） |
-| `0x17`~`0x1F` | 保留 | | |
+| `0x17` | `ALERT_HUMIDITY_HIGH` | 上位机 → 设备 | 无；播放"湿度过高" |
+| `0x18`~`0x1F` | 保留 | | |
 | `0x20` 起 | 动态分配 | 上位机 → 设备 | 设备只需回应答、不需理解含义的命令（如 `PING`） |
 
 ### 两档编码：固定与动态
