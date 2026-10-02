@@ -3,6 +3,7 @@ package com.example.envmonitor.ui
 import com.example.envmonitor.data.Channels
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.TimeZone
 
 /**
  * ChannelFormat 的 JVM 单元测试。
@@ -38,20 +39,35 @@ class ChannelFormatTest {
         assertEquals("1.00", ChannelFormat.value(1.0, "whatever"))
     }
 
-    // -- 时刻：只取时分秒，不做时区换算 ----------------------------------
+    // -- 时刻：换成本地时间再取时分秒（2026-09-29 起）---------------------
+
+    private val shanghai = TimeZone.getTimeZone("Asia/Shanghai")
+    private val utc = TimeZone.getTimeZone("UTC")
 
     @Test
-    fun `takes the clock time out of a real server timestamp`() {
+    fun `a UTC server timestamp is shown in local time`() {
         // 服务端真实发出的形状（带微秒、带 +00:00），取自 2026-09-17 的抓包。
+        // 原先直接截出 07:17:27，比北京时间慢 8 小时。
         assertEquals(
-            "07:17:27",
+            "15:17:27",
             ChannelFormat.moment("2026-09-17T07:17:27.778177+00:00"),
         )
     }
 
     @Test
     fun `handles a timestamp without microseconds`() {
-        assertEquals("04:00:00", ChannelFormat.moment("2026-09-17T04:00:00+00:00"))
+        assertEquals("12:00:00", ChannelFormat.moment("2026-09-17T04:00:00+00:00", shanghai))
+        assertEquals("04:00:00", ChannelFormat.moment("2026-09-17T04:00:00+00:00", utc))
+    }
+
+    @Test
+    fun `an offset that is not UTC is honoured`() {
+        assertEquals("04:00:00", ChannelFormat.moment("2026-09-17T12:00:00+08:00", utc))
+    }
+
+    @Test
+    fun `an unparseable time falls back to cutting out the clock part`() {
+        assertEquals("25:61:99", ChannelFormat.moment("2026-09-17T25:61:99.5", shanghai))
     }
 
     @Test

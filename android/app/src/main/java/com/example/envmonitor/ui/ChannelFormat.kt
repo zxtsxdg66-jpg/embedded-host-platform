@@ -1,7 +1,10 @@
 package com.example.envmonitor.ui
 
 import com.example.envmonitor.data.Channels
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * 数值的展示格式（纯展示层约定，不影响任何协议字段）。
@@ -31,22 +34,41 @@ object ChannelFormat {
         String.format(Locale.US, "%.${decimals(channel)}f", value)
 
     /**
-     * 历史读数的时刻，只取时分秒。
+     * 历史读数的时刻，换成手机本地时间后取时分秒。
      *
-     * 服务端发的是带时区的 ISO-8601（如 `2026-09-17T04:00:00+00:00`）。
-     * 这里**不做时区换算**：手机与 PC 在同一局域网、同一时区，而引入一个
-     * 只在跨时区才有意义的转换，等于为一个不会发生的情况承担解析失败的风险。
-     * 真要跨时区看数据时，该解决的是那件事本身，不是在这里补一层。
+     * 服务端发的是带时区的 ISO-8601，一律 UTC（如 `2026-09-17T04:00:00+00:00`）。
+     *
+     * 2026-09-29 改：原先**不做时区换算**、直接截出时分秒，理由是"手机与 PC 在同一时区"。
+     * 但时区相同并不等于时间串是本地时间——服务端发的是 UTC，于是北京时间 14:05 的读数
+     * 在历史页上显示成 06:05，差了整整 8 小时（截图核对时发现）。现在按串里的偏移解析，
+     * 再按 [zone]（默认手机本地时区）输出。
+     *
+     * 用 [SimpleDateFormat] 而不是 java.time：minSdk 24 还没有 java.time。
+     * 它不认变长的小数秒，所以先把 `.778177` 这一段去掉——显示只到秒，去掉不损失什么。
+     * 解析失败时退回原来的做法（截出时分秒），宁可显示 UTC，也不显示一格空白。
      *
      * 放在这里而不是 HistoryActivity 里，理由与 [StallDetector] 被抽出来时
      * 相同：Activity 里的函数在 JVM 单测中碰不到。
      */
-    fun moment(timestamp: String?): String {
+    fun moment(timestamp: String?, zone: TimeZone = TimeZone.getDefault()): String {
         if (timestamp.isNullOrBlank()) return PLACEHOLDER_TIME
         val timePart = timestamp.substringAfter('T', "")
         if (timePart.isEmpty()) return timestamp
-        return timePart.take(8)
+        val withoutFraction = timestamp.replace(FRACTION, "")
+        return try {
+            val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
+            val instant = parser.parse(withoutFraction) ?: return timePart.take(8)
+            val printer = SimpleDateFormat("HH:mm:ss", Locale.US)
+            printer.timeZone = zone
+            printer.format(instant)
+        } catch (e: ParseException) {
+            timePart.take(8)
+        } catch (e: IllegalArgumentException) {
+            timePart.take(8)
+        }
     }
+
+    private val FRACTION = Regex("""\.\d+(?=[+-]\d{2}:\d{2}$|Z$)""")
 
     const val PLACEHOLDER_TIME = "--:--:--"
 }
