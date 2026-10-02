@@ -47,6 +47,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from question_log import QuestionLog  # noqa: E402  (same scripts/ directory)
+from shadow_classifier import ShadowClassifier  # noqa: E402  (same scripts/ directory)
 
 from api.local_api import LocalApi  # noqa: E402 (see sys.path setup above)
 from application.alarm_state_dispatcher import ALARM_STATE_COMMAND  # noqa: E402
@@ -287,6 +288,31 @@ def attach_language_model(
         return False, client.last_error or "无法连接本地模型服务"
     runtime.attach_language_model(client)
     return True, ""
+
+
+def attach_shadow_classifier(
+    runtime: ApplicationRuntime,
+    question_log: QuestionLog,
+    model: str = DEFAULT_MODEL,
+    enabled: bool = True,
+) -> ShadowClassifier | None:
+    """规则判出的提问，后台再让模型独立分类一次，只记录不改回答（2026-09-29）。
+
+    只在本地模型已接上时启用（``enabled`` 传 ``attach_language_model`` 的结果），
+    挂在问答日志上：桌面与手机两路提问都经过 ``QuestionLog.record_question``。
+    用自己的客户端，只在助手的客户端空闲时提交，见 ``shadow_classifier`` 模块文档。
+    三个启动器共用这一处，理由与本模块其余函数相同。
+    """
+    if not enabled:
+        return None
+    shadow = ShadowClassifier(
+        OllamaClient(model=model),
+        lambda: runtime.assistant.llm.is_busy(),
+        log_dir=question_log.log_dir,
+    )
+    question_log.observer = shadow.offer
+    shadow.start()
+    return shadow
 
 
 def attach_export_status(

@@ -74,6 +74,7 @@ from automation_wiring import (  # noqa: E402
     attach_export_status,
     attach_history,
     attach_language_model,
+    attach_shadow_classifier,
     logging_answer_sink,
     logging_question_observer,
     make_cloud_sync_runner,
@@ -223,6 +224,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # 问答日志见 scripts/question_log.py；桌面与手机两端都记，靠 from 字段区分。
     question_log = QuestionLog()
+    # 影子分类：规则判出的提问，后台再让模型独立分类一次，只记录不改回答
+    # （scripts/shadow_classifier.py，2026-09-29）。
+    attach_shadow_classifier(
+        runtime, question_log, model=args.llm_model, enabled=llm_available
+    )
     # 历史记录：与 run_gui 同一处接线，桌面与手机共用这一个库。
     history_store = attach_history(runtime)
     # 与 run_gui 同一套：助手只读台账，上传由界面按钮触发。

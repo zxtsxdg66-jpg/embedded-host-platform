@@ -76,6 +76,7 @@ from automation_wiring import (  # noqa: E402
     attach_export_status,
     attach_history,
     attach_language_model,
+    attach_shadow_classifier,
     enable_automations,
     logging_answer_sink,
     logging_question_observer,
@@ -595,6 +596,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     if not llm_available:
         print(f"[llm] 未接入本地模型，问答只用模板：{llm_detail}")
+    # 影子分类：规则判出的提问，后台再让模型独立分类一次，只记录不改回答
+    # （scripts/shadow_classifier.py，2026-09-29）。
+    attach_shadow_classifier(
+        runtime, question_log, model=args.llm_model, enabled=llm_available
+    )
 
     _start_runner_thread(
         runtime,

@@ -216,3 +216,27 @@ def test_answer_without_intent_or_facts_still_logs(tmp_path: Path) -> None:
     row = _lines(tmp_path)[0]
     assert row["immediate"]["source"] == "fallback"
     assert row["immediate"]["intent"] is None
+
+
+# -- observer（2026-09-29，影子分类挂在这里） -------------------------------------
+
+
+def test_the_observer_sees_every_question_with_its_source(tmp_path: Path) -> None:
+    log = QuestionLog(log_dir=tmp_path)
+    seen: list[tuple[str, str]] = []
+    log.observer = lambda question, answer, source: seen.append((question, source))
+    log.record_question("温湿度多少", _answer(), source="phone")
+    assert seen == [("温湿度多少", "phone")]
+
+
+def test_a_failing_observer_does_not_stop_the_record(tmp_path: Path) -> None:
+    log = QuestionLog(log_dir=tmp_path)
+
+    def broken(question: str, answer: object, source: str) -> None:
+        raise RuntimeError("boom")
+
+    log.observer = broken
+    log.record_question("湿度多少", _answer())
+    log.flush()
+    assert [row["question"] for row in _lines(tmp_path)] == ["湿度多少"]
+    assert log.failures == 1

@@ -108,6 +108,11 @@ class QuestionLog:
     )
     failures: int = field(default=0, init=False)
     """写入失败的次数。不抛异常，但也不假装没发生过。"""
+    observer: Any = field(default=None, init=False, repr=False)
+    """每记一问之后调用 ``observer(question, answer, source)``。
+
+    2026-09-29 为影子分类加。桌面与手机两路提问都经过本方法，
+    挂在这一处就不会漏掉任何一路。它出错只计入 failures。"""
 
     def _now(self) -> datetime:
         clock = self.clock or datetime.now
@@ -139,6 +144,11 @@ class QuestionLog:
                     self._write(stale.record, stale.moment)
         except Exception:  # noqa: BLE001 - 见模块文档第 1 条纪律
             self.failures += 1
+        if self.observer is not None:
+            try:
+                self.observer(question, answer, source)
+            except Exception:  # noqa: BLE001
+                self.failures += 1
 
     def record_late_answer(self, text: str, answer_source: str) -> None:
         """记下几秒后迟到的模型改写，并把这一条落盘。
