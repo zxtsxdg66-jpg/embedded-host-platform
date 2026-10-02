@@ -208,6 +208,13 @@ static void handle_incoming_pc_frame(void)
         (void)audio_alert_play(AUDIO_ALERT_NOISE);
         debug_log_printf("[alert] noise\r\n");
     }
+    /* 湿度过高（2026-10-01 补）。湿度有上下两个限，PC 端按越限方向选句：
+     * 低于下限发 ALERT_HUMIDITY（"湿度过低"），高于上限发本命令（"湿度过高"）。 */
+    else if (command_type == PROTOCOL_CMD_ALERT_HUMIDITY_HIGH)
+    {
+        (void)audio_alert_play(AUDIO_ALERT_HUMIDITY_HIGH);
+        debug_log_printf("[alert] humidity high\r\n");
+    }
     /* 报警状态位图，只用于板载 LCD 每一行的"正常/报警"显示。阈值判定在 PC 端
      * src/service/sensor_data_processor.py，固件不重复实现一套阈值——否则同一套
      * GB 37488-2019 的论证会在 C 里出现第二份，并且悄悄与 PC 端分叉。
@@ -248,16 +255,22 @@ static void handle_incoming_pc_frame(void)
             uint32_t limit = 0u;
             uint32_t flags = 0u;
             uint32_t source = UI_ANSWER_SOURCE_LOCAL;
+            uint32_t idx = 0u;     /* 一次提问有几项时第几项（2026-09-26），缺省为单项 */
+            uint32_t count = 1u;
 
+            (void)protocol_payload_get_uint(payload, payload_len, "idx", &idx);
+            (void)protocol_payload_get_uint(payload, payload_len, "count", &count);
             (void)protocol_payload_get_uint(payload, payload_len, "channel", &channel);
             (void)protocol_payload_get_uint(payload, payload_len, "value", &value);
             (void)protocol_payload_get_uint(payload, payload_len, "limit", &limit);
             (void)protocol_payload_get_uint(payload, payload_len, "flags", &flags);
             (void)protocol_payload_get_uint(payload, payload_len, "source", &source);
 
-            ui_screen_set_answer((uint8_t)kind, (uint8_t)channel, (uint16_t)value,
-                                 (uint16_t)limit, (uint8_t)flags, (uint8_t)source);
-            debug_log_printf("[answer] kind=%u ch=%u v=%u\r\n",
+            ui_screen_set_answer_slot((uint8_t)idx, (uint8_t)count, (uint8_t)kind,
+                                      (uint8_t)channel, (uint16_t)value, (uint16_t)limit,
+                                      (uint8_t)flags, (uint8_t)source);
+            debug_log_printf("[answer] %u/%u kind=%u ch=%u v=%u\r\n",
+                             (unsigned int)idx + 1u, (unsigned int)count,
                              (unsigned int)kind, (unsigned int)channel,
                              (unsigned int)value);
         }
@@ -281,7 +294,7 @@ int main(void)
     uint32_t loop_ticks = 0;
     uint32_t next_cycle_tick = SENSOR_CYCLE_INTERVAL_TICKS;
     uint32_t noise_blank_until_tick = 0;   /* 噪声消隐窗口的结束节拍 */
-    /* 「语音自检」按一次播一句，三句轮换，一个按钮就能覆盖全部告警语音 */
+    /* 「语音自检」按一次播一句，四句轮换，一个按钮就能覆盖全部告警语音 */
     audio_alert_id_t self_test_clip = AUDIO_ALERT_TEMPERATURE;
     sensor_cycle_state_t cycle_state = CYCLE_IDLE;
     /* 噪声传感器是否已完成预热读数。在此之前取到的第一个成功读数不上报，

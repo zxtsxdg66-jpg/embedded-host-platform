@@ -69,6 +69,14 @@ extern const unsigned char asc2_2412[95][36];
 #define UI_ANS_FOOT_Y           162u         /* 判定与阈值 */
 #define UI_ANS_X                12u
 
+/* 第二页多项并排时的布局：每行「温度 当前 25.2 °C 正常」，行距 38 像素 */
+#define UI_LIST_TOP             70u
+#define UI_LIST_ROW_H           38u
+#define UI_LIST_KIND_X          56u
+#define UI_LIST_VALUE_X         136u
+#define UI_LIST_UNIT_X          200u
+#define UI_LIST_STATE_X         248u
+
 #define UI_FAN_LABEL_X          8u
 #define UI_FAN_STATE_X          64u
 #define UI_AUDIO_STATE_X        124u
@@ -140,6 +148,21 @@ static uint16_t s_answer_value = 0u;
 static uint16_t s_answer_limit = 0u;
 static uint8_t  s_answer_flags = 0u;
 static uint8_t  s_answer_source = UI_ANSWER_SOURCE_LOCAL;
+
+/* 一次提问里的几项答案（2026-09-26）。s_answer_* 那一组仍是"大字布局"用的那一项，
+ * 即第 0 项；这里把每一项整条存下，收到的项记在 s_answer_mask 里。 */
+typedef struct
+{
+    uint8_t  kind;
+    uint8_t  channel;
+    uint16_t value;
+    uint16_t limit;
+    uint8_t  flags;
+} ui_answer_t;
+
+static ui_answer_t s_answers[UI_ANSWER_SLOTS];
+static uint8_t     s_answer_count = 1u;
+static uint8_t     s_answer_mask = 0u;
 
 /* 状态码，供 s_shadow_status 使用 */
 #define UI_STATUS_OK        0u
@@ -416,33 +439,35 @@ static void format_fixed(char *out, size_t out_size, uint16_t value_x10)
                    (unsigned int)(value_x10 % 10u));
 }
 
+static const char *channel_label_of(uint8_t channel)
+{
+    return (channel < UI_ROW_COUNT) ? s_rows[channel].label : "";
+}
+
+static const char *channel_unit_of(uint8_t channel)
+{
+    return (channel < UI_ROW_COUNT) ? s_rows[channel].unit : "";
+}
+
 /**
  * @brief       第二页：通道名，没有则返回空串
  */
 static const char *answer_channel_label(void)
 {
-    if (s_answer_channel < UI_ROW_COUNT)
-    {
-        return s_rows[s_answer_channel].label;
-    }
-    return "";
+    return channel_label_of(s_answer_channel);
 }
 
 static const char *answer_channel_unit(void)
 {
-    if (s_answer_channel < UI_ROW_COUNT)
-    {
-        return s_rows[s_answer_channel].unit;
-    }
-    return "";
+    return channel_unit_of(s_answer_channel);
 }
 
 /**
  * @brief       第二页：这条答案是哪一类
  */
-static const char *answer_kind_label(void)
+static const char *kind_label_of(uint8_t kind)
 {
-    switch (s_answer_kind)
+    switch (kind)
     {
         case UI_ANSWER_KIND_CURRENT:   return UI_TXT("当前");
         case UI_ANSWER_KIND_MAXIMUM:   return UI_TXT("最高");
@@ -455,11 +480,91 @@ static const char *answer_kind_label(void)
     }
 }
 
+static const char *answer_kind_label(void)
+{
+    return kind_label_of(s_answer_kind);
+}
+
 /**
  * @brief       画第二页
  * @note        没收到过任何一条时显示「尚无提问」，而不是留一片空白——
  *              空白无法与"屏幕坏了"区分开。
  */
+static uint8_t answer_rows_received(void)
+{
+    uint8_t i;
+    uint8_t n = 0u;
+
+    for (i = 0u; i < UI_ANSWER_SLOTS; i++)
+    {
+        if ((s_answer_mask & (uint8_t)(1u << i)) != 0u)
+        {
+            n++;
+        }
+    }
+    return n;
+}
+
+/**
+ * @brief       第二页：一次提问有几项时并排画成几行（2026-09-26）
+ * @note        只用第一页已有的字（通道名、种类、正常／已越限、单位），不必
+ *              重新生成字库。数值用 1 倍字：三行 2 倍字放不下，而并排的意义
+ *              在于一眼对比，不在于每个数都大。
+ */
+static void draw_page_answer_list(void)
+{
+    char text[10];
+    uint8_t i;
+    uint8_t row = 0u;
+
+    for (i = 0u; i < UI_ANSWER_SLOTS; i++)
+    {
+        const ui_answer_t *a = &s_answers[i];
+        uint16_t y;
+        uint8_t alarm;
+
+        if ((s_answer_mask & (uint8_t)(1u << i)) == 0u)
+        {
+            continue;
+        }
+        y = (uint16_t)(UI_LIST_TOP + row * UI_LIST_ROW_H);
+        alarm = (uint8_t)((a->flags & UI_ANSWER_FLAG_TRIGGERED) != 0u);
+        row++;
+
+        if (a->kind == UI_ANSWER_KIND_FAN)
+        {
+            draw_text_field(UI_ANS_X, y, 40u, UI_TXT("风扇"), 1u, UI_COLOR_LABEL, UI_COLOR_BG);
+            draw_text_field(UI_LIST_KIND_X, y, 72u,
+                            ((a->flags & UI_ANSWER_FLAG_FAN_RUNNING) != 0u)
+                                ? UI_TXT("运行") : UI_TXT("停止"),
+                            1u, UI_COLOR_VALUE, UI_COLOR_BG);
+            continue;
+        }
+
+        draw_text_field(UI_ANS_X, y, 40u, channel_label_of(a->channel), 1u,
+                        UI_COLOR_LABEL, UI_COLOR_BG);
+        draw_text_field(UI_LIST_KIND_X, y, 76u, kind_label_of(a->kind), 1u,
+                        UI_COLOR_LABEL, UI_COLOR_BG);
+        format_fixed(text, sizeof(text),
+                     (a->kind == UI_ANSWER_KIND_THRESHOLD) ? a->limit : a->value);
+        draw_text_field(UI_LIST_VALUE_X, y, 60u, text, 1u,
+                        alarm ? UI_COLOR_VALUE_ALARM : UI_COLOR_VALUE, UI_COLOR_BG);
+        draw_text_field(UI_LIST_UNIT_X, y, 44u, channel_unit_of(a->channel), 1u,
+                        UI_COLOR_LABEL, UI_COLOR_BG);
+        if (a->kind != UI_ANSWER_KIND_THRESHOLD)
+        {
+            draw_text_field(UI_LIST_STATE_X, y, 64u,
+                            alarm ? UI_TXT("已越限") : UI_TXT("正常"), 1u,
+                            alarm ? UI_COLOR_ALARM : UI_COLOR_OK, UI_COLOR_BG);
+        }
+        if (row < answer_rows_received())
+        {
+            lcd_draw_hline(UI_ANS_X, (uint16_t)(y + UI_LIST_ROW_H - 12u),
+                           (uint16_t)(UI_SCREEN_W - 2u * UI_ANS_X), UI_COLOR_LINE);
+        }
+    }
+}
+
 static void draw_page_answer(void)
 {
     /* 比第一页的 UI_VALUE_TEXT_LEN 宽一点：定点值理论上可到 65535，写成
@@ -483,6 +588,13 @@ static void draw_page_answer(void)
                     (s_answer_source == UI_ANSWER_SOURCE_REMOTE)
                         ? UI_TXT("来自手机") : UI_TXT("来自本机"),
                     1u, UI_COLOR_MUTED, UI_COLOR_BG);
+
+    /* 一次提问有几项：并排画成几行（2026-09-26） */
+    if (answer_rows_received() > 1u)
+    {
+        draw_page_answer_list();
+        return;
+    }
 
     if (s_answer_kind == UI_ANSWER_KIND_FAN)
     {
@@ -813,17 +925,59 @@ void ui_screen_set_link(uint8_t linked)
 void ui_screen_set_answer(uint8_t kind, uint8_t channel, uint16_t value_x10,
                           uint16_t limit_x10, uint8_t flags, uint8_t source)
 {
+    ui_screen_set_answer_slot(0u, 1u, kind, channel, value_x10, limit_x10, flags, source);
+}
+
+void ui_screen_set_answer_slot(uint8_t index, uint8_t count, uint8_t kind,
+                               uint8_t channel, uint16_t value_x10,
+                               uint16_t limit_x10, uint8_t flags, uint8_t source)
+{
     if (s_ready == 0u)
     {
         return;
     }
+    if (count == 0u)
+    {
+        count = 1u;
+    }
+    if (count > UI_ANSWER_SLOTS)
+    {
+        count = UI_ANSWER_SLOTS;
+    }
+    if (index >= count)
+    {
+        return;
+    }
 
-    s_answer_kind = kind;
-    s_answer_channel = channel;
-    s_answer_value = value_x10;
-    s_answer_limit = limit_x10;
-    s_answer_flags = flags;
-    s_answer_source = source;
+    if (index == 0u)
+    {
+        /* 新的一次提问：之前的几项全部作废 */
+        s_answer_count = count;
+        s_answer_mask = 0u;
+    }
+    else if ((count != s_answer_count) || ((s_answer_mask & 0x01u) == 0u))
+    {
+        /* 不属于当前这次提问的后续项（第 0 项没收到、或总数对不上）：不采纳，
+         * 免得把两次提问的几行拼在一起 */
+        return;
+    }
+
+    s_answers[index].kind = kind;
+    s_answers[index].channel = channel;
+    s_answers[index].value = value_x10;
+    s_answers[index].limit = limit_x10;
+    s_answers[index].flags = flags;
+    s_answer_mask |= (uint8_t)(1u << index);
+
+    if (index == 0u)
+    {
+        s_answer_kind = kind;
+        s_answer_channel = channel;
+        s_answer_value = value_x10;
+        s_answer_limit = limit_x10;
+        s_answer_flags = flags;
+        s_answer_source = source;
+    }
 
     /* 不在第二页就只记不画。切页时 draw_body() 会把它画出来——这样一条在
      * 第一页时到达的答案不会丢，也不会去动当前正在看的那一页。 */

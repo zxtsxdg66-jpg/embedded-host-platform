@@ -31,13 +31,16 @@
 #include "./SYSTEM/sys/sys.h"
 #include <stdint.h>
 
-/* 三句固定告警语音。顺序必须与 alert_pcm.c 的 g_alert_clips[] 一致，
- * 也与 PC 端 service/alarm_announcer.py 的 AlertKind 一一对应。 */
+/* 四句固定告警语音。顺序必须与 alert_pcm.c 的 g_alert_clips[] 一致，
+ * 也与 PC 端 service/alarm_announcer.py 的 AlertKind 一一对应。
+ * AUDIO_ALERT_HUMIDITY 是"湿度过低"；"湿度过高"于 2026-10-01 追加在末尾，
+ * 前三句的编号不变。 */
 typedef enum
 {
     AUDIO_ALERT_TEMPERATURE = 0,
     AUDIO_ALERT_HUMIDITY,
     AUDIO_ALERT_NOISE,
+    AUDIO_ALERT_HUMIDITY_HIGH,
     AUDIO_ALERT_COUNT
 } audio_alert_id_t;
 

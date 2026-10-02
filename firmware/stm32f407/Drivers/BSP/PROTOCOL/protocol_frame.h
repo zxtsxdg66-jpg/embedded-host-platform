@@ -62,7 +62,8 @@
  * PC 端的动态分配区间已相应上移到 0x20 起，不会与本区间冲突。 */
 #define PROTOCOL_CMD_FAN_ON             0x10u
 #define PROTOCOL_CMD_FAN_OFF            0x11u
-/* 语音告警：播报三句预合成语音之一。与 service/alarm_announcer.py 的 AlertKind 对应 */
+/* 语音告警：播报四句预合成语音之一。与 service/alarm_announcer.py 的 AlertKind 对应。
+ * ALERT_HUMIDITY 是"湿度过低"；"湿度过高"是 0x17（2026-10-01 补），见下方。 */
 #define PROTOCOL_CMD_ALERT_TEMPERATURE  0x12u
 #define PROTOCOL_CMD_ALERT_HUMIDITY     0x13u
 #define PROTOCOL_CMD_ALERT_NOISE        0x14u
@@ -85,6 +86,10 @@
  * 画不出任意中文句子；因此下发的是"哪一类答案 + 数值"，由板子用自己的模板渲染。
  * 好处不止于省字库——模型改写不会影响屏幕显示，屏幕上出现的永远是事实。 */
 #define PROTOCOL_CMD_ANSWER_SHOW        0x16u
+/* 湿度过高语音（2026-10-01 补）。湿度上限 09-08 就有了，但当时只合成了"湿度过低"
+ * 一句，湿度偏高时喇叭说的也是"湿度过低"。另取 0x17 而不改动 0x13 的含义，
+ * 旧固件收到 0x13 时行为不变。 */
+#define PROTOCOL_CMD_ALERT_HUMIDITY_HIGH 0x17u
 
 typedef enum
 {

@@ -19,7 +19,8 @@
  *   y 0..25    标题栏：站点名 + 链路状态 + 「数据」「问答」两个页签
  *   y 26..193  正文区，按当前页签切换：
  *                第一页  三行数据行，每行 56 高：标签 / 数值 / 单位 / 状态
- *                第二页  最近一条问答：种类 + 数值 + 单位 + 判定 + 阈值 + 来源
+ *                第二页  最近一条问答：种类 + 数值 + 单位 + 判定 + 阈值 + 来源；
+ *                        一次问到几个通道时分行显示，至多三行（ANSWER_SHOW 的 idx/count，2026-09-26）
  *   y 194..239 底栏：风扇状态 + 「语音自检」按钮（两页都在）
  *
  * 为什么是分页而不是下拉滚动：这块屏是**电阻屏**，单点、需按压、没有惯性滚动，
@@ -105,6 +106,10 @@ extern const uint16_t g_hz_glyph_count;
 #define UI_ANSWER_SOURCE_LOCAL      0u      /* PC 上提的问 */
 #define UI_ANSWER_SOURCE_REMOTE     1u      /* 手机上提的问 */
 
+/* 一次提问最多同时显示几项（2026-09-26）。"现在温度湿度噪声是多少"在 PC 上按通道
+ * 答成三段，屏幕第二页把这几段并排画成几行；只有一项时仍用原来的大字布局。 */
+#define UI_ANSWER_SLOTS             3u
+
 /**
  * @brief   触摸事件
  */
@@ -170,6 +175,21 @@ void ui_screen_set_link(uint8_t linked);
  */
 void ui_screen_set_answer(uint8_t kind, uint8_t channel, uint16_t value_x10,
                           uint16_t limit_x10, uint8_t flags, uint8_t source);
+
+/**
+ * @brief       一次提问里有几项答案时，设置其中一项（2026-09-26）
+ * @param       index       第几项，0 起
+ * @param       count       这次一共几项，1..UI_ANSWER_SLOTS
+ * @param       其余参数     同 ui_screen_set_answer()
+ *
+ * @note        第 0 项到达即开始一次新的提问：之前的几项全部作废。其余项按到达
+ *              顺序补进来，收到几项就并排画几行——某一帧丢了，屏幕上少一行，
+ *              不会把上一次提问的那一行留着冒充这一次的。
+ *              ui_screen_set_answer() 等价于 index=0、count=1。
+ */
+void ui_screen_set_answer_slot(uint8_t index, uint8_t count, uint8_t kind,
+                               uint8_t channel, uint16_t value_x10,
+                               uint16_t limit_x10, uint8_t flags, uint8_t source);
 
 /**
  * @brief       扫描触摸屏，返回本次产生的事件
