@@ -337,7 +337,7 @@ class DataPanelWidget(QWidget):
     ) -> None:
         """Put one reading's threshold verdict on that reading's history row.
 
-        Added 2026-09-29, after a screenshot for the thesis showed
+        Added 2026-09-29, after a screenshot showed
         "87.60 正常" in the noise column: **a lone spike is not an alarm by
         design** -- the processor wants ``DEFAULT_CONFIRM_CYCLES`` readings
         in a row -- but the column said only 正常 or 报警, so the reader

@@ -582,7 +582,7 @@ class StepKind(Enum):
     ABANDONED = "abandoned"
     EXPAND = "expand"
     """One sentence named several channels (or "all three"); each is
-    answered in turn (docs/decisions/03-intent.md, items 1 and 2)."""
+    answered in turn (docs/decisions/03-intent.md)."""
     CHOICE = "choice"
     """The user answered a "你是想问 A 还是 B" question."""
     MANIPULATION = "manipulation"

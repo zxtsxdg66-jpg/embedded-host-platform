@@ -291,7 +291,7 @@ hundred is far more than one question produces (under twenty), so a
 consumer polling every cycle never loses one."""
 
 ALL_CHANNELS = (TEMPERATURE_CHANNEL, HUMIDITY_CHANNEL, NOISE_CHANNEL)
-"""What "三个都" expands to (docs/decisions/03-intent.md, item 2)."""
+"""What "三个都" expands to (docs/decisions/03-intent.md)."""
 
 CHOICE_SECONDS = 60
 """How long a "你是想问 A 还是 B" question waits for its answer.
@@ -699,7 +699,7 @@ class Assistant:
             and len(intent_rules.named_channels(question)) > 1
         ):
             # 一句话要改两个通风阈值（"温度和湿度阈值都调到 30 度"）：原先只改了
-            # 第一个通道、不提第二个。指令不展开（docs/decisions/03-intent.md 3.1），
+            # 第一个通道、不提第二个。指令不展开（docs/decisions/03-intent.md），
             # 于是把通道清空，走既有的"你要调的是温度还是湿度"反问，一次只改一个。
             before = recognised
             recognised = replace(recognised, channel=None)
@@ -1042,7 +1042,7 @@ class Assistant:
     def _expand_channels(self, recognised: Intent, question: str) -> list[Intent]:
         """One sentence, several channels: one intent per channel, or none.
 
-        Three cases, all read-only questions (docs/decisions/03-intent.md 3.1):
+        Three cases, all read-only questions (docs/decisions/03-intent.md):
 
         - the sentence names two or more channels by their proper names
           ("温度湿度噪声是多少") -- the rules used to keep the first and drop

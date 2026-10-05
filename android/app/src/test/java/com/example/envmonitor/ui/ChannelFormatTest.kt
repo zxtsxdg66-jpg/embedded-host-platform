@@ -50,7 +50,7 @@ class ChannelFormatTest {
         // 原先直接截出 07:17:27，比北京时间慢 8 小时。
         assertEquals(
             "15:17:27",
-            ChannelFormat.moment("2026-09-17T07:17:27.778177+00:00"),
+            ChannelFormat.moment("2026-09-17T07:17:27.778177+00:00", shanghai),
         )
     }
 

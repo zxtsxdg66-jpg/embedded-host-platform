@@ -140,7 +140,7 @@ def test_prefill_history_fills_the_table(qtbot) -> None:
 
 
 def test_prefill_history_puts_the_newest_at_the_top(qtbot) -> None:
-    """存储按"新的在前"返回，表格却要自上而下顺着时间读——
+    """最新的在最上面（2026-09-29 起，此前是最旧的在上）——与实时路径插入的
     位置一致，否则同一张表两半边的时序是反的。"""
     panel = DataPanelWidget()
     qtbot.addWidget(panel)

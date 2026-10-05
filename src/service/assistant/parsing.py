@@ -62,10 +62,10 @@ PARSE_SYSTEM_PROMPT = (
     "例：通风阈值调到 28 度 -> set_vent_threshold temperature\n"
     "例：明天下雨吗 -> unknown"
 )
-"""2026-09-26 起多了三处（docs/decisions/03-intent.md 3.3）：``sample_count`` 标签、
+"""2026-09-26 起多了三处（docs/decisions/03-intent.md）：``sample_count`` 标签、
 "涉及几个通道就写几个"、"拿不准时可以写两到三个候选"，各配一个示例（候选的那条
-刻意不配示例，以免把确定的句子也教成犹豫的）。改动前后在 148 句留出题库上的
-对照见 ``experiment-data/assistant/README.md``"分类提示词改动"一节。
+刻意不配示例，以免把确定的句子也教成犹豫的）。改动前后在 148 句留出题库上
+做过对照。
 
 Fixed, for the same reason :data:`assistant.REPHRASE_SYSTEM_PROMPT` is:
 an unchanging prefix is what lets Ollama reuse its KV cache between
